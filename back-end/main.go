@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
+	"github.com/gin-contrib/cors"
 )
 
 func main() {
@@ -29,6 +30,15 @@ func main() {
 	db.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{})
 
 	router := gin.Default()
+
+	// Thêm middleware CORS cho phép frontend truy cập
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // hoặc "*" nếu muốn cho tất cả
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	// 🔹 Định nghĩa API đăng ký & đăng nhập
 	router.POST("/register", handlers.RegisterUser(db))
@@ -94,6 +104,12 @@ func main() {
 		homeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Đăng ký khách hàng
 		homeApi.POST("/update_invoice_customer", handlers.UpdateHomeInvoiceCustomer(db)) // Gán customer_id vào hóa đơn nhà
 	}
+	// filepath: d:\project\back-end\main.go
+	adminApi := router.Group("/api/admin", middlewares.AuthMiddleware())
+	adminApi.GET("/all-invoices", handlers.AdminSelectAllInvoices(db))
+	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(db))
+	adminApi.GET("/product-statistics", handlers.AdminProductStatistics(db))
+	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
 	//apiRouter.POST("/form-fields", handlers.CreateField(db))
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))

@@ -434,3 +434,206 @@ Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
 ---
 
 **Nếu cần thêm bảng hoặc API nào khác, chỉ cần yêu cầu, mình sẽ bổ sung tương tự!**
+# API Quản trị & Thống kê Bảo hiểm - Hướng dẫn sử dụng & Triển khai biểu đồ
+
+---
+
+## 1. API Quản trị hóa đơn & khách hàng
+
+### 1.1. Lấy danh sách tất cả hóa đơn (tổng hợp 3 loại)
+
+**Endpoint:**  
+`GET /api/admin/all-invoices`
+
+**Trả về:**  
+Danh sách hóa đơn của tất cả các loại (chung, du lịch, nhà), mỗi bản ghi có trường `invoice_type` để phân biệt.
+
+```json
+[
+  {
+    "invoice_id": 1,
+    "invoice_type": "Chung",
+    "product_name": "Bảo hiểm tai nạn con người 24/24",
+    "customer_name": "Nguyễn Văn A",
+    "insurance_start": "2025-05-22",
+    "insurance_end": "2026-05-22",
+    "insurance_amount": 1000000,
+    "insurance_quantity": 2,
+    "contract_type": "Mới",
+    "status": "Đã thanh toán",
+    "updated_at": "2025-05-22 19:17:21"
+  },
+  {
+    "invoice_id": 2,
+    "invoice_type": "Du lịch",
+    "product_name": "Bảo hiểm du lịch quốc tế",
+    "customer_name": "Trần Thị B",
+    "departure_location": "Hà Nội",
+    "destination": "Singapore",
+    "departure_date": "2025-06-01",
+    "return_date": "2025-06-10",
+    "group_size": 5,
+    "insurance_program": "Chương trình A",
+    "insurance_package": "Gói VIP",
+    "status": "Đã thanh toán",
+    "updated_at": "2025-06-01 10:00:00"
+  },
+  ...
+]
+```
+
+---
+
+### 1.2. Lấy chi tiết hóa đơn (1 API động)
+
+**Endpoint:**  
+`GET /api/admin/invoice-detail?type={type}&id={invoice_id}`
+
+- `type`: `"chung"`, `"travel"`, `"home"`
+- `id`: mã hóa đơn
+
+**Trả về:**  
+Thông tin chi tiết hóa đơn, khách hàng, danh sách người tham gia (nếu có).
+
+```json
+{
+  "invoice_id": 1,
+  "invoice_type": "Chung",
+  "product_name": "Bảo hiểm tai nạn con người 24/24",
+  "customer": {
+    "customer_id": 5,
+    "full_name": "Nguyễn Văn A",
+    "email": "a@gmail.com",
+    "phone_number": "0123456789"
+  },
+  "participants": [
+    {
+      "participant_id": 1,
+      "full_name": "Nguyễn Văn A",
+      "birth_date": "1990-01-01",
+      "gender": "Nam",
+      "identity_number": "123456789"
+    },
+    ...
+  ]
+}
+```
+
+---
+
+### 1.3. Tìm kiếm khách hàng theo ngày, sản phẩm, loại hóa đơn
+
+**Endpoint:**  
+`GET /api/admin/search-customers-by-date?date=YYYY-MM-DD[&product_id=...][&invoice_type=chung|travel|home]`
+
+- `date`: ngày mua hàng (bắt buộc)
+- `product_id`: lọc theo sản phẩm (tùy chọn)
+- `invoice_type`: lọc theo loại hóa đơn (tùy chọn)
+
+**Trả về:**  
+Danh sách khách hàng đã mua hàng theo điều kiện lọc.
+
+```json
+[
+  {
+    "customer_id": 5,
+    "full_name": "Nguyễn Văn A",
+    "email": "a@gmail.com",
+    "phone_number": "0123456789",
+    "product_name": "Bảo hiểm tai nạn con người 24/24",
+    "invoice_type": "Chung",
+    "purchase_date": "2025-05-22"
+  },
+  ...
+]
+```
+
+---
+
+### 1.4. Thống kê số lượng & doanh thu sản phẩm theo ngày/tháng/năm (cho biểu đồ)
+
+**Endpoint:**  
+`GET /api/admin/product-statistics?group=day|month|year`
+
+- `group`: `"day"` (mặc định), `"month"`, `"year"`
+
+**Trả về:**  
+Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo từng mốc thời gian.
+
+```json
+[
+  {
+    "product_id": 1,
+    "product_name": "Bảo hiểm tai nạn con người 24/24",
+    "total_sold": 10,
+    "total_revenue": 10000000,
+    "date_group": "2025-05-22"
+  },
+  {
+    "product_id": 2,
+    "product_name": "Bảo hiểm vật chất ô tô",
+    "total_sold": 5,
+    "total_revenue": 5000000,
+    "date_group": "2025-05-22"
+  },
+  ...
+]
+```
+
+---
+
+## 2. Hướng dẫn xử lý dữ liệu để tạo biểu đồ
+
+### 2.1. Biểu đồ tròn (Pie Chart)
+
+- **Dữ liệu:** Lấy `product_name` và `total_sold` từ API `/api/admin/product-statistics?group=day` (hoặc `month`, `year`).
+- **Cách vẽ:**  
+  - Mỗi lát cắt là một sản phẩm.
+  - Kích thước lát cắt = số lượng bán của sản phẩm đó / tổng số lượng bán của tất cả sản phẩm.
+
+### 2.2. Biểu đồ cột (Bar Chart)
+
+- **Dữ liệu:** Lấy `product_name` và `total_sold` hoặc `total_revenue`.
+- **Cách vẽ:**  
+  - Trục X: Tên sản phẩm.
+  - Trục Y: Số lượng bán hoặc doanh thu.
+  - Mỗi cột là một sản phẩm.
+
+### 2.3. Biểu đồ đường (Line Chart)
+
+- **Dữ liệu:** Lấy `date_group`, `product_name`, `total_sold` từ API (gọi với `group=day`, `month`, `year`).
+- **Cách vẽ:**  
+  - Trục X: Thời gian (ngày/tháng/năm).
+  - Trục Y: Số lượng bán.
+  - Mỗi đường là một sản phẩm, thể hiện sự thay đổi số lượng bán theo thời gian.
+
+---
+
+## 3. Gợi ý triển khai frontend
+
+- **Gọi API:**  
+  Sử dụng fetch/Axios để lấy dữ liệu từ các endpoint trên.
+- **Xử lý dữ liệu:**  
+  - Lọc, nhóm, tổng hợp theo nhu cầu (nếu cần).
+  - Truyền dữ liệu vào thư viện vẽ biểu đồ như Chart.js, ECharts, Ant Design Charts, v.v.
+- **Ví dụ gọi API:**
+  ```js
+  fetch('/api/admin/product-statistics?group=month')
+    .then(res => res.json())
+    .then(data => {
+      // data là mảng các thống kê, truyền vào biểu đồ
+    });
+  ```
+
+---
+
+## 4. Lưu ý
+
+- **Chỉ những hóa đơn có status = 'Đã thanh toán' mới được tính vào thống kê và tìm kiếm.**
+- **Khi tạo hóa đơn mới, cần cập nhật status sang 'Đã thanh toán' để thống kê chính xác.**
+- **Các API đều hỗ trợ lọc động theo ngày, sản phẩm, loại hóa đơn.**
+- **Có thể mở rộng thêm các API thống kê khác nếu cần.**
+
+---
+
+**Nếu cần bổ sung thêm API hoặc hướng dẫn chi tiết hơn về frontend, hãy yêu cầu!**
