@@ -110,6 +110,14 @@ func main() {
 	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(db))
 	adminApi.GET("/product-statistics", handlers.AdminProductStatistics(db))
 	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
+	adminApi.PUT("/update-invoice/:id", handlers.AdminUpdateInvoice(db)) // ?type=chung|travel|home
+	adminApi.PUT("/update-customer/:id", handlers.AdminUpdateCustomer(db))
+	adminApi.PUT("/update-participant/:id", handlers.AdminUpdateParticipant(db))
+	adminApi.PUT("/update-travel-participant/:id", handlers.AdminUpdateTravelParticipant(db))
+	adminApi.DELETE("/delete-participant/:id", handlers.AdminDeleteParticipant(db))
+	adminApi.GET("/deleted-participants", handlers.AdminDeletedParticipants(db))
+	adminApi.DELETE("/delete-invoice/:id", handlers.AdminDeleteInvoice(db)) // ?type=chung|travel|home
+	adminApi.GET("/deleted-invoices", handlers.AdminDeletedInvoices(db)) // lấy lịch sử xóa
 	//apiRouter.POST("/form-fields", handlers.CreateField(db))
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))

@@ -20,6 +20,7 @@ type Invoice struct { // hóa đơn
     Status           string    `gorm:"type:enum('Đã thanh toán','Chưa thanh toán','Đã hủy');default:'Chưa thanh toán'" json:"status"`
     CreatedAt        time.Time `gorm:"autoCreateTime" json:"created_at"`
     UpdatedAt        time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+    DeletedAt      *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 func (i *Invoice) Validate() error {

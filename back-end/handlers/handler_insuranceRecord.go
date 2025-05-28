@@ -30,10 +30,14 @@ func CreateInvoice(db *gorm.DB) gin.HandlerFunc {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
-        if err := db.Table("invoices").Create(&invoice).Error; err != nil {
+
+        tx := db.Begin()
+        if err := tx.Table("invoices").Create(&invoice).Error; err != nil {
+            tx.Rollback()
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lưu invoice!"})
             return
         }
+        tx.Commit()
         c.JSON(http.StatusOK, gin.H{"message": "Invoice đã lưu!", "invoice_id": invoice.InvoiceID})
     }
 }
@@ -56,38 +60,41 @@ func CreateTravelInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
             return
         }
 
-        // 1. Tạo insurance_form trước (nếu muốn liên kết form_id)
+        tx := db.Begin()
+        // 1. Tạo insurance_form
         insuranceForm := models.InsuranceForm{
             InsuranceType:    "travel",
-            PolicyHolderName: "", // Có thể lấy từ customer hoặc để trống
+            PolicyHolderName: "",
             InsuranceStart:   input.TravelInsuranceInvoice.DepartureDate,
             InsuranceDuration: int(input.TravelInsuranceInvoice.ReturnDate.Sub(input.TravelInsuranceInvoice.DepartureDate).Hours() / 24),
             TotalPremium:     input.TravelInsuranceInvoice.TotalAmount,
         }
-        if err := db.Create(&insuranceForm).Error; err != nil {
+        if err := tx.Create(&insuranceForm).Error; err != nil {
+            tx.Rollback()
             c.JSON(500, gin.H{"error": "Lỗi khi tạo insurance_form!"})
             return
         }
-
-        // 2. Gán form_id vào TravelInsuranceInvoice
         input.TravelInsuranceInvoice.FormID = &insuranceForm.FormID
 
-        // 3. Lưu hóa đơn du lịch
-        if err := db.Create(&input.TravelInsuranceInvoice).Error; err != nil {
+        // 2. Lưu hóa đơn du lịch
+        if err := tx.Create(&input.TravelInsuranceInvoice).Error; err != nil {
+            tx.Rollback()
             c.JSON(500, gin.H{"error": "Lỗi khi lưu hóa đơn du lịch!"})
             return
         }
 
-        // 4. Lưu từng participant, gán invoice_id vừa tạo
+        // 3. Lưu từng participant
         for _, p := range input.Participants {
             participant := p
             participant.InvoiceID = input.TravelInsuranceInvoice.InvoiceID
-            if err := db.Create(&participant).Error; err != nil {
+            if err := tx.Create(&participant).Error; err != nil {
+                tx.Rollback()
                 c.JSON(500, gin.H{"error": "Lỗi khi lưu người tham gia!"})
                 return
             }
         }
 
+        tx.Commit()
         c.JSON(200, gin.H{
             "message": "TravelInsuranceInvoice đã lưu!",
             "invoice_id": input.TravelInsuranceInvoice.InvoiceID,
@@ -291,10 +298,13 @@ func CreateHomeInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
         input.CustomerID = nil
         input.FormID = nil
 
-        if err := db.Create(&input).Error; err != nil {
+        tx := db.Begin()
+        if err := tx.Create(&input).Error; err != nil {
+            tx.Rollback()
             c.JSON(500, gin.H{"error": "Lỗi khi lưu hóa đơn bảo hiểm nhà!"})
             return
         }
+        tx.Commit()
         c.JSON(200, gin.H{
             "message": "Đã lưu thông tin hóa đơn bảo hiểm nhà!",
             "invoice_id": input.InvoiceID,
@@ -322,21 +332,26 @@ func CreateAccidentInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
-        if err := db.Create(&input.Invoice).Error; err != nil {
+
+        tx := db.Begin()
+        if err := tx.Create(&input.Invoice).Error; err != nil {
+            tx.Rollback()
             c.JSON(500, gin.H{"error": "Lỗi khi lưu invoice!"})
             return
         }
         for _, p := range input.Participants {
             participant := p
             participant.InvoiceID = input.Invoice.InvoiceID
-            if err := db.Create(&participant).Error; err != nil {
+            if err := tx.Create(&participant).Error; err != nil {
+                tx.Rollback()
                 c.JSON(500, gin.H{"error": "Lỗi khi lưu người tham gia!"})
                 return
             }
         }
-        db.Model(&models.Invoice{}).
+        tx.Model(&models.Invoice{}).
             Where("invoice_id = ?", input.Invoice.InvoiceID).
             Update("insurance_quantity", len(input.Participants))
+        tx.Commit()
         c.JSON(200, gin.H{
             "message": "Invoice bảo hiểm tai nạn đã lưu!",
             "invoice_id": input.Invoice.InvoiceID,

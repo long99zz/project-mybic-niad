@@ -17,7 +17,6 @@ type Product struct {
     InsuranceFee        string `gorm:"type:text"`   // Biểu phí bảo hiểm
     ClaimGuidelines     string  `gorm:"size:255"` // Hướng dẫn bồi thường
     FormRules           string  `gorm:"type:text"`  // Quy tắc biểu mẫu
-
     CreatedAt   time.Time       `json:"created_at"`
     UpdatedAt   time.Time       `json:"updated_at"`
     DeletedAt   gorm.DeletedAt  `gorm:"index" json:"deleted_at"`

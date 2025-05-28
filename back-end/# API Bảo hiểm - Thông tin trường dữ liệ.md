@@ -636,4 +636,82 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 
 ---
 
-**Nếu cần bổ sung thêm API hoặc hướng dẫn chi tiết hơn về frontend, hãy yêu cầu!**
+# Tổng hợp thay đổi API & dữ liệu ngày 2025-05-29
+
+---
+
+## 1. **Thêm tính năng cập nhật (update) cho admin**
+
+- **Cập nhật hóa đơn:**  
+  `PUT /api/admin/update-invoice/:id?type=chung|travel|home`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật khách hàng:**  
+  `PUT /api/admin/update-customer/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật participant:**  
+  `PUT /api/admin/update-participant/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật travel participant:**  
+  `PUT /api/admin/update-travel-participant/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+---
+
+## 2. **Thêm tính năng xóa mềm (soft delete) và xem lịch sử xóa**
+
+- **Xóa hóa đơn:**  
+  `DELETE /api/admin/delete-invoice/:id?type=chung|travel|home`  
+  → Hóa đơn sẽ không bị xóa khỏi DB mà chỉ cập nhật trường `deleted_at`.
+
+- **Xóa participant:**  
+  `DELETE /api/admin/delete-participant/:id`  
+  → Participant sẽ được soft delete (cập nhật trường `deleted_at`).
+
+- **Xem lịch sử hóa đơn đã xóa:**  
+  `GET /api/admin/deleted-invoices`  
+  `GET /api/admin/deleted-invoices?type=chung|travel|home`  
+  → Trả về danh sách hóa đơn đã bị xóa mềm.
+
+- **Xem lịch sử participant đã xóa:**  
+  `GET /api/admin/deleted-participants`  
+  → Trả về danh sách participant đã bị xóa mềm.
+
+---
+
+## 3. **Thay đổi cấu trúc database**
+
+- **Đã thêm trường `deleted_at` (kiểu DATETIME, cho phép NULL) vào các bảng:**
+  - `invoices`
+  - `travel_insurance_invoices`
+  - `home_insurance_invoices`
+  - `participants`
+  - `travel_participants`
+
+---
+
+## 4. **Lưu ý khi lấy dữ liệu**
+
+- **Các API lấy danh sách hóa đơn, participant... chỉ trả về bản ghi chưa bị xóa (`deleted_at IS NULL`).**
+- **API lịch sử xóa sẽ trả về các bản ghi có `deleted_at IS NOT NULL`.**
+
+---
+
+## 5. **Các API khác vẫn giữ nguyên**
+
+- Lấy danh sách hóa đơn: `GET /api/admin/all-invoices`
+- Lấy chi tiết hóa đơn: `GET /api/admin/invoice-detail?type=...&id=...`
+- Thống kê sản phẩm: `GET /api/admin/product-statistics?group=day|month|year`
+- Tìm kiếm khách hàng: `GET /api/admin/search-customers-by-date?...`
+
+---
+
+## 6. **Hướng dẫn frontend**
+
+- Khi muốn cập nhật, xóa, hoặc xem lịch sử xóa, sử dụng đúng endpoint như trên.
+- Khi hiển thị danh sách, chỉ hiển thị bản ghi chưa bị xóa.
+- Có thể xây dựng giao diện "Lịch sử xóa" để admin khôi phục hoặc kiểm tra các bản ghi đã bị xóa mềm.
+
+---
