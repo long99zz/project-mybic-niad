@@ -1,7 +1,8 @@
 package models
 
-import ("time"
-    "fmt"
+import (
+	"fmt"
+	"time"
 )
 
 type CustomerRegistration struct { // khai báo khách hàng
@@ -20,8 +21,8 @@ type CustomerRegistration struct { // khai báo khách hàng
 func (c *CustomerRegistration) Validate() error {
     if c.CustomerType == "" {
         c.CustomerType = "Cá nhân"
-    } else if c.CustomerType != "Cá nhân" && c.CustomerType != "Doanh nghiệp" {
-        return fmt.Errorf("customer_type không hợp lệ! Phải là 'Cá nhân' hoặc 'Doanh nghiệp'.")
+    } else if c.CustomerType != "Cá nhân" && c.CustomerType != "Tổ chức" {
+        return fmt.Errorf("customer_type không hợp lệ! Phải là 'Cá nhân' hoặc 'Tổ chức'.")
     }
     return nil
 }

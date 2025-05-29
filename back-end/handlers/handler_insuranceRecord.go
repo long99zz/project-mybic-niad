@@ -1,12 +1,13 @@
 package handlers
 
 import (
-    "net/http"
-    "gorm.io/gorm"
-    "backend/models"
-    "github.com/gin-gonic/gin"
-    "fmt"
-    "time"
+	"backend/models"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func CreateInvoice(db *gorm.DB) gin.HandlerFunc {
@@ -20,7 +21,8 @@ func CreateInvoice(db *gorm.DB) gin.HandlerFunc {
             invoice.UserID = nil
         }
         if err := c.ShouldBindJSON(&invoice); err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
+            fmt.Printf("Lỗi binding JSON cho invoice: %v\n", err)
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!", "detail": err.Error()})
             return
         }
         if invoice.Status == "" {
@@ -30,14 +32,10 @@ func CreateInvoice(db *gorm.DB) gin.HandlerFunc {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
-
-        tx := db.Begin()
-        if err := tx.Table("invoices").Create(&invoice).Error; err != nil {
-            tx.Rollback()
+        if err := db.Table("invoices").Create(&invoice).Error; err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lưu invoice!"})
             return
         }
-        tx.Commit()
         c.JSON(http.StatusOK, gin.H{"message": "Invoice đã lưu!", "invoice_id": invoice.InvoiceID})
     }
 }
@@ -60,41 +58,38 @@ func CreateTravelInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
             return
         }
 
-        tx := db.Begin()
-        // 1. Tạo insurance_form
+        // 1. Tạo insurance_form trước (nếu muốn liên kết form_id)
         insuranceForm := models.InsuranceForm{
             InsuranceType:    "travel",
-            PolicyHolderName: "",
+            PolicyHolderName: "", // Có thể lấy từ customer hoặc để trống
             InsuranceStart:   input.TravelInsuranceInvoice.DepartureDate,
             InsuranceDuration: int(input.TravelInsuranceInvoice.ReturnDate.Sub(input.TravelInsuranceInvoice.DepartureDate).Hours() / 24),
             TotalPremium:     input.TravelInsuranceInvoice.TotalAmount,
         }
-        if err := tx.Create(&insuranceForm).Error; err != nil {
-            tx.Rollback()
+        if err := db.Create(&insuranceForm).Error; err != nil {
             c.JSON(500, gin.H{"error": "Lỗi khi tạo insurance_form!"})
             return
         }
+
+        // 2. Gán form_id vào TravelInsuranceInvoice
         input.TravelInsuranceInvoice.FormID = &insuranceForm.FormID
 
-        // 2. Lưu hóa đơn du lịch
-        if err := tx.Create(&input.TravelInsuranceInvoice).Error; err != nil {
-            tx.Rollback()
+        // 3. Lưu hóa đơn du lịch
+        if err := db.Create(&input.TravelInsuranceInvoice).Error; err != nil {
             c.JSON(500, gin.H{"error": "Lỗi khi lưu hóa đơn du lịch!"})
             return
         }
 
-        // 3. Lưu từng participant
+        // 4. Lưu từng participant, gán invoice_id vừa tạo
         for _, p := range input.Participants {
             participant := p
             participant.InvoiceID = input.TravelInsuranceInvoice.InvoiceID
-            if err := tx.Create(&participant).Error; err != nil {
-                tx.Rollback()
+            if err := db.Create(&participant).Error; err != nil {
                 c.JSON(500, gin.H{"error": "Lỗi khi lưu người tham gia!"})
                 return
             }
         }
 
-        tx.Commit()
         c.JSON(200, gin.H{
             "message": "TravelInsuranceInvoice đã lưu!",
             "invoice_id": input.TravelInsuranceInvoice.InvoiceID,
@@ -273,11 +268,9 @@ func CreateCustomerRegistration(db *gorm.DB) gin.HandlerFunc {
         }
 
         // 🔹 Lấy `customer_id` vừa tạo bằng `LAST_INSERT_ID()`
-        var customerID uint
-        db.Raw("SELECT LAST_INSERT_ID()").Scan(&customerID)
-        fmt.Println("🚀 Đã tạo customer ID:", customerID)
+        fmt.Println("🚀 Đã tạo customer ID:", customer.CustomerID)
 
-        c.JSON(http.StatusOK, gin.H{"message": "Customer đã lưu!", "customer_id": customerID})
+        c.JSON(http.StatusOK, gin.H{"message": "Customer đã lưu!", "customer_id": customer.CustomerID})
     }
 }
 func CreateHomeInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
@@ -298,13 +291,10 @@ func CreateHomeInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
         input.CustomerID = nil
         input.FormID = nil
 
-        tx := db.Begin()
-        if err := tx.Create(&input).Error; err != nil {
-            tx.Rollback()
+        if err := db.Create(&input).Error; err != nil {
             c.JSON(500, gin.H{"error": "Lỗi khi lưu hóa đơn bảo hiểm nhà!"})
             return
         }
-        tx.Commit()
         c.JSON(200, gin.H{
             "message": "Đã lưu thông tin hóa đơn bảo hiểm nhà!",
             "invoice_id": input.InvoiceID,
@@ -332,26 +322,21 @@ func CreateAccidentInsuranceInvoice(db *gorm.DB) gin.HandlerFunc {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
-
-        tx := db.Begin()
-        if err := tx.Create(&input.Invoice).Error; err != nil {
-            tx.Rollback()
+        if err := db.Create(&input.Invoice).Error; err != nil {
             c.JSON(500, gin.H{"error": "Lỗi khi lưu invoice!"})
             return
         }
         for _, p := range input.Participants {
             participant := p
             participant.InvoiceID = input.Invoice.InvoiceID
-            if err := tx.Create(&participant).Error; err != nil {
-                tx.Rollback()
+            if err := db.Create(&participant).Error; err != nil {
                 c.JSON(500, gin.H{"error": "Lỗi khi lưu người tham gia!"})
                 return
             }
         }
-        tx.Model(&models.Invoice{}).
+        db.Model(&models.Invoice{}).
             Where("invoice_id = ?", input.Invoice.InvoiceID).
             Update("insurance_quantity", len(input.Participants))
-        tx.Commit()
         c.JSON(200, gin.H{
             "message": "Invoice bảo hiểm tai nạn đã lưu!",
             "invoice_id": input.Invoice.InvoiceID,
@@ -368,11 +353,6 @@ func ConfirmPurchase(db *gorm.DB) gin.HandlerFunc {
         }
 
         userID, exists := c.Get("user_id")
-        if !exists {
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Bạn chưa đăng nhập!"})
-            return
-        }
-
         if err := c.ShouldBindJSON(&input); err != nil {
             c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
             return
@@ -389,9 +369,15 @@ func ConfirmPurchase(db *gorm.DB) gin.HandlerFunc {
         insuranceEnd := insuranceForm.InsuranceStart.AddDate(0, int(insuranceForm.InsuranceDuration), 0)
 
         // Cập nhật invoice với các trường mới
-        if err := db.Table("invoices").
-            Where("invoice_id = ? AND user_id = ?", input.InvoiceID, userID).
-            Updates(map[string]interface{}{
+        query := db.Table("invoices").Where("invoice_id = ?", input.InvoiceID)
+        if exists {
+            // Nếu người dùng đăng nhập, thêm điều kiện user_id
+            query = query.Where("user_id = ?", userID)
+        } else {
+            // Nếu không đăng nhập, đảm bảo user_id là NULL
+            query = query.Where("user_id IS NULL")
+        }
+        if err := query.Updates(map[string]interface{}{
                 "customer_id":       input.CustomerID,
                 "form_id":           input.FormID,
                 "insurance_start":   insuranceForm.InsuranceStart,

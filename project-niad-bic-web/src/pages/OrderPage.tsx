@@ -1,5 +1,3 @@
-"use client";
-
 import { ClipboardList, UserCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
@@ -11,8 +9,9 @@ import {
   calculateTotalInsuranceFee,
 } from "../constants/carInsurance";
 import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = import.meta.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // Định nghĩa các loại dữ liệu
 interface ProductInfo {
@@ -59,7 +58,22 @@ interface VehicleInfo {
   accidentParticipants: number;
 }
 
+// Hàm tính phí bảo hiểm TNDS
+const calculateTndsFee = (vehicleCount: number): number => {
+  const baseFee = 500000; // Phí cơ bản cho 1 xe
+  return baseFee * vehicleCount;
+};
+
+// Hàm tính phí bảo hiểm tai nạn
+const calculateAccidentFee = (vehicleCount: number): number => {
+  const baseFee = 300000; // Phí cơ bản cho 1 xe
+  return baseFee * vehicleCount;
+};
+
 export default function OrderPage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   // State cho thông tin sản phẩm
   const [product] = useState<ProductInfo>({
     id: "MVL",
@@ -118,7 +132,7 @@ export default function OrderPage() {
     plateNumberSuffix: "",
     chassisNumber: "",
     engineNumber: "",
-    insuranceStartDate: new Date().toISOString().slice(0, 16),
+    insuranceStartDate: new Date().toISOString().slice(0, 10),
     insuranceTerm: 1,
     insuranceAmount: 480700,
     accidentCoverage: 0,
@@ -134,8 +148,6 @@ export default function OrderPage() {
     { value: 100000000, label: "100 triệu đồng/người/vụ" },
   ];
 
-  const navigate = useNavigate();
-
   // Effect để tính toán lại phí khi thông tin xe thay đổi
   useEffect(() => {
     if (vehicleInfo.purpose && vehicleInfo.vehicleType) {
@@ -146,8 +158,12 @@ export default function OrderPage() {
         vehicleInfo.accidentCoverage
       );
       setTndsFeeDisplay(calculatedFees.tndsFee);
-      setAccidentFeeDisplay(calculatedFees.passengerAccidentFee);
-      setTotalFeeDisplay(calculatedFees.totalFee);
+      // Tính lại phí bảo hiểm tai nạn theo công thức mới: 0.1% * Số tiền bảo hiểm * Số người
+      const calculatedAccidentFee =
+        (vehicleInfo.accidentCoverage || 0) * (vehicleInfo.seats || 0) * 0.001;
+      setAccidentFeeDisplay(calculatedAccidentFee);
+      // Tổng phí = Phí TNDS + Phí tai nạn
+      setTotalFeeDisplay(calculatedFees.tndsFee + calculatedAccidentFee);
     } else {
       // Reset fees if essential information is missing
       setTndsFeeDisplay(0);
@@ -158,74 +174,67 @@ export default function OrderPage() {
 
   // Xử lý chuyển bước
   const handleNextStep = async () => {
-    console.log("Current step:", currentStep);
-    console.log("Total steps:", totalSteps);
-    console.log("handleNextStep called"); // Log start of function
-
     if (currentStep === 1) {
       // Validate step 1
       const step1Errors: { [key: string]: string } = {};
-      console.log("Validating step 1..."); // Log validation start
-      console.log("insuranceType:", insuranceType);
-      console.log("licensePlateNumber:", licensePlateNumber);
-      console.log("vehicleCount:", vehicleCount);
-
       if (!insuranceType) {
-        step1Errors.insuranceType = "Vui lòng chọn đối tượng được bảo hiểm";
+        step1Errors.insuranceType = "Vui lòng chọn loại hợp đồng";
       }
-
-      // Chỉ validate Số GCNBH/BKS khi là Hợp đồng tái tục
-      if (insuranceType === "renewal" && !licensePlateNumber) {
-        step1Errors.licensePlateNumber = "Vui lòng nhập số GCNBH/BKS";
+      if (!vehicleCount || vehicleCount < 1) {
+        step1Errors.vehicleCount = "Vui lòng nhập số lượng xe";
       }
-
-      if (!vehicleCount) {
-        step1Errors.vehicleCount = "Vui lòng chọn số lượng xe";
+      if (!licensePlateNumber) {
+        step1Errors.licensePlateNumber = "Vui lòng nhập biển số xe";
       }
 
       if (Object.keys(step1Errors).length > 0) {
-        console.log("Validation errors found:", step1Errors); // Log errors if found
         setErrors(step1Errors);
         setShowError(true);
         return;
-      } else {
-        console.log("Step 1 validation passed."); // Log success
       }
+
+      // Calculate fees
+      const tndsFee = calculateTndsFee(vehicleCount);
+      const accidentFee = calculateAccidentFee(vehicleCount);
+      const totalFee = tndsFee + accidentFee;
+
+      setTndsFeeDisplay(tndsFee);
+      setAccidentFeeDisplay(accidentFee);
+      setTotalFeeDisplay(totalFee);
+
+      setCurrentStep(2);
     } else if (currentStep === 2) {
       // Validate step 2
       const step2Errors: { [key: string]: string } = {};
-      if (!vehicleInfo.ownerType) {
-        step2Errors.ownerType = "Vui lòng chọn người mua bảo hiểm";
+      if (!customerInfo.type) {
+        step2Errors.type = "Vui lòng chọn loại khách hàng";
       }
-      if (!vehicleInfo.identityCard) {
-        step2Errors.identityCard = "Vui lòng nhập CMND/CCCD";
+      if (!customerInfo.fullName) {
+        step2Errors.fullName = "Vui lòng nhập họ và tên";
       }
-      if (!vehicleInfo.purpose) {
-        step2Errors.purpose = "Vui lòng chọn mục đích sử dụng";
+      if (!customerInfo.email) {
+        step2Errors.email = "Vui lòng nhập email";
       }
-      if (!vehicleInfo.vehicleType) {
-        step2Errors.vehicleType = "Vui lòng chọn loại xe";
+      if (!customerInfo.phone) {
+        step2Errors.phone = "Vui lòng nhập số điện thoại";
       }
-      if (!vehicleInfo.seats) {
-        step2Errors.seats = "Vui lòng nhập số chỗ ngồi";
+      if (!customerInfo.address) {
+        step2Errors.address = "Vui lòng nhập địa chỉ";
       }
-      if (!vehicleInfo.ownerName) {
-        step2Errors.ownerName = "Vui lòng nhập tên chủ xe";
+      if (!customerInfo.city) {
+        step2Errors.city = "Vui lòng chọn tỉnh/thành phố";
       }
-      if (!vehicleInfo.registrationAddress) {
-        step2Errors.registrationAddress = "Vui lòng nhập địa chỉ đăng ký xe";
+      if (!customerInfo.district) {
+        step2Errors.district = "Vui lòng chọn quận/huyện";
       }
-      if (!vehicleInfo.chassisNumber) {
-        step2Errors.chassisNumber = "Vui lòng nhập số khung";
+      if (!customerInfo.ward) {
+        step2Errors.ward = "Vui lòng chọn phường/xã";
       }
-      if (!vehicleInfo.engineNumber) {
-        step2Errors.engineNumber = "Vui lòng nhập số máy";
+      if (!customerInfo.identityCard) {
+        step2Errors.identityCard = "Vui lòng nhập số CMND/CCCD";
       }
-      if (!vehicleInfo.insuranceStartDate) {
-        step2Errors.insuranceStartDate = "Vui lòng chọn thời hạn bảo hiểm từ";
-      }
-      if (!vehicleInfo.plateNumberSuffix && vehicleInfo.hasPlate) {
-        step2Errors.plateNumberSuffix = "Vui lòng nhập biển kiểm soát";
+      if (!customerInfo.dateOfBirth) {
+        step2Errors.dateOfBirth = "Vui lòng nhập ngày sinh";
       }
 
       if (Object.keys(step2Errors).length > 0) {
@@ -233,70 +242,114 @@ export default function OrderPage() {
         setShowError(true);
         return;
       }
+
+      setCurrentStep(3);
     } else if (currentStep === 3) {
-      // Validate step 3
-      const step3Errors: { [key: string]: string } = {};
-      if (!customerInfo.fullName) {
-        step3Errors.fullName = "Vui lòng nhập họ và tên";
-      }
-      if (!customerInfo.address) {
-        step3Errors.address = "Vui lòng nhập địa chỉ";
-      }
-      if (!customerInfo.email) {
-        step3Errors.email = "Vui lòng nhập email";
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.email)) {
-        step3Errors.email = "Email không hợp lệ";
-      }
-      if (!customerInfo.phone) {
-        step3Errors.phone = "Vui lòng nhập số điện thoại";
-      } else if (!/^[0-9]{10}$/.test(customerInfo.phone)) {
-        step3Errors.phone = "Số điện thoại không hợp lệ";
-      }
+      try {
+        // 1. Create CarInsuranceForm
+        const carInsuranceFormPayload = {
+          user_type:
+            vehicleInfo.ownerType === "personal" ? "Cá nhân" : "Tổ chức",
+          identity_number: vehicleInfo.identityCard,
+          usage_purpose: vehicleInfo.purpose,
+          vehicle_type: vehicleInfo.vehicleType,
+          seat_count: vehicleInfo.seats,
+          load_capacity: vehicleInfo.loadCapacity,
+          owner_name: vehicleInfo.ownerName,
+          registration_address: vehicleInfo.registrationAddress,
+          license_plate_status: vehicleInfo.hasPlate ? "Có" : "Chưa có",
+          license_plate: vehicleInfo.hasPlate
+            ? `${vehicleInfo.plateNumberPrefix}-${vehicleInfo.plateNumberSuffix}`
+            : "",
+          chassis_number: vehicleInfo.chassisNumber,
+          engine_number: vehicleInfo.engineNumber,
+          insurance_start: vehicleInfo.insuranceStartDate,
+          insurance_duration: vehicleInfo.insuranceTerm,
+          insurance_fee: vehicleInfo.insuranceAmount,
+          insurance_amount: vehicleInfo.accidentCoverage,
+          participant_count: vehicleInfo.accidentParticipants,
+        };
 
-      if (Object.keys(step3Errors).length > 0) {
-        setErrors(step3Errors);
-        setShowError(true);
-        return;
-      }
+        // Make the API call to create the CarInsuranceForm
+        const carFormResponse = await axios.post(
+          `${API_URL}/api/insurance_car_owner/create_vehicle_insurance_form`,
+          carInsuranceFormPayload
+        );
 
-      console.log("Moving to next step...");
-      if (currentStep < totalSteps) {
-        setCurrentStep(currentStep + 1);
-        setShowError(false);
-        setErrors({});
-        window.scrollTo(0, 0);
-      } else if (currentStep === totalSteps) {
-        // If on the last step and validation passes, navigate to the cart page
-        // navigate("/gio-hang.html"); // Remove or comment out direct navigation
-        try {
-          // Construct the order data payload
-          const orderData = {
-            product: product, // Assuming product info is needed
-            insuranceType: insuranceType,
-            vehicleCount: vehicleCount,
-            licensePlateNumber:
-              insuranceType === "renewal" ? licensePlateNumber : undefined, // Include only for renewal
-            vehicleInfo: vehicleInfo,
-            customerInfo: customerInfo,
-            fees: {
-              tndsFee: tndsFeeDisplay,
-              accidentFee: accidentFeeDisplay,
-              totalFee: totalFeeDisplay,
-            },
-            // Add any other relevant data here
-          };
+        console.log(
+          "CarInsuranceForm created successfully:",
+          carFormResponse.data
+        );
+        const formId = carFormResponse.data.form_id;
 
-          // Make the API call to create the order
-          // NOTE: This should ideally be moved to a dedicated service file (e.g., carInsurance.ts)
-          const response = await axios.post(`${API_URL}/api/orders`, orderData);
+        // 2. Create CustomerRegistration
+        const customerRegistrationPayload = {
+          customer_type:
+            customerInfo.type === "personal" ? "Cá nhân" : "Tổ chức",
+          identity_number: customerInfo.identityCard,
+          full_name: customerInfo.fullName,
+          address: customerInfo.address,
+          email: customerInfo.email,
+          phone_number: customerInfo.phone,
+          invoice_request: customerInfo.invoice,
+          notes: "",
+        };
 
-          console.log("Order created successfully:", response.data);
-          // TODO: Handle successful order creation (e.g., show success message, navigate to order confirmation page)
-          navigate("/gio-hang.html"); // Navigate after successful API call
-        } catch (error) {
-          console.error("Error creating order:", error);
-          // TODO: Handle error (e.g., show error message to user)
-        }
+        const customerResponse = await axios.post(
+          `${API_URL}/api/insurance_car_owner/create_customer_registration`,
+          customerRegistrationPayload
+        );
+
+        console.log(
+          "CustomerRegistration created successfully:",
+          customerResponse.data
+        );
+        const customerId = customerResponse.data.customer_id;
+
+        // 3. Create Invoice
+        const invoicePayload = {
+          insurance_quantity: vehicleCount,
+          contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
+          customer_id: customerId,
+          form_id: formId,
+        };
+
+        const invoiceResponse = await axios.post(
+          `${API_URL}/api/insurance_car_owner/create_invoice`,
+          invoicePayload
+        );
+
+        console.log("Invoice created successfully:", invoiceResponse.data);
+
+        // 4. Confirm Purchase
+        const confirmPayload = {
+          invoice_id: invoiceResponse.data.invoice_id,
+          insurance_start: vehicleInfo.insuranceStartDate,
+          insurance_end: new Date(
+            new Date(vehicleInfo.insuranceStartDate).setFullYear(
+              new Date(vehicleInfo.insuranceStartDate).getFullYear() +
+                vehicleInfo.insuranceTerm
+            )
+          )
+            .toISOString()
+            .split("T")[0],
+          insurance_amount: vehicleInfo.insuranceAmount,
+          status: "Đã xác nhận",
+        };
+
+        const confirmResponse = await axios.post(
+          `${API_URL}/api/insurance_car_owner/confirm_purchase`,
+          confirmPayload
+        );
+
+        console.log("Purchase confirmed successfully:", confirmResponse.data);
+
+        // Show success message and redirect
+        alert("Đặt bảo hiểm thành công!");
+        navigate("/");
+      } catch (error) {
+        console.error("Error creating insurance:", error);
+        alert("Có lỗi xảy ra khi đặt bảo hiểm. Vui lòng thử lại sau.");
       }
     }
   };
@@ -338,7 +391,7 @@ export default function OrderPage() {
                 >
                   <option value="">-- Chọn --</option>
                   <option value="personal">Cá nhân</option>
-                  <option value="business">Doanh nghiệp</option>
+                  <option value="business">Tổ chức</option>
                 </select>
               </div>
             </div>
@@ -614,14 +667,15 @@ export default function OrderPage() {
               </label>
               <div className="flex-1">
                 <input
-                  type="datetime-local"
+                  type="date"
                   value={vehicleInfo.insuranceStartDate}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const selectedDate = e.target.value; // Lấy giá trị từ input (định dạng YYYY-MM-DD)
                     setVehicleInfo({
                       ...vehicleInfo,
-                      insuranceStartDate: e.target.value,
-                    })
-                  }
+                      insuranceStartDate: selectedDate,
+                    });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
@@ -752,37 +806,39 @@ export default function OrderPage() {
                 </div>
               </div>
             </div>
-
-            {/* Tổng phí section */}
-            <div className="border-t pt-6 mt-8">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-medium">
-                  Tổng phí bảo hiểm TNDS (gồm VAT):
-                </span>
-                <span className="text-xl font-bold text-red-600">
-                  {new Intl.NumberFormat("vi-VN").format(tndsFeeDisplay)} VND
-                </span>
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <span className="text-lg font-medium">
-                  Tổng phí bảo hiểm tai nạn (miễn VAT):
-                </span>
-                <span className="text-xl font-bold text-red-600">
-                  {new Intl.NumberFormat("vi-VN").format(accidentFeeDisplay)}{" "}
-                  VND
-                </span>
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <span className="text-lg font-medium">
-                  Tổng phí bảo hiểm (VAT):
-                </span>
-                <span className="text-xl font-bold text-red-600">
-                  {new Intl.NumberFormat("vi-VN").format(totalFeeDisplay)} VND
-                </span>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* Tổng phí section */}
+        {vehicleInfo.purpose && vehicleInfo.vehicleType && (
+          <div className="border-t pt-6 mt-8">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-medium">
+                Tổng phí bảo hiểm TNDS (gồm VAT):
+              </span>
+              <span className="text-xl font-bold text-red-600">
+                {new Intl.NumberFormat("vi-VN").format(tndsFeeDisplay)} VND
+              </span>
+            </div>
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-lg font-medium">
+                Tổng phí bảo hiểm tai nạn (miễn VAT):
+              </span>
+              <span className="text-xl font-bold text-red-600">
+                {new Intl.NumberFormat("vi-VN").format(accidentFeeDisplay)}
+                VND
+              </span>
+            </div>
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-lg font-medium">
+                Tổng phí bảo hiểm (VAT):
+              </span>
+              <span className="text-xl font-bold text-red-600">
+                {new Intl.NumberFormat("vi-VN").format(totalFeeDisplay)} VND
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Nút điều hướng */}
         <div className="flex justify-between mt-8">
@@ -828,6 +884,7 @@ export default function OrderPage() {
                       ...customerInfo,
                       fullName: vehicleInfo.ownerName,
                       address: vehicleInfo.registrationAddress,
+                      identityCard: vehicleInfo.identityCard,
                     });
                   }}
                   className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"

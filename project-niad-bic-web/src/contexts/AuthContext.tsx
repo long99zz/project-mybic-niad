@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
+
+const API_URL = import.meta.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 type User = {
   username: string;
@@ -31,21 +34,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (username: string, password: string) => {
-    // Giả lập kiểm tra user
-    const found = mockUsers.find(
-      (u) => u.username === username && password === "123456"
-    );
-    if (found) {
-      setUser(found);
-      sessionStorage.setItem("user", JSON.stringify(found));
+    try {
+      const response = await axios.post(`${API_URL}/login`, {
+        email: username,
+        password: password,
+      });
+
+      const { token, role } = response.data;
+
+      // Lưu token vào sessionStorage
+      sessionStorage.setItem("token", token);
+
+      // Tạo user object
+      const userData: User = {
+        username,
+        role: role === "Admin" ? "admin" : "user",
+      };
+
+      setUser(userData);
+      sessionStorage.setItem("user", JSON.stringify(userData));
       return true;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
   };
 
   return (

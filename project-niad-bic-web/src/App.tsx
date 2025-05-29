@@ -26,6 +26,7 @@ import Posts from "./pages/admin/Posts";
 import Users from "./pages/admin/Users";
 import Comments from "./pages/admin/Comments";
 import Statistics from "./pages/admin/Statistics";
+import CarMaterialInsuranceForm from "./pages/order/components/CarMaterialInsuranceForm";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -159,6 +160,16 @@ const AppRoutes = () => {
         <Route path="comments" element={<Comments />} />
         <Route path="statistics" element={<Statistics />} />
       </Route>
+
+      {/* New routes for Car Material Insurance */}
+      <Route path="/mua-ngay/vat-chat-oto" element={<OrderPage />} />
+      <Route path="/mua-ngay/tnds-oto" element={<OrderPage />} />
+      <Route path="/mua-ngay/tnds-xe-may" element={<OrderPage />} />
+      <Route path="/mua-ngay/benh-ung-thu" element={<OrderPage />} />
+      <Route path="/mua-ngay/tai-nan-suc-khoe" element={<OrderPage />} />
+      <Route path="/mua-ngay/tai-nan-24h" element={<OrderPage />} />
+      <Route path="/mua-ngay/du-lich-trong-nuoc" element={<OrderPage />} />
+      <Route path="/mua-ngay/du-lich-quoc-te" element={<OrderPage />} />
     </Routes>
   );
 };

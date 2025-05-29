@@ -52,6 +52,15 @@ const insuranceProducts = [
     detailUrl: "/san-pham/bao-hiem-du-lich-trong-nuoc",
   },
   {
+    id: "vat-chat-oto",
+    image: "/products/bic-vat-chat-oto.png",
+    tag: "Vật chất Ô tô",
+    title: "Bảo hiểm vật chất ô tô",
+    contactLink: "/lien-he/vat-chat-oto",
+    buyLink: "/mua-ngay/vat-chat-oto",
+    detailUrl: "/san-pham/bao-hiem-vat-chat-o-to",
+  },
+  {
     id: "tnds-oto",
     image: "/products/bic-tnds-oto.png",
     tag: "TNDS Ô tô",

@@ -4,16 +4,17 @@ import (
 	"backend/handlers"
 	"backend/middlewares"
 	"backend/models"
+	"log"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
-	"github.com/gin-contrib/cors"
 )
 
 func main() {
 	// 🔹 Kết nối MySQL
-	dsn := "root:Zingme01!@tcp(localhost:3303)/bic_insurance?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:long0910@tcp(localhost:3308)/bic_web?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Không thể kết nối MySQL:", err)
@@ -57,7 +58,7 @@ func main() {
 	apiRouter.POST("/categories", handlers.AddCategory(db))
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
-		carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
+		carapi := router.Group("/api/insurance_car_owner") // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
     {
         carapi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
         carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(db)) // Lưu bảo hiểm xe
@@ -110,14 +111,6 @@ func main() {
 	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(db))
 	adminApi.GET("/product-statistics", handlers.AdminProductStatistics(db))
 	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
-	adminApi.PUT("/update-invoice/:id", handlers.AdminUpdateInvoice(db)) // ?type=chung|travel|home
-	adminApi.PUT("/update-customer/:id", handlers.AdminUpdateCustomer(db))
-	adminApi.PUT("/update-participant/:id", handlers.AdminUpdateParticipant(db))
-	adminApi.PUT("/update-travel-participant/:id", handlers.AdminUpdateTravelParticipant(db))
-	adminApi.DELETE("/delete-participant/:id", handlers.AdminDeleteParticipant(db))
-	adminApi.GET("/deleted-participants", handlers.AdminDeletedParticipants(db))
-	adminApi.DELETE("/delete-invoice/:id", handlers.AdminDeleteInvoice(db)) // ?type=chung|travel|home
-	adminApi.GET("/deleted-invoices", handlers.AdminDeletedInvoices(db)) // lấy lịch sử xóa
 	//apiRouter.POST("/form-fields", handlers.CreateField(db))
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))
