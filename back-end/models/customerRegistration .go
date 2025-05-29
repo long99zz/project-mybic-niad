@@ -1,10 +1,11 @@
 package models
 
-import ("time"
-    "fmt"
+import (
+	"fmt"
+	"time"
 )
 
-type CustomerRegistration struct {
+type CustomerRegistration struct { // khai báo khách hàng
     CustomerID      uint      `gorm:"primaryKey;column:customer_id" json:"customer_id"`
     CustomerType    string    `gorm:"type:enum('Cá nhân','Tổ chức');not null" json:"customer_type"`
     IdentityNumber  string    `gorm:"size:20;unique;not null" json:"identity_number"`
@@ -20,8 +21,11 @@ type CustomerRegistration struct {
 func (c *CustomerRegistration) Validate() error {
     if c.CustomerType == "" {
         c.CustomerType = "Cá nhân"
-    } else if c.CustomerType != "Cá nhân" && c.CustomerType != "Doanh nghiệp" {
-        return fmt.Errorf("customer_type không hợp lệ! Phải là 'Cá nhân' hoặc 'Doanh nghiệp'.")
+    } else if c.CustomerType != "Cá nhân" && c.CustomerType != "Tổ chức" {
+        return fmt.Errorf("customer_type không hợp lệ! Phải là 'Cá nhân' hoặc 'Tổ chức'.")
     }
     return nil
+}
+func (CustomerRegistration) TableName() string {
+    return "customer_registration"
 }

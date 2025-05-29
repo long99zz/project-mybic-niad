@@ -1,12 +1,12 @@
 package models
 
 import (
-        "time"
-        "fmt"
-    )
-type CarInsuranceForm struct {
+	"fmt"
+	"time"
+)
+type CarInsuranceForm struct { // bảo hiểm xe ô tô
     CarFormID           uint      `gorm:"primaryKey;autoIncrement" json:"car_form_id"`
-    FormID              *uint     `gorm:"index" json:"form_id"`
+    FormID              *uint `gorm:"index" json:"form_id"`
     UserType            string    `gorm:"type:enum('Cá nhân','Tổ chức');not null" json:"user_type"`
     IdentityNumber      string    `gorm:"size:20;not null" json:"identity_number"`
     UsagePurpose        string    `gorm:"size:255;not null" json:"usage_purpose"`
@@ -19,7 +19,8 @@ type CarInsuranceForm struct {
     LicensePlate        string    `gorm:"size:20;not null" json:"license_plate"`
     ChassisNumber       string    `gorm:"size:50;not null" json:"chassis_number"`
     EngineNumber        string    `gorm:"size:50;not null" json:"engine_number"`
-    InsuranceStart      time.Time `gorm:"type:date;not null" json:"insurance_start"`
+    InsuranceStart      time.Time `gorm:"type:date;not null"`
+    InsuranceStartString string    `json:"insurance_start" gorm:"-"`
     InsuranceDuration   uint      `gorm:"not null" json:"insurance_duration"`
     InsuranceFee        float64   `gorm:"not null" json:"insurance_fee"`
     InsuranceAmount     float64   `gorm:"not null" json:"insurance_amount"`
@@ -37,6 +38,13 @@ func (c *CarInsuranceForm) Validate() error {
         c.LicensePlateStatus = "Chưa có"
     } else if c.LicensePlateStatus != "Mới" && c.LicensePlateStatus != "Cũ" && c.LicensePlateStatus != "Chưa có" {
         return fmt.Errorf("license_plate_status không hợp lệ! Phải là 'Mới', 'Cũ' hoặc 'Chưa có'.")
+    }
+    if c.InsuranceStartString != "" {
+        parsedTime, err := time.Parse("2006-01-02", c.InsuranceStartString)
+        if err != nil {
+            return fmt.Errorf("Định dạng ngày bảo hiểm bắt đầu không hợp lệ! Expected YYYY-MM-DD.")
+        }
+        c.InsuranceStart = parsedTime
     }
     return nil
 }

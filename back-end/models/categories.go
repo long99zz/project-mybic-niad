@@ -3,7 +3,7 @@ package models
 import ("gorm.io/gorm"
         "time")
 
-type Category struct {
+type Category struct { // danh mục sản phẩm
     CategoryID uint   `gorm:"column:category_id;primaryKey" json:"category_id"` // ✅ Xác định rõ cột
     Name       string `gorm:"size:255"`
     Image      string
