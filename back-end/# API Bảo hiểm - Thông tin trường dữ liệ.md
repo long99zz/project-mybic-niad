@@ -283,7 +283,7 @@
 | customer_id        | ✖        | Cập nhật sau khi đăng ký khách hàng          |
 | product_id         | ✔        |                                              |
 | created_at         | ✔        |                                              |
-| updated_at         | ✔        | 
+| updated_at         | ✔        |
 | insurance_package  | Tuỳ loại | Xem lưu ý bên trên                           |
 | insurance_program  | Tuỳ loại | Xem lưu ý bên trên                           |
 
@@ -297,37 +297,43 @@
 
 ## 1. 🟦 BẢO HIỂM TAI NẠN (Accident Insurance)
 
-### 🟢 **Lưu ý:**  
+### 🟢 **Lưu ý:**
+
 Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
+
 - **Bảo hiểm tai nạn con người 24/24**
 - **Bảo hiểm tai nạn người sử dụng điện**
 - **Bảo hiểm tai nạn mở rộng**
 - **Bảo hiểm an ninh mạng**
 
 ### 1.1. API tạo hóa đơn bảo hiểm tai nạn
+
 - **Endpoint:** `POST /api/insurance_accident/create_accident`
 
 #### **Body JSON gửi lên:**
-| Trường             | Bắt buộc | Kiểu dữ liệu | Ghi chú                                  |
-|--------------------|----------|--------------|------------------------------------------|
-| insurance_package  | ✔        | string       | Tên gói bảo hiểm (ví dụ: "Bảo hiểm tai nạn con người 24/24") |
-| insurance_start    | ✔        | date (ISO)   | Ngày bắt đầu bảo hiểm (YYYY-MM-DD)       |
-| insurance_end      | ✔        | date (ISO)   | Ngày kết thúc bảo hiểm (YYYY-MM-DD)      |
-| insurance_amount   | ✔        | number       | Số tiền bảo hiểm                         |
-| contract_type      | ✔        | string       | "Mới" hoặc "Tái tục"                     |
-| status             | ✔        | string       | "Chưa thanh toán", "Đã thanh toán", ...  |
-| participants       | ✔        | array        | Danh sách người tham gia                 |
+
+| Trường            | Bắt buộc | Kiểu dữ liệu | Ghi chú                                                      |
+| ----------------- | -------- | ------------ | ------------------------------------------------------------ |
+| insurance_package | ✔        | string       | Tên gói bảo hiểm (ví dụ: "Bảo hiểm tai nạn con người 24/24") |
+| insurance_start   | ✔        | date (ISO)   | Ngày bắt đầu bảo hiểm (YYYY-MM-DD)                           |
+| insurance_end     | ✔        | date (ISO)   | Ngày kết thúc bảo hiểm (YYYY-MM-DD)                          |
+| insurance_amount  | ✔        | number       | Số tiền bảo hiểm                                             |
+| contract_type     | ✔        | string       | "Mới" hoặc "Tái tục"                                         |
+| status            | ✔        | string       | "Chưa thanh toán", "Đã thanh toán", ...                      |
+| participants      | ✔        | array        | Danh sách người tham gia                                     |
 
 #### **participants** (mảng người tham gia):
-| Trường           | Bắt buộc | Kiểu dữ liệu | Ghi chú                  |
-|------------------|----------|--------------|--------------------------|
-| cmnd_img         | ✖        | string       | Đường dẫn ảnh CMND/CCCD  |
-| full_name        | ✔        | string       | Họ tên                   |
-| gender           | ✔        | string       | "Nam", "Nữ", "Khác"      |
-| birth_date       | ✔        | date (ISO)   | Ngày sinh (YYYY-MM-DD)   |
-| identity_number  | ✔        | string       | Số CMND/CCCD             |
+
+| Trường          | Bắt buộc | Kiểu dữ liệu | Ghi chú                 |
+| --------------- | -------- | ------------ | ----------------------- |
+| cmnd_img        | ✖        | string       | Đường dẫn ảnh CMND/CCCD |
+| full_name       | ✔        | string       | Họ tên                  |
+| gender          | ✔        | string       | "Nam", "Nữ", "Khác"     |
+| birth_date      | ✔        | date (ISO)   | Ngày sinh (YYYY-MM-DD)  |
+| identity_number | ✔        | string       | Số CMND/CCCD            |
 
 #### **Kết quả trả về:**
+
 ```json
 {
   "message": "Invoice bảo hiểm tai nạn đã lưu!",
@@ -341,24 +347,27 @@ Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
 ## 2. 🟩 BẢO HIỂM NHÀ (Home Insurance)
 
 ### 2.1. API tạo hóa đơn bảo hiểm nhà
+
 - **Endpoint:** `POST /api/insurance_home/create_home_invoice`
 
 #### **Body JSON gửi lên:**
-| Trường                | Bắt buộc | Kiểu dữ liệu | Ghi chú                                         |
-|-----------------------|----------|--------------|-------------------------------------------------|
-| form_id               | ✖        | uint/null    | Liên kết insurance_form, có thể null khi tạo mới |
-| customer_id           | ✖        | uint/null    | Liên kết khách hàng, cập nhật sau                |
-| coverage_scope        | ✔        | string       | Phạm vi bảo hiểm (toàn bộ nhà, tài sản, ...)     |
-| home_type             | ✔        | string       | Loại nhà (nhà ở, biệt thự, chung cư, ...)        |
-| home_usage_status     | ✔        | string       | "Mới" hoặc "Đã sử dụng"                          |
-| home_insurance_amount | ✔        | number       | Số tiền bảo hiểm cho nhà                         |
-| asset_insurance_amount| ✔        | number       | Số tiền bảo hiểm cho tài sản                     |
-| insured_person_name   | ✔        | string       | Tên người được bảo hiểm                          |
-| insured_home_address  | ✔        | string       | Địa chỉ nhà                                      |
-| insurance_duration    | ✔        | int          | Thời hạn bảo hiểm (tháng/năm)                    |
-| product_id            | ✔        | uint         | ID sản phẩm bảo hiểm                             |
+
+| Trường                 | Bắt buộc | Kiểu dữ liệu | Ghi chú                                          |
+| ---------------------- | -------- | ------------ | ------------------------------------------------ |
+| form_id                | ✖        | uint/null    | Liên kết insurance_form, có thể null khi tạo mới |
+| customer_id            | ✖        | uint/null    | Liên kết khách hàng, cập nhật sau                |
+| coverage_scope         | ✔        | string       | Phạm vi bảo hiểm (toàn bộ nhà, tài sản, ...)     |
+| home_type              | ✔        | string       | Loại nhà (nhà ở, biệt thự, chung cư, ...)        |
+| home_usage_status      | ✔        | string       | "Mới" hoặc "Đã sử dụng"                          |
+| home_insurance_amount  | ✔        | number       | Số tiền bảo hiểm cho nhà                         |
+| asset_insurance_amount | ✔        | number       | Số tiền bảo hiểm cho tài sản                     |
+| insured_person_name    | ✔        | string       | Tên người được bảo hiểm                          |
+| insured_home_address   | ✔        | string       | Địa chỉ nhà                                      |
+| insurance_duration     | ✔        | int          | Thời hạn bảo hiểm (tháng/năm)                    |
+| product_id             | ✔        | uint         | ID sản phẩm bảo hiểm                             |
 
 #### **Kết quả trả về:**
+
 ```json
 {
   "message": "Đã lưu thông tin hóa đơn bảo hiểm nhà!",
@@ -367,15 +376,18 @@ Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
 ```
 
 ### 2.2. API cập nhật customer cho hóa đơn nhà
+
 - **Endpoint:** `POST /api/insurance_home/update_invoice_customer`
 
 #### **Body JSON:**
-| Trường      | Bắt buộc | Kiểu dữ liệu | Ghi chú                |
-|-------------|----------|--------------|------------------------|
-| invoice_id  | ✔        | uint         | ID hóa đơn nhà         |
-| customer_id | ✔        | uint         | ID khách hàng đã tạo   |
+
+| Trường      | Bắt buộc | Kiểu dữ liệu | Ghi chú              |
+| ----------- | -------- | ------------ | -------------------- |
+| invoice_id  | ✔        | uint         | ID hóa đơn nhà       |
+| customer_id | ✔        | uint         | ID khách hàng đã tạo |
 
 #### **Kết quả trả về:**
+
 ```json
 {
   "message": "Đã cập nhật customer_id cho hóa đơn nhà!",
@@ -388,43 +400,44 @@ Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
 
 ## 3. 🟨 participants (người tham gia bảo hiểm)
 
-| Trường           | Kiểu dữ liệu | Ghi chú                  |
-|------------------|--------------|--------------------------|
-| participant_id   | uint         | Tự sinh                  |
-| invoice_id       | uint         | Liên kết hóa đơn         |
-| cmnd_img         | string       | Ảnh CMND/CCCD            |
-| full_name        | string       | Họ tên                   |
-| gender           | string       | "Nam", "Nữ", "Khác"      |
-| birth_date       | date         | Ngày sinh                |
-| identity_number  | string       | Số CMND/CCCD             |
-| created_at       | datetime     | Tự sinh                  |
-| updated_at       | datetime     | Tự sinh                  |
+| Trường          | Kiểu dữ liệu | Ghi chú             |
+| --------------- | ------------ | ------------------- |
+| participant_id  | uint         | Tự sinh             |
+| invoice_id      | uint         | Liên kết hóa đơn    |
+| cmnd_img        | string       | Ảnh CMND/CCCD       |
+| full_name       | string       | Họ tên              |
+| gender          | string       | "Nam", "Nữ", "Khác" |
+| birth_date      | date         | Ngày sinh           |
+| identity_number | string       | Số CMND/CCCD        |
+| created_at      | datetime     | Tự sinh             |
+| updated_at      | datetime     | Tự sinh             |
 
 ---
 
 ## 4. 🟦 home_insurance_invoices (hóa đơn bảo hiểm nhà)
 
-| Trường                | Kiểu dữ liệu | Ghi chú                                         |
-|-----------------------|--------------|-------------------------------------------------|
-| invoice_id            | uint         | Tự sinh                                         |
-| user_id               | uint         | Người tạo hóa đơn                               |
-| form_id               | uint/null    | Liên kết insurance_form, có thể null            |
-| customer_id           | uint/null    | Liên kết khách hàng, có thể null                |
-| coverage_scope        | string       | Phạm vi bảo hiểm                                |
-| home_type             | string       | Loại nhà                                        |
-| home_usage_status     | string       | "Mới" hoặc "Đã sử dụng"                         |
-| home_insurance_amount | float        | Số tiền bảo hiểm cho nhà                        |
-| asset_insurance_amount| float        | Số tiền bảo hiểm cho tài sản                    |
-| insured_person_name   | string       | Tên người được bảo hiểm                         |
-| insured_home_address  | string       | Địa chỉ nhà                                     |
-| insurance_duration    | int          | Thời hạn bảo hiểm                               |
-| product_id            | uint         | Sản phẩm bảo hiểm                               |
-| created_at            | datetime     | Tự sinh                                         |
-| updated_at            | datetime     | Tự sinh                                         |
+| Trường                 | Kiểu dữ liệu | Ghi chú                              |
+| ---------------------- | ------------ | ------------------------------------ |
+| invoice_id             | uint         | Tự sinh                              |
+| user_id                | uint         | Người tạo hóa đơn                    |
+| form_id                | uint/null    | Liên kết insurance_form, có thể null |
+| customer_id            | uint/null    | Liên kết khách hàng, có thể null     |
+| coverage_scope         | string       | Phạm vi bảo hiểm                     |
+| home_type              | string       | Loại nhà                             |
+| home_usage_status      | string       | "Mới" hoặc "Đã sử dụng"              |
+| home_insurance_amount  | float        | Số tiền bảo hiểm cho nhà             |
+| asset_insurance_amount | float        | Số tiền bảo hiểm cho tài sản         |
+| insured_person_name    | string       | Tên người được bảo hiểm              |
+| insured_home_address   | string       | Địa chỉ nhà                          |
+| insurance_duration     | int          | Thời hạn bảo hiểm                    |
+| product_id             | uint         | Sản phẩm bảo hiểm                    |
+| created_at             | datetime     | Tự sinh                              |
+| updated_at             | datetime     | Tự sinh                              |
 
 ---
 
 ## 📝 **Ghi chú cho frontend**
+
 - **Các form bảo hiểm tai nạn chỉ khác nhau ở trường `insurance_package` (tên sản phẩm), còn lại giống nhau.**
 - **Chỉ gửi các trường bắt buộc, các trường có thể null thì không cần gửi khi tạo mới.**
 - **Luôn lấy `invoice_id` trả về từ backend để thực hiện các bước tiếp theo (gán customer, xác nhận, ...).**
@@ -434,6 +447,7 @@ Có 3 loại sản phẩm, form giống nhau, chỉ khác tên sản phẩm:
 ---
 
 **Nếu cần thêm bảng hoặc API nào khác, chỉ cần yêu cầu, mình sẽ bổ sung tương tự!**
+
 # API Quản trị & Thống kê Bảo hiểm - Hướng dẫn sử dụng & Triển khai biểu đồ
 
 ---
@@ -587,14 +601,14 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 ### 2.1. Biểu đồ tròn (Pie Chart)
 
 - **Dữ liệu:** Lấy `product_name` và `total_sold` từ API `/api/admin/product-statistics?group=day` (hoặc `month`, `year`).
-- **Cách vẽ:**  
+- **Cách vẽ:**
   - Mỗi lát cắt là một sản phẩm.
   - Kích thước lát cắt = số lượng bán của sản phẩm đó / tổng số lượng bán của tất cả sản phẩm.
 
 ### 2.2. Biểu đồ cột (Bar Chart)
 
 - **Dữ liệu:** Lấy `product_name` và `total_sold` hoặc `total_revenue`.
-- **Cách vẽ:**  
+- **Cách vẽ:**
   - Trục X: Tên sản phẩm.
   - Trục Y: Số lượng bán hoặc doanh thu.
   - Mỗi cột là một sản phẩm.
@@ -602,7 +616,7 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 ### 2.3. Biểu đồ đường (Line Chart)
 
 - **Dữ liệu:** Lấy `date_group`, `product_name`, `total_sold` từ API (gọi với `group=day`, `month`, `year`).
-- **Cách vẽ:**  
+- **Cách vẽ:**
   - Trục X: Thời gian (ngày/tháng/năm).
   - Trục Y: Số lượng bán.
   - Mỗi đường là một sản phẩm, thể hiện sự thay đổi số lượng bán theo thời gian.
@@ -613,14 +627,14 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 
 - **Gọi API:**  
   Sử dụng fetch/Axios để lấy dữ liệu từ các endpoint trên.
-- **Xử lý dữ liệu:**  
+- **Xử lý dữ liệu:**
   - Lọc, nhóm, tổng hợp theo nhu cầu (nếu cần).
   - Truyền dữ liệu vào thư viện vẽ biểu đồ như Chart.js, ECharts, Ant Design Charts, v.v.
 - **Ví dụ gọi API:**
   ```js
-  fetch('/api/admin/product-statistics?group=month')
-    .then(res => res.json())
-    .then(data => {
+  fetch("/api/admin/product-statistics?group=month")
+    .then((res) => res.json())
+    .then((data) => {
       // data là mảng các thống kê, truyền vào biểu đồ
     });
   ```
@@ -636,4 +650,82 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 
 ---
 
-**Nếu cần bổ sung thêm API hoặc hướng dẫn chi tiết hơn về frontend, hãy yêu cầu!**
+# Tổng hợp thay đổi API & dữ liệu ngày 2025-05-29
+
+---
+
+## 1. **Thêm tính năng cập nhật (update) cho admin**
+
+- **Cập nhật hóa đơn:**  
+  `PUT /api/admin/update-invoice/:id?type=chung|travel|home`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật khách hàng:**  
+  `PUT /api/admin/update-customer/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật participant:**  
+  `PUT /api/admin/update-participant/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+- **Cập nhật travel participant:**  
+  `PUT /api/admin/update-travel-participant/:id`  
+  Body: `{ ...các trường cần cập nhật... }`
+
+---
+
+## 2. **Thêm tính năng xóa mềm (soft delete) và xem lịch sử xóa**
+
+- **Xóa hóa đơn:**  
+  `DELETE /api/admin/delete-invoice/:id?type=chung|travel|home`  
+  → Hóa đơn sẽ không bị xóa khỏi DB mà chỉ cập nhật trường `deleted_at`.
+
+- **Xóa participant:**  
+  `DELETE /api/admin/delete-participant/:id`  
+  → Participant sẽ được soft delete (cập nhật trường `deleted_at`).
+
+- **Xem lịch sử hóa đơn đã xóa:**  
+  `GET /api/admin/deleted-invoices`  
+  `GET /api/admin/deleted-invoices?type=chung|travel|home`  
+  → Trả về danh sách hóa đơn đã bị xóa mềm.
+
+- **Xem lịch sử participant đã xóa:**  
+  `GET /api/admin/deleted-participants`  
+  → Trả về danh sách participant đã bị xóa mềm.
+
+---
+
+## 3. **Thay đổi cấu trúc database**
+
+- **Đã thêm trường `deleted_at` (kiểu DATETIME, cho phép NULL) vào các bảng:**
+  - `invoices`
+  - `travel_insurance_invoices`
+  - `home_insurance_invoices`
+  - `participants`
+  - `travel_participants`
+
+---
+
+## 4. **Lưu ý khi lấy dữ liệu**
+
+- **Các API lấy danh sách hóa đơn, participant... chỉ trả về bản ghi chưa bị xóa (`deleted_at IS NULL`).**
+- **API lịch sử xóa sẽ trả về các bản ghi có `deleted_at IS NOT NULL`.**
+
+---
+
+## 5. **Các API khác vẫn giữ nguyên**
+
+- Lấy danh sách hóa đơn: `GET /api/admin/all-invoices`
+- Lấy chi tiết hóa đơn: `GET /api/admin/invoice-detail?type=...&id=...`
+- Thống kê sản phẩm: `GET /api/admin/product-statistics?group=day|month|year`
+- Tìm kiếm khách hàng: `GET /api/admin/search-customers-by-date?...`
+
+---
+
+## 6. **Hướng dẫn frontend**
+
+- Khi muốn cập nhật, xóa, hoặc xem lịch sử xóa, sử dụng đúng endpoint như trên.
+- Khi hiển thị danh sách, chỉ hiển thị bản ghi chưa bị xóa.
+- Có thể xây dựng giao diện "Lịch sử xóa" để admin khôi phục hoặc kiểm tra các bản ghi đã bị xóa mềm.
+
+---

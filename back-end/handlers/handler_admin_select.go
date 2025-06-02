@@ -6,6 +6,7 @@ import (
     "github.com/gin-gonic/gin"
 	"backend/models"
 	"fmt"
+    "time"
 )
 
 type AdminInvoiceView struct {
@@ -394,6 +395,268 @@ func AdminSearchCustomersByDate(db *gorm.DB) gin.HandlerFunc {
             var homeResult []CustomerPurchaseInfo
             db.Raw(query, params...).Scan(&homeResult)
             result = append(result, homeResult...)
+        }
+
+        c.JSON(http.StatusOK, result)
+    }
+}
+func AdminUpdateInvoice(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        invoiceType := c.Query("type") // "chung", "travel", "home"
+        invoiceID := c.Param("id")
+
+        switch invoiceType {
+        case "chung":
+            var input models.Invoice
+            if err := c.ShouldBindJSON(&input); err != nil {
+                c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+                return
+            }
+            if err := db.Model(&models.Invoice{}).Where("invoice_id = ?", invoiceID).Updates(input).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Cập nhật hóa đơn thất bại!"})
+                return
+            }
+        case "travel":
+            var input models.TravelInsuranceInvoice
+            if err := c.ShouldBindJSON(&input); err != nil {
+                c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+                return
+            }
+            if err := db.Model(&models.TravelInsuranceInvoice{}).Where("invoice_id = ?", invoiceID).Updates(input).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Cập nhật hóa đơn du lịch thất bại!"})
+                return
+            }
+        case "home":
+            var input models.HomeInsuranceInvoice
+            if err := c.ShouldBindJSON(&input); err != nil {
+                c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+                return
+            }
+            if err := db.Model(&models.HomeInsuranceInvoice{}).Where("invoice_id = ?", invoiceID).Updates(input).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Cập nhật hóa đơn nhà thất bại!"})
+                return
+            }
+        default:
+            c.JSON(400, gin.H{"error": "Loại hóa đơn không hợp lệ"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Cập nhật hóa đơn thành công!"})
+    }
+}
+func AdminUpdateCustomer(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        customerID := c.Param("id")
+        var input models.CustomerRegistration
+        if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+            return
+        }
+        if err := db.Model(&models.CustomerRegistration{}).Where("customer_id = ?", customerID).Updates(input).Error; err != nil {
+            c.JSON(500, gin.H{"error": "Cập nhật khách hàng thất bại!"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Cập nhật khách hàng thành công!"})
+    }
+}
+func AdminUpdateParticipant(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        id := c.Param("id")
+        var input models.Participant
+        if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+            return
+        }
+        if err := db.Model(&models.Participant{}).Where("participant_id = ?", id).Updates(input).Error; err != nil {
+            c.JSON(500, gin.H{"error": "Cập nhật participant thất bại!"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Cập nhật participant thành công!"})
+    }
+}
+func AdminUpdateTravelParticipant(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        id := c.Param("id")
+        var input models.TravelParticipant
+        if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(400, gin.H{"error": "Dữ liệu không hợp lệ!"})
+            return
+        }
+        if err := db.Model(&models.TravelParticipant{}).Where("travel_participant_id = ?", id).Updates(input).Error; err != nil {
+            c.JSON(500, gin.H{"error": "Cập nhật travel participant thất bại!"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Cập nhật travel participant thành công!"})
+    }
+}
+func AdminDeleteParticipant(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        id := c.Param("id")
+        now := time.Now()
+        if err := db.Model(&models.Participant{}).
+            Where("participant_id = ?", id).
+            Update("deleted_at", &now).Error; err != nil {
+            c.JSON(500, gin.H{"error": "Xóa participant thất bại!"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Đã xóa participant (soft delete)!"})
+    }
+}
+func AdminDeletedParticipants(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var result []models.Participant
+        db.Where("deleted_at IS NOT NULL").Find(&result)
+        c.JSON(200, result)
+    }
+}
+func AdminDeleteInvoice(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        invoiceType := c.Query("type") // "chung", "travel", "home"
+        invoiceID := c.Param("id")
+        now := time.Now()
+
+        switch invoiceType {
+        case "chung":
+            if err := db.Model(&models.Invoice{}).
+                Where("invoice_id = ?", invoiceID).
+                Update("deleted_at", &now).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Xóa hóa đơn thất bại!"})
+                return
+            }
+        case "travel":
+            if err := db.Model(&models.TravelInsuranceInvoice{}).
+                Where("invoice_id = ?", invoiceID).
+                Update("deleted_at", &now).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Xóa hóa đơn du lịch thất bại!"})
+                return
+            }
+        case "home":
+            if err := db.Model(&models.HomeInsuranceInvoice{}).
+                Where("invoice_id = ?", invoiceID).
+                Update("deleted_at", &now).Error; err != nil {
+                c.JSON(500, gin.H{"error": "Xóa hóa đơn nhà thất bại!"})
+                return
+            }
+        default:
+            c.JSON(400, gin.H{"error": "Loại hóa đơn không hợp lệ"})
+            return
+        }
+        c.JSON(200, gin.H{"message": "Đã xóa hóa đơn (soft delete)!"})
+    }
+}
+func AdminDeletedInvoices(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        invoiceType := c.Query("type") // "chung", "travel", "home" hoặc rỗng (lấy tất cả)
+        var result []AdminInvoiceView
+
+        // Hóa đơn chung
+        if invoiceType == "" || invoiceType == "chung" {
+            var temp []AdminInvoiceView
+            db.Raw(`
+                SELECT 
+                    i.invoice_id,
+                    'Chung' AS invoice_type,
+                    p.name AS product_name,
+                    c.full_name AS customer_name,
+                    DATE_FORMAT(i.insurance_start, '%Y-%m-%d') AS insurance_start,
+                    DATE_FORMAT(i.insurance_end, '%Y-%m-%d') AS insurance_end,
+                    i.insurance_amount,
+                    i.insurance_quantity,
+                    i.contract_type,
+                    i.status,
+                    NULL AS departure_location,
+                    NULL AS destination,
+                    NULL AS departure_date,
+                    NULL AS return_date,
+                    NULL AS group_size,
+                    NULL AS insurance_program,
+                    NULL AS insurance_package,
+                    NULL AS home_usage_status,
+                    NULL AS home_insurance_amount,
+                    NULL AS asset_insurance_amount,
+                    NULL AS insured_person_name,
+                    NULL AS insured_home_address,
+                    NULL AS insurance_duration,
+                    DATE_FORMAT(i.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+                FROM invoices i
+                LEFT JOIN products p ON i.product_id = p.product_id
+                LEFT JOIN customer_registration c ON i.customer_id = c.customer_id
+                WHERE i.deleted_at IS NOT NULL
+            `).Scan(&temp)
+            result = append(result, temp...)
+        }
+
+        // Hóa đơn du lịch
+        if invoiceType == "" || invoiceType == "travel" {
+            var temp []AdminInvoiceView
+            db.Raw(`
+                SELECT 
+                    t.invoice_id,
+                    'Du lịch' AS invoice_type,
+                    p.name AS product_name,
+                    c.full_name AS customer_name,
+                    NULL AS insurance_start,
+                    NULL AS insurance_end,
+                    NULL AS insurance_amount,
+                    NULL AS insurance_quantity,
+                    NULL AS contract_type,
+                    t.status,
+                    t.departure_location,
+                    t.destination,
+                    DATE_FORMAT(t.departure_date, '%Y-%m-%d') AS departure_date,
+                    DATE_FORMAT(t.return_date, '%Y-%m-%d') AS return_date,
+                    t.group_size,
+                    t.insurance_program,
+                    t.insurance_package,
+                    NULL AS home_usage_status,
+                    NULL AS home_insurance_amount,
+                    NULL AS asset_insurance_amount,
+                    NULL AS insured_person_name,
+                    NULL AS insured_home_address,
+                    NULL AS insurance_duration,
+                    DATE_FORMAT(t.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+                FROM travel_insurance_invoices t
+                LEFT JOIN products p ON t.product_id = p.product_id
+                LEFT JOIN customer_registration c ON t.customer_id = c.customer_id
+                WHERE t.deleted_at IS NOT NULL
+            `).Scan(&temp)
+            result = append(result, temp...)
+        }
+
+        // Hóa đơn nhà
+        if invoiceType == "" || invoiceType == "home" {
+            var temp []AdminInvoiceView
+            db.Raw(`
+                SELECT 
+                    h.invoice_id,
+                    'Nhà' AS invoice_type,
+                    p.name AS product_name,
+                    c.full_name AS customer_name,
+                    NULL AS insurance_start,
+                    NULL AS insurance_end,
+                    NULL AS insurance_amount,
+                    NULL AS insurance_quantity,
+                    NULL AS contract_type,
+                    NULL AS status,
+                    NULL AS departure_location,
+                    NULL AS destination,
+                    NULL AS departure_date,
+                    NULL AS return_date,
+                    NULL AS group_size,
+                    NULL AS insurance_program,
+                    NULL AS insurance_package,
+                    h.home_usage_status,
+                    h.home_insurance_amount,
+                    h.asset_insurance_amount,
+                    h.insured_person_name,
+                    h.insured_home_address,
+                    h.insurance_duration,
+                    DATE_FORMAT(h.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+                FROM home_insurance_invoices h
+                LEFT JOIN products p ON h.product_id = p.product_id
+                LEFT JOIN customer_registration c ON h.customer_id = c.customer_id
+                WHERE h.deleted_at IS NOT NULL
+            `).Scan(&temp)
+            result = append(result, temp...)
         }
 
         c.JSON(http.StatusOK, result)

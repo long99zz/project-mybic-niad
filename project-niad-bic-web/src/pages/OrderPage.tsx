@@ -58,20 +58,8 @@ interface VehicleInfo {
   accidentParticipants: number;
 }
 
-// Hàm tính phí bảo hiểm TNDS
-const calculateTndsFee = (vehicleCount: number): number => {
-  const baseFee = 500000; // Phí cơ bản cho 1 xe
-  return baseFee * vehicleCount;
-};
-
-// Hàm tính phí bảo hiểm tai nạn
-const calculateAccidentFee = (vehicleCount: number): number => {
-  const baseFee = 300000; // Phí cơ bản cho 1 xe
-  return baseFee * vehicleCount;
-};
-
 export default function OrderPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
 
   // State cho thông tin sản phẩm
@@ -174,182 +162,220 @@ export default function OrderPage() {
 
   // Xử lý chuyển bước
   const handleNextStep = async () => {
+    console.log("Current step:", currentStep);
+    console.log("Total steps:", totalSteps);
+    console.log("handleNextStep called"); // Log start of function
+
+    let currentStepErrors: { [key: string]: string } = {};
+
     if (currentStep === 1) {
       // Validate step 1
-      const step1Errors: { [key: string]: string } = {};
+      console.log("Validating step 1..."); // Log validation start
+      console.log("insuranceType:", insuranceType);
+      console.log("licensePlateNumber:", licensePlateNumber);
+      console.log("vehicleCount:", vehicleCount);
+
       if (!insuranceType) {
-        step1Errors.insuranceType = "Vui lòng chọn loại hợp đồng";
-      }
-      if (!vehicleCount || vehicleCount < 1) {
-        step1Errors.vehicleCount = "Vui lòng nhập số lượng xe";
-      }
-      if (!licensePlateNumber) {
-        step1Errors.licensePlateNumber = "Vui lòng nhập biển số xe";
+        currentStepErrors.insuranceType =
+          "Vui lòng chọn đối tượng được bảo hiểm";
       }
 
-      if (Object.keys(step1Errors).length > 0) {
-        setErrors(step1Errors);
-        setShowError(true);
-        return;
+      // Chỉ validate Số GCNBH/BKS khi là Hợp đồng tái tục
+      if (insuranceType === "renewal" && !licensePlateNumber) {
+        currentStepErrors.licensePlateNumber = "Vui lòng nhập số GCNBH/BKS";
       }
 
-      // Calculate fees
-      const tndsFee = calculateTndsFee(vehicleCount);
-      const accidentFee = calculateAccidentFee(vehicleCount);
-      const totalFee = tndsFee + accidentFee;
-
-      setTndsFeeDisplay(tndsFee);
-      setAccidentFeeDisplay(accidentFee);
-      setTotalFeeDisplay(totalFee);
-
-      setCurrentStep(2);
+      if (!vehicleCount) {
+        currentStepErrors.vehicleCount = "Vui lòng chọn số lượng xe";
+      }
     } else if (currentStep === 2) {
       // Validate step 2
-      const step2Errors: { [key: string]: string } = {};
-      if (!customerInfo.type) {
-        step2Errors.type = "Vui lòng chọn loại khách hàng";
+      console.log("Validating step 2...");
+      if (!vehicleInfo.ownerType) {
+        currentStepErrors.ownerType = "Vui lòng chọn người mua bảo hiểm";
       }
+      if (!vehicleInfo.identityCard) {
+        currentStepErrors.identityCard =
+          vehicleInfo.ownerType === "business"
+            ? "Vui lòng nhập Mã số thuế"
+            : "Vui lòng nhập CMND/CCCD";
+      }
+      if (!vehicleInfo.purpose) {
+        currentStepErrors.purpose = "Vui lòng chọn mục đích sử dụng";
+      }
+      if (!vehicleInfo.vehicleType) {
+        currentStepErrors.vehicleType = "Vui lòng chọn loại xe";
+      }
+      if (!vehicleInfo.seats) {
+        currentStepErrors.seats = "Vui lòng nhập số chỗ ngồi";
+      }
+      if (!vehicleInfo.ownerName) {
+        currentStepErrors.ownerName = "Vui lòng nhập tên chủ xe";
+      }
+      if (!vehicleInfo.registrationAddress) {
+        currentStepErrors.registrationAddress =
+          "Vui lòng nhập địa chỉ đăng ký xe";
+      }
+      if (!vehicleInfo.chassisNumber) {
+        currentStepErrors.chassisNumber = "Vui lòng nhập số khung";
+      }
+      if (!vehicleInfo.engineNumber) {
+        currentStepErrors.engineNumber = "Vui lòng nhập số máy";
+      }
+      if (!vehicleInfo.insuranceStartDate) {
+        currentStepErrors.insuranceStartDate =
+          "Vui lòng chọn thời hạn bảo hiểm từ";
+      }
+      if (!vehicleInfo.plateNumberSuffix && vehicleInfo.hasPlate) {
+        currentStepErrors.plateNumberSuffix = "Vui lòng nhập biển kiểm soát";
+      }
+    } else if (currentStep === 3) {
+      // Validate step 3
+      console.log("Validating step 3...");
       if (!customerInfo.fullName) {
-        step2Errors.fullName = "Vui lòng nhập họ và tên";
-      }
-      if (!customerInfo.email) {
-        step2Errors.email = "Vui lòng nhập email";
-      }
-      if (!customerInfo.phone) {
-        step2Errors.phone = "Vui lòng nhập số điện thoại";
+        currentStepErrors.fullName = "Vui lòng nhập họ và tên";
       }
       if (!customerInfo.address) {
-        step2Errors.address = "Vui lòng nhập địa chỉ";
+        currentStepErrors.address = "Vui lòng nhập địa chỉ";
       }
-      if (!customerInfo.city) {
-        step2Errors.city = "Vui lòng chọn tỉnh/thành phố";
+      if (!customerInfo.email) {
+        currentStepErrors.email = "Vui lòng nhập email";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.email)) {
+        currentStepErrors.email = "Email không hợp lệ";
       }
-      if (!customerInfo.district) {
-        step2Errors.district = "Vui lòng chọn quận/huyện";
+      if (!customerInfo.phone) {
+        currentStepErrors.phone = "Vui lòng nhập số điện thoại";
+      } else if (!/^[0-9]{10}$/.test(customerInfo.phone)) {
+        currentStepErrors.phone = "Số điện thoại không hợp lệ";
       }
-      if (!customerInfo.ward) {
-        step2Errors.ward = "Vui lòng chọn phường/xã";
-      }
-      if (!customerInfo.identityCard) {
-        step2Errors.identityCard = "Vui lòng nhập số CMND/CCCD";
-      }
-      if (!customerInfo.dateOfBirth) {
-        step2Errors.dateOfBirth = "Vui lòng nhập ngày sinh";
-      }
+    }
 
-      if (Object.keys(step2Errors).length > 0) {
-        setErrors(step2Errors);
-        setShowError(true);
-        return;
-      }
+    if (Object.keys(currentStepErrors).length > 0) {
+      console.log("Validation errors found:", currentStepErrors);
+      setErrors(currentStepErrors);
+      setShowError(true);
+    } else {
+      console.log(`Step ${currentStep} validation passed.`);
+      setShowError(false);
+      setErrors({});
+      window.scrollTo(0, 0);
 
-      setCurrentStep(3);
-    } else if (currentStep === 3) {
-      try {
-        // 1. Create CarInsuranceForm
-        const carInsuranceFormPayload = {
-          user_type:
-            vehicleInfo.ownerType === "personal" ? "Cá nhân" : "Tổ chức",
-          identity_number: vehicleInfo.identityCard,
-          usage_purpose: vehicleInfo.purpose,
-          vehicle_type: vehicleInfo.vehicleType,
-          seat_count: vehicleInfo.seats,
-          load_capacity: vehicleInfo.loadCapacity,
-          owner_name: vehicleInfo.ownerName,
-          registration_address: vehicleInfo.registrationAddress,
-          license_plate_status: vehicleInfo.hasPlate ? "Có" : "Chưa có",
-          license_plate: vehicleInfo.hasPlate
-            ? `${vehicleInfo.plateNumberPrefix}-${vehicleInfo.plateNumberSuffix}`
-            : "",
-          chassis_number: vehicleInfo.chassisNumber,
-          engine_number: vehicleInfo.engineNumber,
-          insurance_start: vehicleInfo.insuranceStartDate,
-          insurance_duration: vehicleInfo.insuranceTerm,
-          insurance_fee: vehicleInfo.insuranceAmount,
-          insurance_amount: vehicleInfo.accidentCoverage,
-          participant_count: vehicleInfo.accidentParticipants,
-        };
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+      } else if (currentStep === totalSteps) {
+        try {
+          // Construct the order data payload
+          // Dữ liệu cho CarInsuranceForm
+          const carInsuranceFormPayload = {
+            user_type:
+              vehicleInfo.ownerType === "personal" ? "Cá nhân" : "Tổ chức",
+            identity_number: vehicleInfo.identityCard,
+            usage_purpose: vehicleInfo.purpose,
+            vehicle_type: vehicleInfo.vehicleType,
+            seat_count: vehicleInfo.seats,
+            load_capacity: vehicleInfo.loadCapacity,
+            owner_name: vehicleInfo.ownerName,
+            registration_address: vehicleInfo.registrationAddress,
+            license_plate_status: vehicleInfo.hasPlate ? "Mới" : "Chưa có",
+            license_plate: vehicleInfo.hasPlate
+              ? `${vehicleInfo.plateNumberPrefix}-${vehicleInfo.plateNumberSuffix}`
+              : "",
+            chassis_number: vehicleInfo.chassisNumber,
+            engine_number: vehicleInfo.engineNumber,
+            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
+            insurance_duration: vehicleInfo.insuranceTerm,
+            insurance_fee: totalFeeDisplay,
+            insurance_amount: vehicleInfo.accidentCoverage,
+            participant_count: vehicleInfo.seats,
+          };
 
-        // Make the API call to create the CarInsuranceForm
-        const carFormResponse = await axios.post(
-          `${API_URL}/api/insurance_car_owner/create_vehicle_insurance_form`,
-          carInsuranceFormPayload
-        );
+          console.log("CarInsuranceForm payload:", carInsuranceFormPayload);
 
-        console.log(
-          "CarInsuranceForm created successfully:",
-          carFormResponse.data
-        );
-        const formId = carFormResponse.data.form_id;
+          // Make the API call to create the CarInsuranceForm
+          const carFormResponse = await axios.post(
+            `${API_URL}/api/insurance_car_owner/create_car_insurance_form`,
+            carInsuranceFormPayload
+          );
 
-        // 2. Create CustomerRegistration
-        const customerRegistrationPayload = {
-          customer_type:
-            customerInfo.type === "personal" ? "Cá nhân" : "Tổ chức",
-          identity_number: customerInfo.identityCard,
-          full_name: customerInfo.fullName,
-          address: customerInfo.address,
-          email: customerInfo.email,
-          phone_number: customerInfo.phone,
-          invoice_request: customerInfo.invoice,
-          notes: "",
-        };
+          console.log("CarInsuranceForm response:", carFormResponse.data);
+          const formId = carFormResponse.data.form_id;
 
-        const customerResponse = await axios.post(
-          `${API_URL}/api/insurance_car_owner/create_customer_registration`,
-          customerRegistrationPayload
-        );
+          // 2. Create CustomerRegistration
+          const customerRegistrationPayload = {
+            customer_type:
+              customerInfo.type === "personal" ? "Cá nhân" : "Tổ chức",
+            identity_number: customerInfo.identityCard,
+            full_name: customerInfo.fullName,
+            address: customerInfo.address,
+            email: customerInfo.email,
+            phone_number: customerInfo.phone,
+            invoice_request: customerInfo.invoice,
+            notes: "",
+          };
 
-        console.log(
-          "CustomerRegistration created successfully:",
-          customerResponse.data
-        );
-        const customerId = customerResponse.data.customer_id;
+          console.log(
+            "CustomerRegistration payload:",
+            customerRegistrationPayload
+          );
 
-        // 3. Create Invoice
-        const invoicePayload = {
-          insurance_quantity: vehicleCount,
-          contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
-          customer_id: customerId,
-          form_id: formId,
-        };
+          const customerResponse = await axios.post(
+            `${API_URL}/api/insurance_car_owner/create_customer_registration`,
+            customerRegistrationPayload
+          );
 
-        const invoiceResponse = await axios.post(
-          `${API_URL}/api/insurance_car_owner/create_invoice`,
-          invoicePayload
-        );
+          console.log("CustomerRegistration response:", customerResponse.data);
+          const customerId = customerResponse.data.customer_id;
 
-        console.log("Invoice created successfully:", invoiceResponse.data);
+          // 3. Create Invoice
+          const invoicePayload = {
+            product_id: 1,
+            contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
+            insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)),
+            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
+            insurance_end: new Date(
+              new Date(vehicleInfo.insuranceStartDate).setFullYear(
+                new Date(vehicleInfo.insuranceStartDate).getFullYear() +
+                  vehicleInfo.insuranceTerm
+              )
+            ).toISOString(),
+            insurance_quantity: 1,
+            customer_id: customerId,
+            form_id: formId,
+          };
 
-        // 4. Confirm Purchase
-        const confirmPayload = {
-          invoice_id: invoiceResponse.data.invoice_id,
-          insurance_start: vehicleInfo.insuranceStartDate,
-          insurance_end: new Date(
-            new Date(vehicleInfo.insuranceStartDate).setFullYear(
-              new Date(vehicleInfo.insuranceStartDate).getFullYear() +
-                vehicleInfo.insuranceTerm
-            )
-          )
-            .toISOString()
-            .split("T")[0],
-          insurance_amount: vehicleInfo.insuranceAmount,
-          status: "Đã xác nhận",
-        };
+          console.log("Invoice payload:", invoicePayload);
 
-        const confirmResponse = await axios.post(
-          `${API_URL}/api/insurance_car_owner/confirm_purchase`,
-          confirmPayload
-        );
+          const invoiceResponse = await axios.post(
+            `${API_URL}/api/insurance_car_owner/create_invoice`,
+            invoicePayload
+          );
 
-        console.log("Purchase confirmed successfully:", confirmResponse.data);
+          console.log("Invoice response:", invoiceResponse.data);
+          const invoiceId = invoiceResponse.data.invoice_id;
 
-        // Show success message and redirect
-        alert("Đặt bảo hiểm thành công!");
-        navigate("/");
-      } catch (error) {
-        console.error("Error creating insurance:", error);
-        alert("Có lỗi xảy ra khi đặt bảo hiểm. Vui lòng thử lại sau.");
+          // 4. Confirm Purchase
+          const confirmPurchasePayload = {
+            invoice_id: invoiceId,
+            customer_id: customerId,
+            form_id: formId,
+          };
+
+          console.log("ConfirmPurchase payload:", confirmPurchasePayload);
+
+          const confirmResponse = await axios.post(
+            `${API_URL}/api/insurance_car_owner/confirm_purchase`,
+            confirmPurchasePayload
+          );
+
+          console.log("ConfirmPurchase response:", confirmResponse.data);
+          navigate("/gio-hang.html");
+        } catch (error) {
+          console.error("Error creating order:", error);
+          if (error.response) {
+            console.error("Error response:", error.response.data);
+          }
+          alert("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.");
+        }
       }
     }
   };

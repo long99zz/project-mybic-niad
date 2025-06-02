@@ -2,14 +2,9 @@
 export { CarPhysicalDamageForm } from "./CarPhysicalDamageForm";
 export { CivilLiabilityForm } from "./CivilLiabilityForm";
 
-// Bảo hiểm xe ô tô
-export { CarInsuranceForm } from "./CarInsuranceForm";
-export { CarMaterialInsuranceForm } from "./CarMaterialInsuranceForm";
-
 // Bảo hiểm xe máy
 export { MotorcyclePhysicalDamageForm } from "./MotorcyclePhysicalDamageForm";
 export { MotorcycleCivilLiabilityForm } from "./MotorcycleCivilLiabilityForm";
-export { MotorbikeInsuranceForm } from "./MotorbikeInsuranceForm";
 
 // Bảo hiểm sức khỏe
 export { HealthInsuranceForm } from "./HealthInsuranceForm";

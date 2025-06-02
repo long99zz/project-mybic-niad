@@ -19,4 +19,5 @@ type HomeInsuranceInvoice struct {
     ProductID            uint      `gorm:"not null" json:"product_id"`                  // Khóa ngoại liên kết với bảng products
     CreatedAt            time.Time `gorm:"autoCreateTime" json:"created_at"`            // Thời gian tạo hóa đơn
     UpdatedAt            time.Time `gorm:"autoUpdateTime" json:"updated_at"`            // Thời gian cập nhật hóa đơn
+    DeletedAt         *time.Time `gorm:"index" json:"deleted_at,omitempty"`  
 }

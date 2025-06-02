@@ -26,7 +26,14 @@ import Posts from "./pages/admin/Posts";
 import Users from "./pages/admin/Users";
 import Comments from "./pages/admin/Comments";
 import Statistics from "./pages/admin/Statistics";
-import CarMaterialInsuranceForm from "./pages/order/components/CarMaterialInsuranceForm";
+import UserProfilePage from "./pages/UserProfilePage";
+import CategoryPage from "./pages/CategoryPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import PaymentConfirmationPage from "./pages/PaymentConfirmationPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import PersonalInfoPage from "./pages/user/PersonalInfoPage";
+import ChangePasswordPage from "./pages/user/ChangePasswordPage";
+import OrderHistoryPage from "./pages/user/OrderHistoryPage";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -65,7 +72,6 @@ const AppRoutes = () => {
       <Route path="/mua-ngay/:productType" element={<OrderPage />} />
       <Route path="/dat-hang" element={<OrderPage />} />
       <Route path="/gio-hang.html" element={<CartPage />} />
-
       {/* Các route cụ thể cho từng sản phẩm */}
       <Route
         path="/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to-9.html"
@@ -93,7 +99,6 @@ const AppRoutes = () => {
         path="/bao-hiem-tai-nan-24h-14.html"
         element={<ProductDetailPage productSlug="bao-hiem-tai-nan-24h" />}
       />
-
       {/* Thêm các routes mới cho đường dẫn sản phẩm mới */}
       <Route
         path="/san-pham/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to"
@@ -149,7 +154,6 @@ const AppRoutes = () => {
         path="/san-pham/bao-hiem-an-ninh-mang"
         element={<ProductDetailPage productSlug="bao-hiem-an-ninh-mang" />}
       />
-
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
@@ -160,16 +164,29 @@ const AppRoutes = () => {
         <Route path="comments" element={<Comments />} />
         <Route path="statistics" element={<Statistics />} />
       </Route>
-
-      {/* New routes for Car Material Insurance */}
-      <Route path="/mua-ngay/vat-chat-oto" element={<OrderPage />} />
-      <Route path="/mua-ngay/tnds-oto" element={<OrderPage />} />
-      <Route path="/mua-ngay/tnds-xe-may" element={<OrderPage />} />
-      <Route path="/mua-ngay/benh-ung-thu" element={<OrderPage />} />
-      <Route path="/mua-ngay/tai-nan-suc-khoe" element={<OrderPage />} />
-      <Route path="/mua-ngay/tai-nan-24h" element={<OrderPage />} />
-      <Route path="/mua-ngay/du-lich-trong-nuoc" element={<OrderPage />} />
-      <Route path="/mua-ngay/du-lich-quoc-te" element={<OrderPage />} />
+      {/* User Profile Routes */}
+      <Route path="/tai-khoan" element={<UserProfilePage />}>
+        {/* Default content or redirect */}
+        <Route index element={<div>Chọn một mục từ menu bên trái.</div>} />{" "}
+        {/* Personal Info Route */}
+        <Route path="thong-tin-ca-nhan" element={<PersonalInfoPage />} />{" "}
+        {/* Change Password Route */}
+        <Route path="doi-mat-khau" element={<ChangePasswordPage />} />{" "}
+        {/* Order History Route */}
+        <Route path="don-hang" element={<OrderHistoryPage />} />{" "}
+        {/* Placeholder */}
+      </Route>
+      {/* New routes */}
+      <Route path="/danh-muc/:categorySlug" element={<CategoryPage />} />
+      <Route path="/san-pham/:productSlug" element={<ProductDetailPage />} />
+      <Route path="/gio-hang" element={<CartPage />} />
+      <Route path="/thanh-toan" element={<CheckoutPage />} />
+      <Route
+        path="/xac-nhan-thanh-toan"
+        element={<PaymentConfirmationPage />}
+      />
+      <Route path="*" element={<NotFoundPage />} />{" "}
+      {/* Optional: Not Found Page */}
     </Routes>
   );
 };
