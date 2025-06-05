@@ -46,7 +46,11 @@ func main() {
 
 	// 🔹 Nhóm API yêu cầu xác thực bằng JWT
 	apiRouter := router.Group("/api")
-	apiRouter.Use(middlewares.AuthMiddleware()) 
+	apiRouter.Use(middlewares.AuthMiddleware())
+
+	apiRouter.POST("/posts", handlers.AddPost(db))
+	apiRouter.PUT("/posts/:id", handlers.UpdatePost(db))
+	apiRouter.DELETE("/posts/:id", handlers.DeletePost(db))
 
 	apiRouter.GET("/user", handlers.GetUserInfo(db))  // Lấy thông tin user
 	apiRouter.GET("/products", handlers.GetProducts(db))
