@@ -2,7 +2,16 @@
 
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, ChevronDown, ChevronRight, Menu, X } from "lucide-react";
+import {
+  ShoppingCart,
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  X,
+  User,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 // Dữ liệu menu đa cấp với URL chính xác
 const productMenuData = [
@@ -578,7 +587,16 @@ function MobileMenu() {
 }
 
 export default function Navbar() {
+  const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
   const [currentPath, setCurrentPath] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  console.log("Navbar user data:", user);
+
+  // Hàm kiểm tra đường dẫn active
+  const isActive = (pathname: string) => location.pathname === pathname;
 
   // Xác định đường dẫn hiện tại khi component được tải
   useEffect(() => {
@@ -604,9 +622,18 @@ export default function Navbar() {
     };
   }, []);
 
+  // Xử lý hover cho dropdown user
+  const handleUserDropdownMouseEnter = () => {
+    setIsUserDropdownOpen(true);
+  };
+
+  const handleUserDropdownMouseLeave = () => {
+    setIsUserDropdownOpen(false);
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b z-50 shadow-sm">
-      <div className="container mx-auto px-4 h-[82px] flex items-center justify-between">
+      <div className="container mx-auto px-4 h-[82px] flex items-center justify-start">
         {/* Logo - thu về phía phải một chút */}
         <div className="w-24 md:w-32 lg:w-24 ml-0 lg:ml-6">
           <a href="/">
@@ -621,7 +648,7 @@ export default function Navbar() {
         </div>
 
         {/* Navigation - hiển thị trên desktop */}
-        <nav className="hidden lg:flex items-center justify-center flex-1 lg:space-x-0.5 xl:space-x-1">
+        <nav className="hidden lg:flex items-center justify-start lg:space-x-0.5 xl:space-x-1 ml-24">
           <NavItem href="/" isHome={true} isActive={currentPath === "/"}>
             TRANG CHỦ
           </NavItem>
@@ -658,25 +685,102 @@ export default function Navbar() {
         </nav>
 
         {/* Auth & Cart - thu về phía trái một chút */}
-        <div className="hidden lg:flex items-center lg:gap-2 xl:gap-3 lg:pr-6 xl:pr-10 mr-0 lg:-mr-6">
-          <a
-            href="/dang-nhap"
-            className="lg:px-1.5 xl:px-2 py-1.5 text-sm font-medium"
-          >
-            ĐĂNG NHẬP
-          </a>
-          <a
-            href="/dang-ky"
-            className="lg:px-1.5 xl:px-2 py-1.5 text-sm font-medium border border-gray-300 rounded-md"
-          >
-            ĐĂNG KÝ
-          </a>
-          <a href="/gio-hang.html" className="relative ml-1 xl:ml-2">
-            <ShoppingCart className="w-5 h-5" />
-            <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              0
-            </span>
-          </a>
+        <div className="hidden lg:flex items-center lg:gap-2 xl:gap-3 lg:pr-6 xl:pr-10 mr-0 lg:-mr-6 ml-auto">
+          <div className="flex items-center space-x-4">
+            {/* Cart Icon - Đặt trước */}
+            <Link to="/cart" className="text-gray-800 hover:text-red-600">
+              <ShoppingCart className="w-5 h-5" />
+            </Link>
+
+            {/* User Auth Status / Dropdown - Đặt sau */}
+            {isAuthenticated ? (
+              <div
+                className="relative group flex items-center cursor-pointer"
+                onMouseEnter={handleUserDropdownMouseEnter}
+                onMouseLeave={handleUserDropdownMouseLeave}
+              >
+                <div className="flex items-center space-x-2 px-3 py-2 rounded-md bg-gray-100">
+                  {/* User Icon */}
+                  <User className="w-5 h-5 text-red-600" />
+                  {/* User Name - Display full name */}
+                  <span className="text-gray-800 font-medium text-sm">
+                    {`${user?.last_name || ""} ${user?.first_name || ""}`
+                      .trim()
+                      .toUpperCase()}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
+                      isUserDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+                {isUserDropdownOpen && (
+                  <div
+                    className="absolute top-full left-0 w-48 bg-white rounded-md shadow-lg z-50 py-1"
+                    onMouseEnter={handleUserDropdownMouseEnter}
+                    onMouseLeave={handleUserDropdownMouseLeave}
+                    style={{ paddingTop: "10px", paddingBottom: "10px" }} // Add padding to increase hover area
+                  >
+                    {/* User Profile Link */}
+                    <Link
+                      to="/tai-khoan"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    >
+                      Trang cá nhân
+                    </Link>
+                    {/* Personal Info Link */}
+                    <Link
+                      to="/tai-khoan/thong-tin-ca-nhan"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    >
+                      Thông tin cá nhân
+                    </Link>
+                    {/* Change Password Link */}
+                    <Link
+                      to="/tai-khoan/doi-mat-khau"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    >
+                      Đổi mật khẩu
+                    </Link>
+                    {/* Order History Link */}
+                    <Link
+                      to="/tai-khoan/don-hang"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    >
+                      Quản lý đơn hàng
+                    </Link>
+
+                    {/* Logout Link */}
+                    <button
+                      onClick={logout}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/dang-ky"
+                  className="inline-block px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                >
+                  ĐĂNG KÝ
+                </Link>
+                <Link
+                  to="/dang-nhap"
+                  className="inline-block px-4 py-2 text-sm font-medium text-red-600 border border-red-600 rounded-md hover:bg-red-100"
+                >
+                  ĐĂNG NHẬP
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Menu mobile - hiển thị trên tablet và mobile */}

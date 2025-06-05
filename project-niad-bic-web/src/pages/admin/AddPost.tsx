@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface Category {
   category_id: number;
@@ -21,17 +24,11 @@ const AddPost = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // TODO: Gọi API lấy danh sách danh mục
-    // Ví dụ:
-    // fetch('/api/admin/categories')
-    //     .then(res => res.json())
-    //     .then(data => setCategories(data));
-
-    // Tạm thời mock dữ liệu
-    setCategories([
-      { category_id: 1, name: "Tin tức" },
-      { category_id: 2, name: "Khuyến mãi" },
-    ]);
+    // Gọi API lấy danh mục
+    axios
+      .get(`${API_URL}/api/categories`, { withCredentials: true })
+      .then((res) => setCategories(res.data))
+      .catch(() => setCategories([]));
   }, []);
 
   const handleInputChange = (
@@ -73,21 +70,17 @@ const AddPost = () => {
     }
 
     try {
-      // TODO: Gọi API thêm bài viết
-      // Ví dụ:
-      // const formDataToSend = new FormData();
-      // formDataToSend.append('title', formData.title);
-      // formDataToSend.append('content', formData.content);
-      // formDataToSend.append('category_id', formData.category_id);
-      // if (formData.image) {
-      //     formDataToSend.append('image', formData.image);
-      // }
-      // await fetch('/api/admin/posts', {
-      //     method: 'POST',
-      //     body: formDataToSend
-      // });
-
-      // Tạm thời mock thêm bài viết
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("content", formData.content);
+      formDataToSend.append("category_id", formData.category_id);
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+      await axios.post(`${API_URL}/api/posts`, formDataToSend, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("Thêm bài viết thành công");
       navigate("/admin/posts");
     } catch (err) {
@@ -101,13 +94,11 @@ const AddPost = () => {
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h6 className="mb-0">Thêm bài viết mới</h6>
         </div>
-
         {error && (
           <div className="alert alert-danger" role="alert">
             {error}
           </div>
         )}
-
         <form onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-md-8">
@@ -125,7 +116,6 @@ const AddPost = () => {
                   required
                 />
               </div>
-
               <div className="form-group mb-3">
                 <label htmlFor="content" className="form-label">
                   Nội dung
@@ -137,7 +127,6 @@ const AddPost = () => {
                 />
               </div>
             </div>
-
             <div className="col-md-4">
               <div className="form-group mb-3">
                 <label htmlFor="category_id" className="form-label">
@@ -162,7 +151,6 @@ const AddPost = () => {
                   ))}
                 </select>
               </div>
-
               <div className="form-group mb-3">
                 <label htmlFor="image" className="form-label">
                   Ảnh đại diện
@@ -185,7 +173,6 @@ const AddPost = () => {
               </div>
             </div>
           </div>
-
           <div className="text-end mt-3">
             <button type="submit" className="btn btn-custom">
               Thêm bài viết

@@ -59,7 +59,7 @@ interface VehicleInfo {
 }
 
 export default function OrderPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
 
   // State cho thông tin sản phẩm
@@ -268,26 +268,28 @@ export default function OrderPage() {
           // Dữ liệu cho CarInsuranceForm
           const carInsuranceFormPayload = {
             user_type:
-              vehicleInfo.ownerType === "personal" ? "Cá nhân" : "Tổ chức", // Chuyển đổi sang định dạng backend mong muốn
+              vehicleInfo.ownerType === "personal" ? "Cá nhân" : "Tổ chức",
             identity_number: vehicleInfo.identityCard,
-            usage_purpose: vehicleInfo.purpose, // Sử dụng giá trị từ state
-            vehicle_type: vehicleInfo.vehicleType, // Sử dụng giá trị từ state
+            usage_purpose: vehicleInfo.purpose,
+            vehicle_type: vehicleInfo.vehicleType,
             seat_count: vehicleInfo.seats,
             load_capacity: vehicleInfo.loadCapacity,
             owner_name: vehicleInfo.ownerName,
             registration_address: vehicleInfo.registrationAddress,
-            license_plate_status: vehicleInfo.hasPlate ? "Mới" : "Chưa có", // Chuyển đổi sang định dạng backend (giả định Đã có -> Mới)
+            license_plate_status: vehicleInfo.hasPlate ? "Mới" : "Chưa có",
             license_plate: vehicleInfo.hasPlate
               ? `${vehicleInfo.plateNumberPrefix}-${vehicleInfo.plateNumberSuffix}`
-              : "", // Kết hợp biển số
+              : "",
             chassis_number: vehicleInfo.chassisNumber,
             engine_number: vehicleInfo.engineNumber,
-            insurance_start: vehicleInfo.insuranceStartDate.slice(0, 10), // Chỉ lấy ngày (YYYY-MM-DD)
+            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
             insurance_duration: vehicleInfo.insuranceTerm,
-            insurance_fee: totalFeeDisplay, // Sử dụng tổng phí đã tính
-            insurance_amount: vehicleInfo.accidentCoverage, // Số tiền bảo hiểm tai nạn
-            participant_count: vehicleInfo.seats, // Số người = Số chỗ ngồi
+            insurance_fee: totalFeeDisplay,
+            insurance_amount: vehicleInfo.accidentCoverage,
+            participant_count: vehicleInfo.seats,
           };
+
+          console.log("CarInsuranceForm payload:", carInsuranceFormPayload);
 
           // Make the API call to create the CarInsuranceForm
           const carFormResponse = await axios.post(
@@ -295,10 +297,7 @@ export default function OrderPage() {
             carInsuranceFormPayload
           );
 
-          console.log(
-            "CarInsuranceForm created successfully:",
-            carFormResponse.data
-          );
+          console.log("CarInsuranceForm response:", carFormResponse.data);
           const formId = carFormResponse.data.form_id;
 
           // 2. Create CustomerRegistration
@@ -314,46 +313,44 @@ export default function OrderPage() {
             notes: "",
           };
 
+          console.log(
+            "CustomerRegistration payload:",
+            customerRegistrationPayload
+          );
+
           const customerResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/create_customer_registration`,
             customerRegistrationPayload
           );
 
-          console.log(
-            "CustomerRegistration created successfully:",
-            customerResponse.data
-          );
+          console.log("CustomerRegistration response:", customerResponse.data);
           const customerId = customerResponse.data.customer_id;
 
           // 3. Create Invoice
           const invoicePayload = {
-            product_id: 1, // Cần thay thế bằng ID sản phẩm thực tế nếu có
+            product_id: 1,
             contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
-            insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)), // Làm tròn đến 2 chữ số thập phân và đảm bảo là số
-            insurance_start: vehicleInfo.insuranceStartDate.slice(0, 10), // Lấy định dạng YYYY-MM-DD
-            // Tính InsuranceEnd dựa trên insuranceStartDate và insuranceTerm
-            // (Cần hàm hoặc logic để tính ngày kết thúc chính xác)
-            // Tạm thời giả định 1 năm sau ngày bắt đầu
+            insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)),
+            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
             insurance_end: new Date(
-              new Date(vehicleInfo.insuranceStartDate.slice(0, 10)).setFullYear(
-                new Date(
-                  vehicleInfo.insuranceStartDate.slice(0, 10)
-                ).getFullYear() + vehicleInfo.insuranceTerm
+              new Date(vehicleInfo.insuranceStartDate).setFullYear(
+                new Date(vehicleInfo.insuranceStartDate).getFullYear() +
+                  vehicleInfo.insuranceTerm
               )
-            )
-              .toISOString()
-              .slice(0, 10),
-            insurance_quantity: 1, // Hoặc lấy từ state nếu có nhiều xe trong 1 hóa đơn
+            ).toISOString(),
+            insurance_quantity: 1,
             customer_id: customerId,
             form_id: formId,
           };
+
+          console.log("Invoice payload:", invoicePayload);
 
           const invoiceResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/create_invoice`,
             invoicePayload
           );
 
-          console.log("Invoice created successfully:", invoiceResponse.data);
+          console.log("Invoice response:", invoiceResponse.data);
           const invoiceId = invoiceResponse.data.invoice_id;
 
           // 4. Confirm Purchase
@@ -363,16 +360,21 @@ export default function OrderPage() {
             form_id: formId,
           };
 
+          console.log("ConfirmPurchase payload:", confirmPurchasePayload);
+
           const confirmResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/confirm_purchase`,
             confirmPurchasePayload
           );
 
-          console.log("ConfirmPurchase successful:", confirmResponse.data);
+          console.log("ConfirmPurchase response:", confirmResponse.data);
           navigate("/gio-hang.html");
         } catch (error) {
           console.error("Error creating order:", error);
-          // TODO: Handle error (e.g., show error message to user)
+          if (error.response) {
+            console.error("Error response:", error.response.data);
+          }
+          alert("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.");
         }
       }
     }

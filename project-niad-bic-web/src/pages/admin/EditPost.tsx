@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface Category {
   category_id: number;
@@ -32,36 +35,19 @@ const EditPost = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // TODO: Gọi API lấy danh sách danh mục
-    // Ví dụ:
-    // fetch('/api/admin/categories')
-    //     .then(res => res.json())
-    //     .then(data => setCategories(data));
-
-    // Tạm thời mock dữ liệu
-    setCategories([
-      { category_id: 1, name: "Tin tức" },
-      { category_id: 2, name: "Khuyến mãi" },
-    ]);
-
-    // TODO: Gọi API lấy thông tin bài viết
-    // Ví dụ:
-    // fetch(`/api/admin/posts/${id}`)
-    //     .then(res => res.json())
-    //     .then(data => {
-    //         setFormData(data);
-    //         setImagePreview(data.image);
-    //     });
-
-    // Tạm thời mock dữ liệu
-    setFormData({
-      post_id: Number(id),
-      title: "Bài viết mẫu",
-      content: "<p>Nội dung bài viết mẫu</p>",
-      category_id: 1,
-      image: "post.jpg",
-    });
-    setImagePreview("post.jpg");
+    // Lấy danh mục
+    axios
+      .get(`${API_URL}/api/categories`, { withCredentials: true })
+      .then((res) => setCategories(res.data))
+      .catch(() => setCategories([]));
+    // Lấy thông tin bài viết
+    axios
+      .get(`${API_URL}/api/posts/${id}`, { withCredentials: true })
+      .then((res) => {
+        setFormData(res.data);
+        setImagePreview(res.data.image);
+      })
+      .catch(() => setError("Không thể tải dữ liệu bài viết"));
   }, [id]);
 
   const handleInputChange = (
@@ -99,21 +85,17 @@ const EditPost = () => {
     }
 
     try {
-      // TODO: Gọi API cập nhật bài viết
-      // Ví dụ:
-      // const formDataToSend = new FormData();
-      // formDataToSend.append('title', formData.title);
-      // formDataToSend.append('content', formData.content);
-      // formDataToSend.append('category_id', formData.category_id.toString());
-      // if (newImage) {
-      //     formDataToSend.append('image', newImage);
-      // }
-      // await fetch(`/api/admin/posts/${id}`, {
-      //     method: 'PUT',
-      //     body: formDataToSend
-      // });
-
-      // Tạm thời mock cập nhật bài viết
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("content", formData.content);
+      formDataToSend.append("category_id", formData.category_id.toString());
+      if (newImage) {
+        formDataToSend.append("image", newImage);
+      }
+      await axios.put(`${API_URL}/api/posts/${id}`, formDataToSend, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("Cập nhật bài viết thành công");
       navigate("/admin/posts");
     } catch (err) {
@@ -127,13 +109,11 @@ const EditPost = () => {
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h6 className="mb-0">Sửa bài viết</h6>
         </div>
-
         {error && (
           <div className="alert alert-danger" role="alert">
             {error}
           </div>
         )}
-
         <form onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-md-8">
@@ -151,7 +131,6 @@ const EditPost = () => {
                   required
                 />
               </div>
-
               <div className="form-group mb-3">
                 <label htmlFor="content" className="form-label">
                   Nội dung
@@ -164,7 +143,6 @@ const EditPost = () => {
                 />
               </div>
             </div>
-
             <div className="col-md-4">
               <div className="form-group mb-3">
                 <label htmlFor="category_id" className="form-label">
@@ -189,7 +167,6 @@ const EditPost = () => {
                   ))}
                 </select>
               </div>
-
               <div className="form-group mb-3">
                 <label htmlFor="image" className="form-label">
                   Ảnh đại diện
@@ -212,7 +189,6 @@ const EditPost = () => {
               </div>
             </div>
           </div>
-
           <div className="text-end mt-3">
             <button type="submit" className="btn btn-custom">
               Cập nhật bài viết

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
 import axios from "axios";
 
@@ -16,6 +16,7 @@ interface Invoice {
   product_name: string;
   status: string; // "Đã thanh toán", "Chưa thanh toán", "Đã hủy" hoặc code tương ứng
 }
+
 const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
   const [stats, setStats] = useState<ProductStatistic[]>([]);
@@ -28,7 +29,7 @@ const Dashboard = () => {
     if (selectedPeriod === "month") group = "month";
     if (selectedPeriod === "year") group = "year";
     axios
-      .get(`${API_URL}/admin/product-statistics?group=${group}`)
+      .get(`${API_URL}/api/admin/product-statistics?group=${group}`)
       .then((res) => {
         setStats(res.data);
         console.log("DATA FROM API:", res.data);
@@ -41,7 +42,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     axios
-      .get(`${API_URL}/admin/all-invoices`)
+      .get(`${API_URL}/api/admin/all-invoices`)
       .then((res) => {
         setInvoices(res.data);
         console.log("ALL INVOICES:", res.data);
@@ -100,23 +101,22 @@ const Dashboard = () => {
   // Thống kê nhanh
   const totalRevenue = stats.reduce((sum, s) => sum + (s.total_revenue || 0), 0);
   const totalOrders = stats.reduce((sum, s) => sum + (s.total_sold || 0), 0);
+  const paidOrders = invoices.filter(i => getStatusText(i.status) === "Đã thanh toán").length;
+  const cancelledOrders = invoices.filter(i => getStatusText(i.status) === "Đã hủy").length;
 
   const quickStats = [
     { icon: "💰", title: "Tổng doanh thu", value: totalRevenue, change: 0 },
     { icon: "📝", title: "Tổng đơn hàng", value: totalOrders, change: 0 },
-    { icon: "✅", title: "Đơn đã thanh toán", value: totalOrders, change: 0 },
-    { icon: "❌", title: "Đơn đã hủy", value: 0, change: 0 },
+    { icon: "✅", title: "Đơn đã thanh toán", value: paidOrders, change: 0 },
+    { icon: "❌", title: "Đơn đã hủy", value: cancelledOrders, change: 0 },
   ];
 
   // Hàm chuyển trạng thái đơn hàng từ số sang text (giả sử backend trả về status dạng số, nếu là text thì bỏ)
-  const getStatusText = (status: string | number) => {
-    if (status === "Đã thanh toán") return "Đã thanh toán";
-    if (status === "Đã hủy") return "Đã hủy";
+  function getStatusText(status: string | number) {
+    if (status === "Đã thanh toán" || status === "paid" || status === 1) return "Đã thanh toán";
+    if (status === "Đã hủy" || status === "cancelled" || status === 2) return "Đã hủy";
     return "Chưa thanh toán";
-  };
-
-  // Giả sử stats có thêm trường status, nếu chưa có bạn cần bổ sung ở backend
-  // Ví dụ dữ liệu: { ..., status: "paid" | "unpaid" | "cancelled" }
+  }
 
   return (
     <div className="space-y-6">
@@ -169,10 +169,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Biểu đồ trạng thái đơn hàng */}
+        {/* Trạng thái đơn hàng */}
         <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
           <h3 className="text-lg font-semibold mb-2 text-center">Trạng thái đơn hàng</h3>
-          {/* Bỏ canvas nếu không dùng */}
           <div className="overflow-x-auto" style={{ maxHeight: 220, overflowY: "auto" }}>
             <table className="min-w-full text-sm border">
               <thead>
@@ -195,9 +194,9 @@ const Dashboard = () => {
                     <td className="px-4 py-2 align-middle">
                       <span
                         className={
-                          item.status === "Đã thanh toán"
+                          getStatusText(item.status) === "Đã thanh toán"
                             ? "text-green-600 font-semibold"
-                            : item.status === "Đã hủy"
+                            : getStatusText(item.status) === "Đã hủy"
                             ? "text-red-600 font-semibold"
                             : "text-gray-600 font-semibold"
                         }

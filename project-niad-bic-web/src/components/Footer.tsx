@@ -1,6 +1,7 @@
+import React from "react";
 import { Facebook, Twitter, Youtube, ChevronRight } from "lucide-react";
 
-export default function Footer() {
+const Footer: React.FC = () => {
   return (
     <footer className="w-full">
       <div className="bg-red-600 text-white py-12 relative overflow-hidden">
@@ -161,4 +162,6 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;

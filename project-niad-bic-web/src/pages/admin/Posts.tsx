@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-// import { Link } from "react-router-dom"; // Tạm thời bỏ Link nếu không cần điều hướng chi tiết
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface Post {
   post_id: number;
@@ -9,29 +12,13 @@ interface Post {
   created_at: string;
 }
 
-const mockPosts = [
-  {
-    post_id: 1,
-    title: "Đánh giá MSI Katana 15",
-    author: "Admin",
-    category_name: "Thông tin về Laptop",
-    created_at: "2024-06-27 16:08:14",
-  },
-  {
-    post_id: 2,
-    title: "Chính thức: Samsung xác nhận sự kiện Galaxy Unpacked 2024",
-    author: "Admin",
-    category_name: "Thông tin về Laptop",
-    created_at: "2024-06-30 20:28:18",
-  },
-];
-
 const Posts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [success, setSuccess] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPosts();
@@ -41,19 +28,9 @@ const Posts = () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Thay thế bằng lệnh gọi API thực tế
-      console.log("Fetching posts...");
-      // const response = await fetch('/api/admin/posts');
-      // if (!response.ok) { throw new Error('Failed to fetch posts'); }
-      // const data = await response.json();
-      // setPosts(data);
-
-      // Mô phỏng độ trễ API và dữ liệu
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setPosts(mockPosts);
-      console.log("Posts fetched:", mockPosts);
+      const res = await axios.get(`${API_URL}/api/posts`, { withCredentials: true });
+      setPosts(res.data);
     } catch (err) {
-      console.error("Error fetching posts:", err);
       setError("Không thể tải dữ liệu bài viết.");
       setPosts([]);
     } finally {
@@ -61,44 +38,21 @@ const Posts = () => {
     }
   };
 
-  // Các hàm CRUD placeholder
   const handleCreate = () => {
-    // TODO: Triển khai chức năng tạo bài viết mới (có thể dùng routing hoặc modal)
-    console.log("Initiating post creation...");
-    alert("Chức năng thêm bài viết mới");
-  };
-
-  const handleView = (postId: number) => {
-    // TODO: Triển khai chức năng xem chi tiết bài viết (có thể dùng routing)
-    console.log("Viewing post with ID:", postId);
-    alert(`Xem chi tiết bài viết ${postId}`);
+    navigate("/admin/posts/add");
   };
 
   const handleEdit = (postId: number) => {
-    // TODO: Triển khai chức năng chỉnh sửa bài viết (có thể dùng routing hoặc modal)
-    console.log("Editing post with ID:", postId);
-    alert(`Chỉnh sửa bài viết ${postId}`);
+    navigate(`/admin/posts/edit/${postId}`);
   };
 
   const handleDelete = async (postId: number) => {
-    if (
-      window.confirm(
-        "Bạn có chắc muốn xóa?\nSau khi xóa sẽ không thể khôi phục"
-      )
-    ) {
-      // TODO: Thay thế bằng lệnh gọi API xóa thực tế
-      console.log("Attempting to delete post with ID:", postId);
+    if (window.confirm("Bạn có chắc muốn xóa? Sau khi xóa sẽ không thể khôi phục")) {
       try {
-        // const response = await fetch(`/api/admin/posts/${postId}`, { method: 'DELETE' });
-        // if (!response.ok) { throw new Error('Failed to delete post'); }
-
-        // Mô phỏng độ trễ API và cập nhật trạng thái
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await axios.delete(`${API_URL}/api/posts/${postId}`, { withCredentials: true });
         setPosts(posts.filter((post) => post.post_id !== postId));
         setSuccess("Đã xóa thành công 1 bài viết");
-        console.log("Post deleted with ID:", postId);
       } catch (err) {
-        console.error("Error deleting post:", err);
         setError("Không thể xóa bài viết.");
       }
     }
@@ -119,7 +73,6 @@ const Posts = () => {
   return (
     <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-xl font-bold mb-4">Danh sách bài viết</h2>
-
       <div className="mb-4 flex justify-between items-center">
         <button
           className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
@@ -127,7 +80,6 @@ const Posts = () => {
         >
           Thêm bài viết
         </button>
-
         <input
           type="text"
           className="w-64 px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -136,7 +88,6 @@ const Posts = () => {
           onChange={(e) => setSearchKeyword(e.target.value)}
         />
       </div>
-
       {success && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
           {success}
@@ -147,7 +98,6 @@ const Posts = () => {
           {error}
         </div>
       )}
-
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -173,24 +123,6 @@ const Posts = () => {
                 </td>
                 <td className="p-2 text-center">{post.created_at}</td>
                 <td className="p-2 space-x-2 text-center">
-                  {/* <Link
-                      to={`/admin/posts/view/${post.post_id}`}
-                      className="px-2 py-1 bg-green-500 text-white rounded text-xs"
-                    >
-                      Xem
-                    </Link> */}
-                  <button
-                    className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition"
-                    onClick={() => handleView(post.post_id)}
-                  >
-                    Xem
-                  </button>
-                  {/* <Link
-                      to={`/admin/posts/edit/${post.post_id}`}
-                      className="px-2 py-1 bg-gray-400 text-white rounded text-xs"
-                    >
-                      Sửa
-                    </Link> */}
                   <button
                     className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition"
                     onClick={() => handleEdit(post.post_id)}
