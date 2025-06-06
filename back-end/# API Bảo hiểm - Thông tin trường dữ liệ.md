@@ -715,3 +715,4 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 - Có thể xây dựng giao diện "Lịch sử xóa" để admin khôi phục hoặc kiểm tra các bản ghi đã bị xóa mềm.
 
 ---
+ALTER TABLE motorbike_insurance_forms ADD COLUMN vehicle_type VARCHAR(100) NOT NULL DEFAULT ''; // thêm vô database
