@@ -1,0 +1,222 @@
+/* Các style cho trang đặt bảo hiểm TNDS xe máy */
+
+/* Container chính */
+.motorcycle-order-page {
+  padding: 24px; /* Consistent padding */
+  max-width: 960px; /* Adjusted max-width based on common form layouts */
+  margin: 0 auto; /* Center the container */
+  background-color: #fff; /* White background for the page content area */
+  border-radius: 8px; /* Match card border-radius */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Match card shadow */
+}
+
+/* Style cho tiêu đề trang */
+.motorcycle-order-page h1 {
+  text-align: center;
+  color: #333; /* Darker text */
+  margin-bottom: 32px; /* Space below title */
+  font-size: 28px; /* Larger title */
+  font-weight: bold;
+}
+
+/* Style cho Steps */
+.ant-steps {
+  margin-bottom: 32px; /* Space below steps */
+}
+
+.ant-steps-item-title {
+  font-weight: bold;
+}
+
+.ant-steps-item-finish
+  > .ant-steps-item-container
+  > .ant-steps-item-content
+  > .ant-steps-item-title::after {
+  background-color: #ec1c24; /* Màu đường nối khi hoàn thành */
+}
+
+.ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-icon {
+  background-color: #ec1c24; /* Màu nền icon bước hiện tại */
+  border-color: #ec1c24;
+}
+
+.ant-steps-item-process
+  > .ant-steps-item-container
+  > .ant-steps-item-icon
+  .ant-steps-icon {
+  color: #fff; /* Màu icon bước hiện tại */
+}
+
+.ant-steps-item-finish > .ant-steps-item-icon {
+  border-color: #ec1c24; /* Màu border icon khi hoàn thành */
+}
+
+.ant-steps-item-finish > .ant-steps-item-icon .ant-steps-icon {
+  color: #ec1c24; /* Màu icon khi hoàn thành */
+}
+
+/* Style cho card bao quanh form */
+.ant-card.mb-4 {
+  border-radius: 8px;
+  box-shadow: none; /* Remove shadow as container has it */
+  border: 1px solid #e8e8e8; /* Add a light border */
+}
+
+/* Style cho tiêu đề card */
+.ant-card-head {
+  background-color: #f0f2f5; /* Màu nền giống ảnh */
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: bold;
+  color: #333;
+}
+
+.ant-card-head-title {
+  padding: 16px 0; /* Adjust padding */
+  font-size: 16px; /* Slightly larger card title */
+}
+
+.ant-card-body {
+  padding: 24px; /* Padding inside the card */
+}
+
+/* Style cho form group (label và input) */
+.ant-form-item {
+  margin-bottom: 20px; /* Increase space between form items */
+}
+
+.ant-form-item-label > label {
+  font-weight: normal; /* Đảm bảo label không quá đậm */
+  color: #555; /* Slightly darker label text */
+}
+
+/* Style cho các input Ant Design */
+.ant-input,
+.ant-select .ant-select-selector,
+.ant-picker,
+.ant-input-number .ant-input-number-input {
+  border-radius: 4px; /* Bo góc nhẹ cho input */
+  border-color: #d9d9d9; /* Default border color */
+  height: 40px; /* Standard height */
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused,
+.ant-input-number-focused .ant-input-number-input {
+  border-color: #ec1c24; /* Highlight color on focus */
+  box-shadow: 0 0 0 2px rgba(236, 28, 36, 0.2); /* Shadow on focus */
+}
+
+/* Style cho radio group */
+.ant-radio-group label.ant-radio-wrapper {
+  margin-right: 24px; /* Khoảng cách giữa các radio option */
+  color: #555;
+}
+
+.ant-radio-inner::after {
+  background-color: #ec1c24; /* Màu chấm tròn radio */
+}
+
+.ant-radio-checked .ant-radio-inner {
+  border-color: #ec1c24; /* Màu border radio khi chọn */
+}
+
+/* Style cho checkbox */
+.ant-checkbox-wrapper {
+  color: #555;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #ec1c24; /* Màu nền checkbox khi chọn */
+  border-color: #ec1c24;
+}
+
+/* Style cho nút Tiếp tục và Quay lại */
+.form-actions .ant-btn {
+  border-radius: 4px;
+  font-weight: bold;
+  min-width: 120px; /* Increase minimum button width */
+  height: 40px; /* Standard button height */
+  text-align: center;
+}
+
+.ant-btn-primary {
+  background-color: #ec1c24; /* Màu nút chính giống BIC */
+  border-color: #ec1c24;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background-color: #d0181f; /* Màu hover/focus nút chính */
+  border-color: #d0181f;
+}
+
+.ant-btn-default {
+  border-color: #d9d9d9; /* Màu border nút phụ */
+  color: #555; /* Màu chữ nút phụ */
+}
+
+.ant-btn-default:hover,
+.ant-btn-default:focus {
+  border-color: #ec1c24; /* Màu border hover/focus nút phụ */
+  color: #ec1c24; /* Màu chữ hover/focus nút phụ */
+}
+
+/* Style cho bố cục cột sử dụng Ant Design Row/Col */
+.ant-row.gutter-16 > .ant-col {
+  padding-left: 8px; /* Nửa gutter */
+  padding-right: 8px; /* Nửa gutter */
+}
+
+.ant-row.gutter-16 {
+  margin-left: -8px; /* Bù lại gutter */
+  margin-right: -8px; /* Bù lại gutter */
+}
+
+/* Điều chỉnh khoảng cách Form.Item trong Col để căn chỉnh */
+.ant-col .ant-form-item {
+  width: 100%; /* Make form item take full width of column */
+}
+
+/* Căn chỉnh nút trong form-actions */
+.form-actions {
+  display: flex;
+  justify-content: center; /* Center buttons */
+  gap: 16px; /* Space between buttons */
+  margin-top: 24px; /* Space above buttons */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .motorcycle-order-page {
+    padding: 16px;
+  }
+  .motorcycle-order-page h1 {
+    font-size: 24px;
+  }
+  .ant-card-body {
+    padding: 16px;
+  }
+  .ant-row.gutter-16 > .ant-col {
+    padding-left: 0; /* Remove gutter on small screens */
+    padding-right: 0; /* Remove gutter on small screens */
+  }
+  .ant-row.gutter-16 {
+    margin-left: 0; /* Remove negative margin */
+    margin-right: 0; /* Remove negative margin */
+  }
+  .ant-col .ant-form-item {
+    margin-bottom: 16px; /* Adjust space on small screens */
+  }
+
+  .form-actions {
+    flex-direction: column; /* Stack buttons on small screens */
+    gap: 12px;
+  }
+
+  .form-actions .ant-btn {
+    width: 100%; /* Full width buttons */
+    min-width: auto;
+  }
+}

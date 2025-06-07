@@ -119,7 +119,7 @@ const productsByCategory = {
       image: "/products/bic-tnds-oto.png?height=200&width=300",
       title: "Bảo hiểm trách nhiệm dân sự chủ xe ô tô",
       detailUrl: "/san-pham/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to",
-      buyUrl: "/mua-bao-hiem/bao-hiem-o-to/tnds-bat-buoc",
+      buyUrl: "/mua-bao-hiem/bao-hiem-o-to",
     },
     {
       id: 2,
@@ -135,7 +135,7 @@ const productsByCategory = {
       image: "/placeholder.svg?height=200&width=300",
       title: "Bảo hiểm TNDS bắt buộc xe máy",
       detailUrl: "/san-pham/bao-hiem-tnds-xe-may",
-      buyUrl: "/mua-bao-hiem/bao-hiem-xe-may/tnds-bat-buoc",
+      buyUrl: "/mua-bao-hiem-xe-may/tnds",
     },
   ],
   "bao-hiem-suc-khoe-11": [

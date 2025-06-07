@@ -18,7 +18,7 @@ const productDetails = {
       "Bảo hiểm trách nhiệm dân sự (TNDS) của chủ xe ô tô là loại bảo hiểm bắt buộc theo quy định của pháp luật. Sản phẩm này bảo vệ quyền lợi của chủ xe trước những thiệt hại về người và tài sản đối với bên thứ ba do xe gây ra.",
     bannerImage: "/placeholder.svg?height=500&width=800",
     price: "Từ 436.000đ/năm",
-    buyUrl: "/mua-bao-hiem/bao-hiem-o-to/tnds-bat-buoc",
+    buyUrl: "/mua-bao-hiem/bao-hiem-o-to",
     category: "bao-hiem-o-to-9",
     categoryName: "Bảo hiểm ô tô",
     doiTuongBaoHiem:
@@ -74,7 +74,7 @@ const productDetails = {
       "Bảo hiểm trách nhiệm dân sự (TNDS) của chủ xe máy là loại bảo hiểm bắt buộc theo quy định của pháp luật. Sản phẩm này bảo vệ quyền lợi của chủ xe trước những thiệt hại về người và tài sản đối với bên thứ ba do xe gây ra.",
     bannerImage: "/placeholder.svg?height=500&width=800",
     price: "Từ 60.000đ/năm",
-    buyUrl: "/mua-bao-hiem/bao-hiem-xe-may/tnds-bat-buoc",
+    buyUrl: "/mua-bao-hiem-xe-may/tnds",
     category: "bao-hiem-xe-may-10",
     categoryName: "Bảo hiểm xe máy",
     doiTuongBaoHiem:

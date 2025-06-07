@@ -1,21 +1,6 @@
-// Bảo hiểm ô tô
-export { CarPhysicalDamageForm } from "./CarPhysicalDamageForm";
-export { CivilLiabilityForm } from "./CivilLiabilityForm";
+// Bảo hiểm ô tô - Trách nhiệm dân sự
+export { CarCivilLiabilityForm } from "./CarCivilLiabilityForm";
+export { CarMandatoryCivilLiabilityForm } from "./CarMandatoryCivilLiabilityForm";
 
-// Bảo hiểm xe máy
-export { MotorcyclePhysicalDamageForm } from "./MotorcyclePhysicalDamageForm";
+// Bảo hiểm xe máy - Trách nhiệm dân sự
 export { MotorcycleCivilLiabilityForm } from "./MotorcycleCivilLiabilityForm";
-
-// Bảo hiểm sức khỏe
-export { HealthInsuranceForm } from "./HealthInsuranceForm";
-export { CriticalIllnessForm } from "./CriticalIllnessForm";
-export { HospitalCashForm } from "./HospitalCashForm";
-
-// Bảo hiểm du lịch
-export { TravelInsuranceForm } from "./TravelInsuranceForm";
-
-// Bảo hiểm nhà tư nhân
-export { HomeInsuranceForm } from "./HomeInsuranceForm";
-
-// Bảo hiểm doanh nghiệp
-export { BusinessInsuranceForm } from "./BusinessInsuranceForm";

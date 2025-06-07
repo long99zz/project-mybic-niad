@@ -4,13 +4,13 @@ import CustomerSupport from "@/components/CustomerSupport";
 
 const { Option } = Select;
 
-interface PassengerAccidentFormProps {
+interface CarMandatoryCivilLiabilityFormProps {
   onSubmit: (values: any) => void;
 }
 
-export const PassengerAccidentForm: React.FC<PassengerAccidentFormProps> = ({
-  onSubmit,
-}) => {
+export const CarMandatoryCivilLiabilityForm: React.FC<
+  CarMandatoryCivilLiabilityFormProps
+> = ({ onSubmit }) => {
   const [form] = Form.useForm();
 
   const handleSubmit = (values: any) => {
@@ -19,7 +19,10 @@ export const PassengerAccidentForm: React.FC<PassengerAccidentFormProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <Card title="Thông tin đặt bảo hiểm tai nạn người ngồi" className="mb-4">
+      <Card
+        title="Thông tin đặt bảo hiểm trách nhiệm dân sự bắt buộc"
+        className="mb-4"
+      >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Row gutter={16}>
             <Col span={12}>
@@ -51,35 +54,28 @@ export const PassengerAccidentForm: React.FC<PassengerAccidentFormProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="coveragePerPerson"
-                label="Số tiền bảo hiểm/người"
+                name="usage"
+                label="Mục đích sử dụng"
                 rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn số tiền bảo hiểm/người",
-                  },
+                  { required: true, message: "Vui lòng chọn mục đích sử dụng" },
                 ]}
               >
-                <Select placeholder="Chọn số tiền bảo hiểm/người">
-                  <Option value="10000000">10 triệu VNĐ</Option>
-                  <Option value="20000000">20 triệu VNĐ</Option>
-                  <Option value="30000000">30 triệu VNĐ</Option>
-                  <Option value="50000000">50 triệu VNĐ</Option>
+                <Select placeholder="Chọn mục đích sử dụng">
+                  <Option value="personal">Cá nhân</Option>
+                  <Option value="business">Kinh doanh</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="medicalExpense"
-                label="Chi phí y tế"
-                rules={[
-                  { required: true, message: "Vui lòng chọn chi phí y tế" },
-                ]}
+                name="region"
+                label="Khu vực"
+                rules={[{ required: true, message: "Vui lòng chọn khu vực" }]}
               >
-                <Select placeholder="Chọn chi phí y tế">
-                  <Option value="5000000">5 triệu VNĐ</Option>
-                  <Option value="10000000">10 triệu VNĐ</Option>
-                  <Option value="20000000">20 triệu VNĐ</Option>
+                <Select placeholder="Chọn khu vực">
+                  <Option value="north">Miền Bắc</Option>
+                  <Option value="central">Miền Trung</Option>
+                  <Option value="south">Miền Nam</Option>
                 </Select>
               </Form.Item>
             </Col>

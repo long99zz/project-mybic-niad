@@ -18,6 +18,7 @@ type MotorbikeInsuranceForm struct { // bảo hiểm xe máy
     EngineNumber         string    `gorm:"size:50;not null" json:"engine_number"`
     InsuranceStart       time.Time `gorm:"type:date;not null" json:"insurance_start"`
     InsuranceFee         float64   `gorm:"not null" json:"insurance_fee"`
+    VehicleType          string    `gorm:"size:100;not null" json:"vehicle_type"`
     CreatedAt            time.Time `gorm:"autoCreateTime" json:"created_at"`
     UpdatedAt            time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

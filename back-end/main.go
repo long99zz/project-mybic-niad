@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// 🔹 Kết nối MySQL
-	dsn := "root:long0910@tcp(localhost:3308)/bic_insurance?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:long0910@tcp(localhost:3308)/bic_insurance?charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Không thể kết nối MySQL:", err)
@@ -47,7 +47,11 @@ func main() {
 
 	// 🔹 Nhóm API yêu cầu xác thực bằng JWT
 	apiRouter := router.Group("/api")
-	apiRouter.Use(middlewares.AuthMiddleware()) 
+	apiRouter.Use(middlewares.AuthMiddleware())
+
+	apiRouter.POST("/posts", handlers.AddPost(db))
+	apiRouter.PUT("/posts/:id", handlers.UpdatePost(db))
+	apiRouter.DELETE("/posts/:id", handlers.DeletePost(db))
 
 	apiRouter.GET("/user", handlers.GetUserInfo(db))  // Lấy thông tin user
 	apiRouter.GET("/products", handlers.GetProducts(db))
@@ -58,49 +62,48 @@ func main() {
 	apiRouter.POST("/categories", handlers.AddCategory(db))
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
-
-	// Các route KHÔNG yêu cầu xác thực
-	router.POST("/api/insurance_car_owner/create_car_insurance_form", handlers.CreateCarInsuranceForm(db))
-	router.POST("/api/insurance_car_owner/create_customer_registration", handlers.CreateCustomerRegistration(db))
-	router.POST("/api/insurance_car_owner/create_invoice", handlers.CreateInvoice(db))
-	router.POST("/api/insurance_car_owner/confirm_purchase", handlers.ConfirmPurchase(db))
-	router.POST("/api/insurance_car_owner/create_vehicle_insurance_form", handlers.CreateVehicleInsuranceForm(db))
-
-	// Các route còn lại vẫn giữ nguyên middleware
-	motorbikeApi := router.Group("/api/insurance_motorbike_owner", middlewares.AuthMiddleware())
+		carapi := router.Group("/api/insurance_car_owner") // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
+    {
+        carapi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
+        carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(db)) // Lưu bảo hiểm xe
+        carapi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
+        carapi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
+		carapi.POST("/create_vehicle_insurance_form", handlers.CreateVehicleInsuranceForm(db)) // Lưu bảo hiểm vật chất xe ô tô
+    }
+		motorbikeApi := router.Group("/api/insurance_motorbike_owner")
 	{
 		motorbikeApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
 		motorbikeApi.POST("/create_motorbike_insurance_form", handlers.CreateMotorbikeInsuranceForm(db)) // Lưu bảo hiểm xe máy
 		motorbikeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
 		motorbikeApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
 	}
-		cancerApi := router.Group("/api/insurance_cancer", middlewares.AuthMiddleware())
-	{
-		cancerApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
-		cancerApi.POST("/create_insurance_participant_info", handlers.CreateInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
-		cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
-		cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
-	}
-		personalApi := router.Group("/api/insurance_personal", middlewares.AuthMiddleware())
+    cancerApi := router.Group("/api/insurance_cancer")
+    {
+        cancerApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
+        cancerApi.POST("/create_insurance_participant_info", handlers.CreateInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
+        cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
+        cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
+    }
+		personalApi := router.Group("/api/insurance_personal")
 	{
 		personalApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
 		personalApi.POST("/create_personal_insurance_form", handlers.CreatePersonalInsuranceForm(db)) // Lưu bảo hiểm sức khỏe cá nhân
 		personalApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
 		personalApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
 	}
-		travelApi := router.Group("/api/insurance_travel", middlewares.AuthMiddleware())
+		travelApi := router.Group("/api/insurance_travel")
 	{
 		travelApi.POST("/create_travel_invoice", handlers.CreateTravelInsuranceInvoice(db)) // Nhập hóa đơn du lịch
 		travelApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Đăng ký khách hàng
 		travelApi.POST("/update_invoice_customer", handlers.UpdateTravelInvoiceCustomer(db)) //  Gán customer_id vào hóa đơn
 	}
-		accidentApi := router.Group("/api/insurance_accident", middlewares.AuthMiddleware())
+		accidentApi := router.Group("/api/insurance_accident")
 	{
 		accidentApi.POST("/create_accident", handlers.CreateAccidentInsuranceInvoice(db))
 		accidentApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))
 		accidentApi.POST("/update_invoice_customer", handlers.UpdateInvoiceCustomer(db))
 	}
-		homeApi := router.Group("/api/insurance_home", middlewares.AuthMiddleware())
+		homeApi := router.Group("/api/insurance_home")
 	{
 		homeApi.POST("/create_home_invoice", handlers.CreateHomeInsuranceInvoice(db)) // Nhập thông tin chung hóa đơn nhà
 		homeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Đăng ký khách hàng

@@ -66,7 +66,7 @@ export default function CartPage() {
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6 mx-auto">
             <div className="grid grid-cols-[auto,auto,1.5fr,1fr,auto,auto] gap-4 items-center pb-3 border-b border-gray-200 text-gray-600 font-semibold">
-              <div className="w-6 flex justify-center items-center"></div>
+              <div className="w-6 flex justify-center"></div>
               <div className="w-24">Hình ảnh</div>
               <div>Tên sản phẩm</div>
               <div>Người mua</div>
@@ -75,12 +75,12 @@ export default function CartPage() {
             </div>
 
             <div className="grid grid-cols-[auto,auto,1.5fr,1fr,auto,auto] gap-4 items-start py-4 border-b border-gray-200">
-              <div className="w-6 flex justify-center items-start mt-1">
+              <div className="w-6 flex justify-center items-start">
                 <input
                   type="checkbox"
                   checked={cartItem.isSelected}
                   onChange={handleToggleSelect}
-                  className="form-checkbox text-red-600 rounded cursor-pointer"
+                  className="form-checkbox text-red-600 rounded cursor-pointer mt-1"
                 />
               </div>
               <div className="w-24">
@@ -107,13 +107,13 @@ export default function CartPage() {
                 <p className="text-sm">{cartItem.buyerPhone}</p>
                 <p className="text-sm">{cartItem.buyerEmail}</p>
               </div>
-              <div className="font-bold text-red-600 text-right">
+              <div className="font-bold text-red-600 text-right flex items-center">
                 {new Intl.NumberFormat("vi-VN").format(cartItem.price)} VNĐ
               </div>
-              <div className="w-16 flex justify-center items-start mt-1">
+              <div className="w-16 flex justify-center items-start">
                 <button
                   onClick={handleRemoveItem}
-                  className="text-red-600 hover:text-red-700 text-sm leading-none"
+                  className="text-red-600 hover:text-red-700 text-sm leading-none mt-1"
                 >
                   Xóa đơn hàng
                 </button>

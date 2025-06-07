@@ -1,12 +1,13 @@
 package handlers
 
 import (
-    "net/http"
-    "gorm.io/gorm"
-    "github.com/gin-gonic/gin"
 	"backend/models"
 	"fmt"
-    "time"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AdminInvoiceView struct {
@@ -543,6 +544,54 @@ func AdminDeleteInvoice(db *gorm.DB) gin.HandlerFunc {
         c.JSON(200, gin.H{"message": "Đã xóa hóa đơn (soft delete)!"})
     }
 }
+
+// Thêm bài viết
+func AddPost(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var post models.Post
+        if err := c.ShouldBindJSON(&post); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+        if err := db.Create(&post).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể thêm bài viết"})
+            return
+        }
+        c.JSON(http.StatusOK, post)
+    }
+}
+
+// Sửa bài viết
+func UpdatePost(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        id := c.Param("id")
+        var post models.Post
+        if err := db.First(&post, id).Error; err != nil {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy bài viết"})
+            return
+        }
+        var input models.Post
+        if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+        db.Model(&post).Updates(input)
+        c.JSON(http.StatusOK, post)
+    }
+}
+
+// Xóa bài viết
+func DeletePost(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        id := c.Param("id")
+        if err := db.Delete(&models.Post{}, id).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể xóa bài viết"})
+            return
+        }
+        c.JSON(http.StatusOK, gin.H{"message": "Đã xóa bài viết"})
+    }
+}
+
 func AdminDeletedInvoices(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         invoiceType := c.Query("type") // "chung", "travel", "home" hoặc rỗng (lấy tất cả)

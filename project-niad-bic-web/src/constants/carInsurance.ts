@@ -491,7 +491,8 @@ export const calculateTotalInsuranceFee = (
   usagePurpose: string,
   vehicleType: string,
   insuranceTerm: number,
-  accidentCoverage: number
+  accidentCoverage: number,
+  seats: number = 1
 ): {
   tndsFee: number;
   passengerAccidentFee: number;
@@ -500,15 +501,14 @@ export const calculateTotalInsuranceFee = (
   // 1. Tính phí TNDS cơ bản (1 năm)
   let baseTndsFee = getTNDSFee(usagePurpose, vehicleType);
 
-  // Áp dụng hệ số thời hạn bảo hiểm (nếu khác 1 năm) - Giả định công thức chung là tỷ lệ thuận theo số năm
-  // LƯU Ý: Nghị định 67 có công thức riêng cho thời hạn dưới 1 năm (tối thiểu 60% phí năm). Cần điều chỉnh nếu hỗ trợ thời hạn dưới 1 năm.
+  // Áp dụng hệ số thời hạn bảo hiểm (nếu khác 1 năm)
   const annualTndsFee = baseTndsFee * insuranceTerm;
 
   // Thêm 10% VAT cho phí TNDS
   const tndsFeeWithVAT = annualTndsFee * 1.1;
 
-  // 2. Tính phí bảo hiểm tai nạn phụ xe
-  const passengerAccidentFee = accidentCoverage * PASSENGER_ACCIDENT_FEE_RATE;
+  // 2. Tính phí bảo hiểm tai nạn phụ xe (0.2% * Số tiền BH * Số người)
+  const passengerAccidentFee = accidentCoverage * PASSENGER_ACCIDENT_FEE_RATE * seats;
 
   // 3. Tính tổng phí
   const totalFee = tndsFeeWithVAT + passengerAccidentFee;

@@ -14,7 +14,7 @@ import NewsPage from "./pages/NewsPage";
 import PromotionsPage from "./pages/PromotionsPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
-import OrderPage from "./pages/OrderPage";
+import CarCivilLiabilityOrderPage from "./pages/CarCivilLiabilityOrderPage";
 import CartPage from "./pages/CartPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./App.css";
@@ -34,6 +34,8 @@ import NotFoundPage from "./pages/NotFoundPage";
 import PersonalInfoPage from "./pages/user/PersonalInfoPage";
 import ChangePasswordPage from "./pages/user/ChangePasswordPage";
 import OrderHistoryPage from "./pages/user/OrderHistoryPage";
+import MotorcycleInsuranceOrderPage from "./pages/order/MotorcycleInsuranceOrderPage";
+import InsuranceOrderRouter from "./pages/order/InsuranceOrderRouter";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -67,10 +69,35 @@ const AppRoutes = () => {
       <Route path="/san-pham/:category" element={<ProductsPage />} />
       <Route path="/danh-muc/:category" element={<ProductsPage />} />
       <Route path="/danh-muc/:category.html" element={<ProductsPage />} />
-      <Route path="/nhap-thong-tin.html" element={<OrderPage />} />
-      <Route path="/mua-bao-hiem/:productId" element={<OrderPage />} />
-      <Route path="/mua-ngay/:productType" element={<OrderPage />} />
-      <Route path="/dat-hang" element={<OrderPage />} />
+      <Route
+        path="/nhap-thong-tin.html"
+        element={<CarCivilLiabilityOrderPage />}
+      />
+      <Route
+        path="/mua-bao-hiem/:productId"
+        element={<InsuranceOrderRouter />}
+      />
+      <Route
+        path="/mua-ngay/:productType"
+        element={<InsuranceOrderRouter />}
+      />
+      <Route
+        path="/dat-hang"
+        element={<CarCivilLiabilityOrderPage />}
+      />
+      {/* Routes cho bảo hiểm TNDS xe máy */}
+      <Route
+        path="/nhap-thong-tin-xe-may"
+        element={<MotorcycleInsuranceOrderPage />}
+      />
+      <Route
+        path="/mua-bao-hiem-xe-may/:productId"
+        element={<MotorcycleInsuranceOrderPage />}
+      />
+      <Route
+        path="/dat-hang-xe-may"
+        element={<MotorcycleInsuranceOrderPage />}
+      />
       <Route path="/gio-hang.html" element={<CartPage />} />
       {/* Các route cụ thể cho từng sản phẩm */}
       <Route
@@ -184,6 +211,15 @@ const AppRoutes = () => {
       <Route
         path="/xac-nhan-thanh-toan"
         element={<PaymentConfirmationPage />}
+      />
+      {/* Route cho bảo hiểm TNDS xe máy */}
+      <Route
+        path="/dat-bao-hiem-tnds-xe-may"
+        element={<MotorcycleInsuranceOrderPage />}
+      />
+      <Route
+        path="/mua-bao-hiem-tnds-xe-may/:productId"
+        element={<MotorcycleInsuranceOrderPage />}
       />
       <Route path="*" element={<NotFoundPage />} />{" "}
       {/* Optional: Not Found Page */}

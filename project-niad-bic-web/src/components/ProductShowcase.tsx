@@ -66,7 +66,7 @@ const insuranceProducts = [
     tag: "TNDS Xe máy",
     title: "Bảo hiểm trách nhiệm dân sự chủ xe máy",
     contactLink: "/lien-he/tnds-xe-may",
-    buyLink: "/mua-ngay/tnds-xe-may",
+    buyLink: "/mua-bao-hiem/bao-hiem-tnds-xe-may",
     detailUrl: "/san-pham/bao-hiem-tnds-xe-may",
   },
   {

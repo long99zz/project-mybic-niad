@@ -4,11 +4,11 @@ import CustomerSupport from "@/components/CustomerSupport";
 
 const { Option } = Select;
 
-interface CivilLiabilityFormProps {
+interface CarCivilLiabilityFormProps {
   onSubmit: (values: any) => void;
 }
 
-export const CivilLiabilityForm: React.FC<CivilLiabilityFormProps> = ({
+export const CarCivilLiabilityForm: React.FC<CarCivilLiabilityFormProps> = ({
   onSubmit,
 }) => {
   const [form] = Form.useForm();
