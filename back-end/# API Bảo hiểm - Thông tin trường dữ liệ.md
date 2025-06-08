@@ -713,6 +713,49 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 - Khi muốn cập nhật, xóa, hoặc xem lịch sử xóa, sử dụng đúng endpoint như trên.
 - Khi hiển thị danh sách, chỉ hiển thị bản ghi chưa bị xóa.
 - Có thể xây dựng giao diện "Lịch sử xóa" để admin khôi phục hoặc kiểm tra các bản ghi đã bị xóa mềm.
+## 7. **Tổng hợp các chức năng đã cập nhật và thêm mới**
+
+### 7.1. **Cập nhật bảng motorbike_insurance_forms**
+- Thêm trường `vehicle_type` (loại xe máy).
+- Thêm trường `engine_capacity_type` (phân biệt "duoi_50cc" hoặc "tren_50cc").
+- Sửa trường `engine_capacity` cho phép NULL (người dùng có thể không nhập).
+- **Câu lệnh SQL:**
+  ```sql
+  ALTER TABLE motorbike_insurance_forms ADD COLUMN vehicle_type VARCHAR(100) NOT NULL DEFAULT '';
+  ALTER TABLE motorbike_insurance_forms ADD COLUMN engine_capacity_type VARCHAR(20) NOT NULL DEFAULT 'duoi_50cc';
+  ALTER TABLE motorbike_insurance_forms MODIFY COLUMN engine_capacity DOUBLE NULL;
+  ```
+
+### 7.2. **API giỏ hàng**
+- Thêm API lấy thông tin giỏ hàng cho user, trả về tất cả hóa đơn "chưa thanh toán" của 3 loại (chung, du lịch, nhà).
+- **Endpoint:**  
+  `GET /api/cart`
+- **Trả về:**  
+  - Có thể trả về dạng gộp chung (mỗi bản ghi có trường `invoice_type`) hoặc tách riêng từng loại hóa đơn.
+
+### 7.3. **API quản trị: cập nhật, xóa mềm, lịch sử xóa**
+- Thêm các API cập nhật (update) cho hóa đơn, khách hàng, participant.
+- Thêm các API xóa mềm (soft delete) cho hóa đơn, participant.
+- Thêm các API xem lịch sử xóa (danh sách bản ghi đã bị xóa mềm).
+- **Các endpoint mới:**
+  - `PUT /api/admin/update-invoice/:id?type=chung|travel|home`
+  - `PUT /api/admin/update-customer/:id`
+  - `PUT /api/admin/update-participant/:id`
+  - `PUT /api/admin/update-travel-participant/:id`
+  - `DELETE /api/admin/delete-invoice/:id?type=chung|travel|home`
+  - `DELETE /api/admin/delete-participant/:id`
+  - `GET /api/admin/deleted-invoices`
+  - `GET /api/admin/deleted-invoices?type=chung|travel|home`
+  - `GET /api/admin/deleted-participants`
+
+### 7.4. **Cập nhật logic lấy dữ liệu**
+- Các API lấy danh sách hóa đơn, participant... chỉ trả về bản ghi chưa bị xóa (`deleted_at IS NULL`).
+- API lịch sử xóa sẽ trả về các bản ghi đã bị xóa mềm (`deleted_at IS NOT NULL`).
+
+### 7.5. **Hướng dẫn frontend**
+- Khi cập nhật, xóa, hoặc xem lịch sử xóa, sử dụng đúng endpoint mới.
+- Khi hiển thị danh sách, chỉ hiển thị bản ghi chưa bị xóa.
+- Có thể xây dựng giao diện "Lịch sử xóa" để admin kiểm tra hoặc khôi phục bản ghi đã xóa mềm.
+- Khi tạo mới hoặc cập nhật form bảo hiểm xe máy, chỉ cần gửi `engine_capacity_type` (trên/dưới 50cc), trường `engine_capacity` có thể bỏ trống nếu không cần nhập.
 
 ---
-ALTER TABLE motorbike_insurance_forms ADD COLUMN vehicle_type VARCHAR(100) NOT NULL DEFAULT ''; // thêm vô database

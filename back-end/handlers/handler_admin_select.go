@@ -662,14 +662,8 @@ func AdminDeletedInvoices(db *gorm.DB) gin.HandlerFunc {
         c.JSON(http.StatusOK, result)
     }
 }
-package handlers
 
-import (
-    "net/http"
-    "github.com/gin-gonic/gin"
-    "gorm.io/gorm"
-    "backend/models"
-)
+
 
 // Thêm bài viết
 func AddPost(db *gorm.DB) gin.HandlerFunc {

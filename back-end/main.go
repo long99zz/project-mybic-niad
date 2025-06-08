@@ -61,6 +61,7 @@ func main() {
 	apiRouter.POST("/categories", handlers.AddCategory(db))
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
+	apiRouter.GET("/cart", handlers.GetCart(db))
 		carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
     {
         carapi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
