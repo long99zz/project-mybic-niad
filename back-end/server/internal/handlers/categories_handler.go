@@ -6,10 +6,44 @@ import (
     "path/filepath"
     "github.com/google/uuid"
     "net/http"
-	"backend/models"
+	"backend/server/models"
 	
 )
 
+// GetCategories godoc
+// @Summary Lấy danh sách danh mục
+// @Tags Category
+// @Produce json
+// @Success 200 {array} models.Category
+// @Router /api/categories [get]
+func GetCategories(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var categories []models.Category
+
+        // Preload để lấy danh sách sản phẩm
+        db.Preload("Products").Find(&categories)
+
+        // Tính số lượng sản phẩm
+        for i := range categories {
+            categories[i].QtyProduct = len(categories[i].Products) //  Đếm số sản phẩm
+            categories[i].Products = nil // Không gửi danh sách sản phẩm, chỉ gửi số lượng
+        }
+
+        c.JSON(http.StatusOK, categories)
+    }
+}
+
+// AddCategory godoc
+// @Summary Thêm danh mục
+// @Tags Category
+// @Accept multipart/form-data
+// @Produce json
+// @Param name formData string true "Tên danh mục"
+// @Param status formData string true "Trạng thái"
+// @Param image formData file false "Ảnh danh mục"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/categories [post]
 func AddCategory(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var category models.Category
@@ -49,6 +83,18 @@ func AddCategory(db *gorm.DB) gin.HandlerFunc {
     }
 }
 
+// UpdateCategory godoc
+// @Summary Sửa danh mục
+// @Tags Category
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param name formData string false "Tên danh mục"
+// @Param status formData string false "Trạng thái"
+// @Param image formData file false "Ảnh danh mục"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/categories/{id} [put]
 func UpdateCategory(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var category models.Category
@@ -91,6 +137,13 @@ func UpdateCategory(db *gorm.DB) gin.HandlerFunc {
     }
 }
 
+// DeleteCategory godoc
+// @Summary Xóa danh mục
+// @Tags Category
+// @Param id path int true "Category ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/categories/{id} [delete]
 func DeleteCategory(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var category models.Category
@@ -112,22 +165,6 @@ func DeleteCategory(db *gorm.DB) gin.HandlerFunc {
         }
 
         c.JSON(http.StatusOK, gin.H{"message": "Xóa danh mục thành công!"})
-    }
-}
-func GetCategories(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        var categories []models.Category
-
-        // Preload để lấy danh sách sản phẩm
-        db.Preload("Products").Find(&categories)
-
-        // Tính số lượng sản phẩm
-        for i := range categories {
-            categories[i].QtyProduct = len(categories[i].Products) //  Đếm số sản phẩm
-            categories[i].Products = nil // Không gửi danh sách sản phẩm, chỉ gửi số lượng
-        }
-
-        c.JSON(http.StatusOK, categories)
     }
 }
 

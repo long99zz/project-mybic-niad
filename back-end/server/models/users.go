@@ -24,5 +24,5 @@ type User struct {
     Role          string `gorm:"type:ENUM('Admin', 'Customer');default:'Customer';column:role"`
     CreatedAt     time.Time
     UpdatedAt     time.Time
-    DeletedAt     gorm.DeletedAt `gorm:"index"`
+    DeletedAt     gorm.DeletedAt `gorm:"index" swaggerignore:"true"`
 }

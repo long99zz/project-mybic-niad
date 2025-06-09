@@ -3,7 +3,7 @@ package handlers
 import (
     "github.com/gin-gonic/gin"
     "gorm.io/gorm"
-    "backend/models"
+    "backend/server/models"
     "net/http"
     "path/filepath"
     "os"
@@ -12,6 +12,41 @@ import (
     "strconv"
 )
 
+// GetProducts godoc
+// @Summary Lấy danh sách sản phẩm
+// @Tags Product
+// @Produce json
+// @Success 200 {array} models.Product
+// @Router /api/products [get]
+func GetProducts(db *gorm.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var products []models.Product
+
+        keyword := c.Query("keyword")
+        categoryID := c.Query("category_id")
+
+        query := db
+        if keyword != "" {
+            query = query.Where("name LIKE ?", "%"+keyword+"%")
+        }
+        if categoryID != "" {
+            query = query.Where("category_id = ?", categoryID)
+        }
+
+        query.Find(&products)
+        c.JSON(http.StatusOK, products)
+    }
+}
+
+// AddProduct godoc
+// @Summary Thêm sản phẩm
+// @Tags Product
+// @Accept json
+// @Produce json
+// @Param product body models.Product true "Product info"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/products [post]
 func AddProduct(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var p models.Product
@@ -94,6 +129,16 @@ func AddProduct(db *gorm.DB) gin.HandlerFunc {
     }
 }
 
+// UpdateProduct godoc
+// @Summary Sửa sản phẩm
+// @Tags Product
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Param product body models.Product true "Product info"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/products/{id} [put]
 func UpdateProduct(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var p models.Product
@@ -118,26 +163,14 @@ func UpdateProduct(db *gorm.DB) gin.HandlerFunc {
         c.JSON(http.StatusOK, gin.H{"message": "Cập nhật sản phẩm thành công!"})
     }
 }
-func GetProducts(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        var products []models.Product
 
-        keyword := c.Query("keyword")
-        categoryID := c.Query("category_id")
-
-        query := db
-        if keyword != "" {
-            query = query.Where("name LIKE ?", "%"+keyword+"%")
-        }
-        if categoryID != "" {
-            query = query.Where("category_id = ?", categoryID)
-        }
-
-        query.Find(&products)
-        c.JSON(http.StatusOK, products)
-    }
-}
-
+// DeleteProduct godoc
+// @Summary Xóa sản phẩm
+// @Tags Product
+// @Param id path int true "Product ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/products/{id} [delete]
 func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
 

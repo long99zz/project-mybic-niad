@@ -4,7 +4,7 @@ import (
     "golang.org/x/crypto/bcrypt"
     "net/http"
     "gorm.io/gorm"
-    "backend/models"
+    "backend/server/models"
 	"github.com/golang-jwt/jwt/v5"
     "time"
     "os"
@@ -21,6 +21,15 @@ func GenerateToken(userID uint, role string) (string, error) {
     return token.SignedString([]byte(secretKey))
 }
 
+// RegisterUser godoc
+// @Summary Đăng ký tài khoản
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User info"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /register [post]
 func RegisterUser(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var user models.User
@@ -60,7 +69,15 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
     }
 }
 
-
+// LoginUser godoc
+// @Summary Đăng nhập
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param user body object true "Login info"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /login [post]
 func LoginUser(db *gorm.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         var input struct {

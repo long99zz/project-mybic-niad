@@ -1,19 +1,31 @@
+// @title BIC Insurance API
+// @version 1.0
+// @description API cho hệ thống bảo hiểm
+// @host localhost:5000
+// @BasePath /
 package main
 
 import (
-	"backend/handlers"
+	_ "backend/server/docs"
+	"backend/server/internal/handlers"
 	"backend/middlewares"
-	"backend/models"
+	"backend/server/models"
+	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
-	"github.com/gin-contrib/cors"
+	"backend/config"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
 )
 
 func main() {
-	// 🔹 Kết nối MySQL
-	dsn := "root:Zingme01!@tcp(localhost:3303)/bic_insurance?charset=utf8mb4&parseTime=True&loc=Local"
+	cfg := config.LoadConfig()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.DBUser, cfg.DBPass, cfg.DBHost, cfg.DBPort, cfg.DBName,
+	)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Không thể kết nối MySQL:", err)
@@ -80,7 +92,7 @@ func main() {
 	    cancerApi := router.Group("/api/insurance_cancer", middlewares.AuthMiddleware())
     {
         cancerApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
-        cancerApi.POST("/create_insurance_participant_info", handlers.CreateInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
+        cancerApi.POST("/create_insurance_participant_info", handlers.CreateCancerInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
         cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
         cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
     }
@@ -127,5 +139,10 @@ func main() {
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))
 	// 🔹 Khởi chạy server
-	router.Run(":5000")
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	port := cfg.Port
+    if port == "" {
+        port = "5000"
+    }
+	router.Run(":" + port)
 }
