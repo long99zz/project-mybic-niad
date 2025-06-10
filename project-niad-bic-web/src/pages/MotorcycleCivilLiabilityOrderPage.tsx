@@ -1,51 +1,29 @@
 import { ClipboardList, UserCircle2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import {
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Button,
-  Card,
-  Row,
-  Col,
-  Radio,
-  InputNumber,
-  Steps,
-  Checkbox,
-  Space,
-} from "antd";
+import { useState, useEffect } from "react";
+import { Form, Select } from "antd";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import axios from "axios";
 
-const { Option } = Select;
-const { Step } = Steps;
-
-interface GeneralInfo {
-  insuranceObject: "new" | "renewal";
-  gcnBksNumber?: string;
-  numberOfVehicles: number;
-}
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface MotorcycleVehicleInfo {
-  ownerType: string;
+  ownerType: "personal" | "organization";
   identityCard?: string;
-  purpose: string;
-  vehicleType: string;
-  engineCapacity?: number;
+  engineCapacity: "under_50" | "over_50";
   ownerName: string;
   registrationAddress: string;
   hasPlate: boolean;
-  licensePlate?: string;
   chassisNumber: string;
   engineNumber: string;
   insuranceStartDate: string;
   insuranceTerm: number;
-  accidentCoverageSum: number;
-  insuredPersons: number;
+  tndsAmount?: number;
+  tndsFeeDisplay?: number;
+  productId: number;
 }
 
 interface CustomerInfo {
@@ -62,28 +40,24 @@ interface CustomerInfo {
   companyAddress?: string;
   receiveMethod: string;
   receiveAddress?: string;
+  note?: string;
 }
 
 export default function MotorcycleCivilLiabilityOrderPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const totalSteps = 2;
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showError, setShowError] = useState(false);
-
-  const [generalInfo, setGeneralInfo] = useState<GeneralInfo>({
-    insuranceObject: "new",
-    numberOfVehicles: 1,
-  });
+  const [insuranceType, setInsuranceType] = useState("new");
+  const [licensePlateNumber, setLicensePlateNumber] = useState("");
+  const [vehicleCount, setVehicleCount] = useState<number>(1);
 
   const [vehicleInfo, setVehicleInfo] = useState<MotorcycleVehicleInfo>({
-    ownerType: "",
-    purpose: "",
-    vehicleType: "",
-    engineCapacity: undefined,
+    ownerType: "personal",
+    engineCapacity: "under_50",
     ownerName: "",
     registrationAddress: "",
     hasPlate: true,
@@ -91,129 +65,208 @@ export default function MotorcycleCivilLiabilityOrderPage() {
     engineNumber: "",
     insuranceStartDate: dayjs().format("YYYY-MM-DD"),
     insuranceTerm: 1,
-    accidentCoverageSum: 100000000,
-    insuredPersons: 1,
+    tndsAmount: 0,
+    tndsFeeDisplay: 0,
+    productId: 3,
   });
 
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    type: "",
+    type: "individual",
     fullName: "",
     email: "",
     phone: "",
     address: "",
+    identityCard: "",
+    dateOfBirth: "",
     invoice: false,
+    companyName: "",
+    taxCode: "",
+    companyAddress: "",
     receiveMethod: "email",
+    receiveAddress: "",
+    note: "",
   });
 
   const [tndsFeeDisplay, setTndsFeeDisplay] = useState(0);
-  const [accidentFeeDisplay, setAccidentFeeDisplay] = useState(0);
-  const [totalFeeDisplay, setTotalFeeDisplay] = useState(0);
-
-  const accidentCoverageOptions = [
-    { value: 10000000, label: "10 triệu đồng/người/vụ" },
-    { value: 20000000, label: "20 triệu đồng/người/vụ" },
-    { value: 30000000, label: "30 triệu đồng/người/vụ" },
-    { value: 50000000, label: "50 triệu đồng/người/vụ" },
-    { value: 100000000, label: "100 triệu đồng/người/vụ" },
-  ];
+  const [accidentCoverage, setAccidentCoverage] = useState(0);
+  const [licensePlatePart1, setLicensePlatePart1] = useState("");
+  const [licensePlatePart2, setLicensePlatePart2] = useState("");
 
   useEffect(() => {
     let calculatedTnds = 0;
-    const vehicleType = vehicleInfo.vehicleType;
     const engineCapacity = vehicleInfo.engineCapacity;
 
-    if (vehicleType === "Mô tô 2 bánh") {
-      if (engineCapacity !== undefined && engineCapacity !== null) {
-        if (engineCapacity < 50) {
-          calculatedTnds = 55000;
-        } else {
-          calculatedTnds = 60000;
-        }
-      } else {
-        calculatedTnds = 0;
-      }
-    } else if (vehicleType === "Mô tô 3 bánh") {
-      calculatedTnds = 290000;
-    } else if (vehicleType === "Xe gắn máy") {
-      if (engineCapacity !== undefined && engineCapacity !== null) {
-        if (engineCapacity === 0) {
-          calculatedTnds = 55000;
-        } else {
-          calculatedTnds = 290000;
-        }
-      } else {
-        calculatedTnds = 0;
-      }
-    } else if (vehicleType === "Xe máy điện") {
-      calculatedTnds = 55000;
+    if (engineCapacity === "under_50") {
+      calculatedTnds = 60000; // Mô tô 2 bánh dưới 50cc
+    } else if (engineCapacity === "over_50") {
+      calculatedTnds = 66000; // Mô tô 2 bánh từ 50cc trở lên
     }
 
+    // Thêm phí bảo hiểm tai nạn cho người ngồi trên xe
+    // Công thức: (Hạn mức * 0.1% * 2)
+    const accidentFee = accidentCoverage * 0.001 * 2;
+    calculatedTnds = calculatedTnds + accidentFee;
+
+    // Calculate term fee
     calculatedTnds = calculatedTnds * vehicleInfo.insuranceTerm;
 
+    // Calculate for multiple vehicles
+    calculatedTnds = calculatedTnds * vehicleCount;
+
+    // Add VAT
     calculatedTnds = calculatedTnds * 1.1;
 
-    const calculatedAccident =
-      (vehicleInfo.accidentCoverageSum || 0) *
-      (vehicleInfo.insuredPersons || 1) *
-      0.001;
-
-    const total = calculatedTnds + calculatedAccident;
-
     setTndsFeeDisplay(calculatedTnds);
-    setAccidentFeeDisplay(calculatedAccident);
-    setTotalFeeDisplay(total);
   }, [
-    vehicleInfo.vehicleType,
     vehicleInfo.engineCapacity,
-    vehicleInfo.accidentCoverageSum,
-    vehicleInfo.insuredPersons,
     vehicleInfo.insuranceTerm,
+    vehicleCount,
+    accidentCoverage,
   ]);
 
-  const handleGeneralInfoChange = (changedValues: any, allValues: any) => {
-    console.log("General Info Changed:", changedValues, allValues);
-    setGeneralInfo((prev) => ({ ...prev, ...allValues }));
+  useEffect(() => {
+    // Mặc định hạn mức tai nạn là 10,000,000 nếu chưa chọn
+    if (accidentCoverage === 0) {
+      setAccidentCoverage(10000000);
+    }
+  }, [accidentCoverage]);
+
+  const handleVehicleInfoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setVehicleInfo((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }));
   };
 
-  const handleVehicleInfoChange = (changedValues: any, allValues: any) => {
-    console.log("Vehicle Info Changed:", changedValues, allValues);
-    setVehicleInfo((prev) => ({ ...prev, ...allValues }));
-  };
-
-  const handleCustomerInfoChange = (changedValues: any, allValues: any) => {
-    console.log("Customer Info Changed:", changedValues, allValues);
-    setCustomerInfo((prev) => ({ ...prev, ...allValues }));
+  const handleCustomerInfoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type, checked } = e.target as HTMLInputElement;
+    setCustomerInfo((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleNextStep = async () => {
+    console.log("handleNextStep called");
+    console.log("Current step:", currentStep);
+    console.log("Vehicle info:", vehicleInfo);
+    console.log("Customer info:", customerInfo);
     setShowError(false);
     let currentStepErrors: { [key: string]: string } = {};
 
     try {
       if (currentStep === 1) {
-        await form.validateFields(Object.keys(generalInfo));
+        // Validation cho bước 1
+        if (!insuranceType) {
+          currentStepErrors.insuranceType =
+            "Vui lòng chọn loại hợp đồng bảo hiểm";
+        }
+        if (insuranceType === "renewal" && !licensePlateNumber) {
+          currentStepErrors.licensePlateNumber = "Vui lòng nhập số GCNBH/BKS";
+        }
+        if (!vehicleCount || vehicleCount < 1) {
+          currentStepErrors.vehicleCount =
+            "Vui lòng chọn số lượng xe và phải lớn hơn 0";
+        }
+        if (!vehicleInfo.engineCapacity) {
+          currentStepErrors.engineCapacity =
+            "Vui lòng chọn dung tích xi lanh xe";
+        }
       } else if (currentStep === 2) {
-        await form.validateFields(Object.keys(vehicleInfo));
-      } else if (currentStep === 3) {
-        await form.validateFields(Object.keys(customerInfo));
+        // Validation cho thông tin xe
+        if (!vehicleInfo.ownerType) {
+          currentStepErrors.ownerType = "Vui lòng chọn loại chủ sở hữu xe";
+        }
+        if (!vehicleInfo.ownerName?.trim()) {
+          currentStepErrors.ownerName = "Vui lòng nhập tên chủ xe";
+        }
+        if (!vehicleInfo.registrationAddress?.trim()) {
+          currentStepErrors.registrationAddress =
+            "Vui lòng nhập địa chỉ đăng ký xe";
+        }
+        if (
+          vehicleInfo.hasPlate &&
+          (!licensePlatePart1.trim() || !licensePlatePart2.trim())
+        ) {
+          currentStepErrors.licensePlate = "Vui lòng nhập đầy đủ biển số xe";
+        }
+        if (!vehicleInfo.chassisNumber?.trim()) {
+          currentStepErrors.chassisNumber = "Vui lòng nhập số khung xe";
+        }
+        if (!vehicleInfo.engineNumber?.trim()) {
+          currentStepErrors.engineNumber = "Vui lòng nhập số máy xe";
+        }
+        if (!vehicleInfo.insuranceStartDate) {
+          currentStepErrors.insuranceStartDate =
+            "Vui lòng chọn ngày bắt đầu bảo hiểm";
+        }
+        if (!vehicleInfo.insuranceTerm) {
+          currentStepErrors.insuranceTerm = "Vui lòng chọn thời hạn bảo hiểm";
+        }
+        if (!accidentCoverage || accidentCoverage === 0) {
+          currentStepErrors.accidentCoverage = "Vui lòng chọn hạn mức tai nạn";
+        }
+
+        // Validation cho thông tin khách hàng
+        if (!customerInfo.type) {
+          currentStepErrors.type = "Vui lòng chọn loại người mua";
+        }
+        if (!customerInfo.fullName?.trim()) {
+          currentStepErrors.fullName = "Vui lòng nhập họ và tên";
+        }
+        if (!customerInfo.address?.trim()) {
+          currentStepErrors.address = "Vui lòng nhập địa chỉ";
+        }
+        if (!customerInfo.email?.trim()) {
+          currentStepErrors.email = "Vui lòng nhập email";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.email)) {
+          currentStepErrors.email = "Email không hợp lệ";
+        }
+        if (!customerInfo.phone?.trim()) {
+          currentStepErrors.phone = "Vui lòng nhập số điện thoại";
+        } else if (
+          !/^[0-9]{10,11}$/.test(customerInfo.phone.replace(/\D/g, ""))
+        ) {
+          currentStepErrors.phone = "Số điện thoại không hợp lệ";
+        }
+        if (
+          customerInfo.type === "individual" &&
+          !customerInfo.identityCard?.trim()
+        ) {
+          currentStepErrors.identityCard = "Vui lòng nhập CMND/CCCD";
+        } else if (
+          customerInfo.identityCard &&
+          !/^[0-9]{9,12}$/.test(customerInfo.identityCard.replace(/\D/g, ""))
+        ) {
+          currentStepErrors.identityCard = "CMND/CCCD không hợp lệ";
+        }
       }
 
-      setErrors({});
-      if (currentStep < totalSteps) {
-        setCurrentStep(currentStep + 1);
-      } else if (currentStep === totalSteps) {
-        const orderDataToSend = {
-          generalInfo,
-          vehicleInfo,
-          customerInfo,
-          totalFeeDisplay,
-        };
-        console.log("Final Order Data to Send:", orderDataToSend);
-        submitOrder(orderDataToSend);
+      if (Object.keys(currentStepErrors).length > 0) {
+        setErrors(currentStepErrors);
+        setShowError(true);
+        return;
       }
-    } catch (validationErrors) {
-      console.log("Validation Failed:", validationErrors);
+
+      if (currentStep === totalSteps) {
+        await handleSubmit();
+      } else {
+        setCurrentStep(currentStep + 1);
+        setShowError(false);
+        setErrors({});
+        window.scrollTo(0, 0);
+      }
+    } catch (error) {
+      console.error("Error validating form:", error);
       setShowError(true);
+      setErrors({
+        submit: "Có lỗi xảy ra khi xử lý form. Vui lòng thử lại sau.",
+      });
     }
   };
 
@@ -222,759 +275,964 @@ export default function MotorcycleCivilLiabilityOrderPage() {
       setCurrentStep(currentStep - 1);
       setShowError(false);
       setErrors({});
+      window.scrollTo(0, 0);
     }
   };
 
-  const submitOrder = async (orderData: any) => {
-    console.log("Submitting order data:", orderData);
-
+  const handleSubmit = async () => {
     try {
-      const invoiceResponse = await fetch(
+      setIsSubmitting(true);
+      setShowError(false);
+      setErrors({});
+
+      // 1. Tạo hóa đơn (Invoice)
+      const invoiceResponse = await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/create_invoice`,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            insurance_quantity: orderData.generalInfo.numberOfVehicles,
-            contract_type:
-              orderData.generalInfo.insuranceObject === "new"
-                ? "Mới"
-                : "Tái tục",
-          }),
+          // Remove insurance_quantity and contract_type from here
+          // They will be sent in confirm_purchase
         }
       );
-      const invoiceData = await invoiceResponse.json();
-      const invoiceId = invoiceData.invoice_id;
-      console.log("Invoice created with ID:", invoiceId);
+      const invoiceId = invoiceResponse.data.invoice_id;
 
-      const formResponse = await fetch(
+      // 2. Tạo form bảo hiểm xe máy (MotorbikeInsuranceForm)
+      const motorbikeFormPayload = {
+        engine_capacity:
+          vehicleInfo.engineCapacity === "under_50" ? 49.0 : 125.0,
+        accident_coverage: parseFloat(accidentCoverage.toFixed(2)),
+        insurance_duration: vehicleInfo.insuranceTerm,
+        owner_name: vehicleInfo.ownerName,
+        registration_address: vehicleInfo.registrationAddress,
+        license_plate_status: vehicleInfo.hasPlate,
+        license_plate: vehicleInfo.hasPlate
+          ? `${licensePlatePart1}-${licensePlatePart2}`
+          : "",
+        chassis_number: vehicleInfo.chassisNumber,
+        engine_number: vehicleInfo.engineNumber,
+        insurance_start: dayjs(vehicleInfo.insuranceStartDate).toISOString(),
+        insurance_fee: tndsFeeDisplay,
+      };
+
+      console.log(
+        "Debug: Raw insuranceStartDate from state:",
+        vehicleInfo.insuranceStartDate
+      );
+      console.log(
+        "Payload for create_motorbike_insurance_form:",
+        motorbikeFormPayload
+      );
+
+      const formResponse = await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/create_motorbike_insurance_form`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            engine_capacity: orderData.vehicleInfo.engineCapacity || 0,
-            accident_coverage: orderData.vehicleInfo.accidentCoverageSum || 0,
-            insurance_duration: orderData.vehicleInfo.insuranceTerm * 12,
-            owner_name: orderData.vehicleInfo.ownerName,
-            registration_address: orderData.vehicleInfo.registrationAddress,
-            license_plate_status: orderData.vehicleInfo.hasPlate,
-            license_plate: orderData.vehicleInfo.licensePlate || "",
-            chassis_number: orderData.vehicleInfo.chassisNumber,
-            engine_number: orderData.vehicleInfo.engineNumber,
-            insurance_start: dayjs(
-              orderData.vehicleInfo.insuranceStartDate
-            ).format("YYYY-MM-DD"),
-            insurance_fee: orderData.totalFeeDisplay,
-          }),
-        }
+        motorbikeFormPayload
       );
-      const formData = await formResponse.json();
-      const formId = formData.form_id;
-      console.log("Motorbike Insurance Form created with ID:", formId);
+      const formId = formResponse.data.form_id;
 
-      const customerResponse = await fetch(
+      // 3. Tạo thông tin khách hàng (CustomerRegistration)
+      const customerResponse = await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/create_customer_registration`,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customer_type:
-              orderData.customerInfo.type === "individual"
-                ? "Cá nhân"
-                : "Tổ chức",
-            identity_number: orderData.customerInfo.identityCard || "",
-            full_name: orderData.customerInfo.fullName,
-            address: orderData.customerInfo.address,
-            email: orderData.customerInfo.email,
-            phone_number: orderData.customerInfo.phone,
-            invoice_request: orderData.customerInfo.invoice,
-            notes: "Motorbike Civil Liability Insurance Order",
-          }),
+          customer_type:
+            customerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
+          identity_number: customerInfo.identityCard || "",
+          full_name: customerInfo.fullName,
+          address: customerInfo.address,
+          email: customerInfo.email,
+          phone_number: customerInfo.phone,
+          invoice_request: customerInfo.invoice,
+          notes: "Khách đăng ký bảo hiểm xe máy",
         }
       );
-      const customerData = await customerResponse.json();
-      const customerId = customerData.customer_id;
-      console.log("Customer Registration created with ID:", customerId);
+      const customerId = customerResponse.data.customer_id;
 
-      const confirmResponse = await fetch(
+      // Calculate insurance_end based on insuranceStartDate and insuranceTerm
+      console.log(
+        "Debug: Raw insuranceStartDate from state (for end date calc):",
+        vehicleInfo.insuranceStartDate
+      );
+      const insuranceEndDate = dayjs(vehicleInfo.insuranceStartDate)
+        .add(vehicleInfo.insuranceTerm, "year")
+        .toISOString();
+
+      // 4. Xác nhận mua hàng (ConfirmPurchase)
+      console.log(
+        "Debug: Raw insuranceStartDate from state (for confirm purchase):",
+        vehicleInfo.insuranceStartDate
+      );
+      await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/confirm_purchase`,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            invoice_id: invoiceId,
-            customer_id: customerId,
-            form_id: formId,
-          }),
+          invoice_id: invoiceId,
+          customer_id: customerId,
+          form_id: formId,
+          product_id: vehicleInfo.productId,
+          insurance_start: dayjs(vehicleInfo.insuranceStartDate).toISOString(),
+          insurance_end: insuranceEndDate,
+          insurance_amount: tndsFeeDisplay * vehicleCount,
+          insurance_quantity: vehicleCount,
+          contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
         }
       );
-      const confirmData = await confirmResponse.json();
-      console.log("Purchase confirmed:", confirmData);
 
-      navigate("/payment-success");
-    } catch (error) {
-      console.error("Error in order submission:", error);
+      // Chuyển hướng đến trang giỏ hàng sau khi hoàn tất
+      navigate("/gio-hang.html");
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
+      setShowError(true);
+
+      // Xử lý lỗi chi tiết
+      if (error.response) {
+        const { data, status } = error.response;
+        switch (status) {
+          case 400:
+            setErrors({
+              submit: "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
+            });
+            break;
+          case 401:
+            setErrors({
+              submit: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+            });
+            break;
+          case 403:
+            setErrors({
+              submit: "Bạn không có quyền thực hiện thao tác này.",
+            });
+            break;
+          case 404:
+            setErrors({
+              submit: "Không tìm thấy tài nguyên yêu cầu.",
+            });
+            break;
+          case 500:
+            setErrors({
+              submit: "Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.",
+            });
+            break;
+          default:
+            setErrors({
+              submit: data?.message || "Có lỗi xảy ra. Vui lòng thử lại sau.",
+            });
+        }
+      } else if (error.request) {
+        setErrors({
+          submit:
+            "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.",
+        });
+      } else {
+        setErrors({
+          submit: "Có lỗi xảy ra khi xử lý đơn hàng. Vui lòng thử lại sau.",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Card title="Thông tin chung" className="w-full max-w-2xl mx-auto">
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={generalInfo}
-              onValuesChange={handleGeneralInfoChange}
-            >
-              <Form.Item
-                name="insuranceObject"
-                label="Đối tượng được bảo hiểm"
-                rules={[{ required: true, message: "Vui lòng chọn đối tượng" }]}
-              >
-                <Radio.Group>
-                  <Radio value="new">Hợp đồng mới</Radio>
-                  <Radio value="renewal">Hợp đồng tái tục</Radio>
-                </Radio.Group>
-              </Form.Item>
+  const renderStep1Content = () => {
+    return (
+      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+        <div className="bg-[#F4F6F8] p-6 rounded-lg">
+          <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
+            Thông tin chung
+          </h3>
+          <div className="space-y-6">
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Đối tượng được bảo hiểm
+              </label>
+              <div className="flex-1">
+                <div className="flex gap-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="insuranceType"
+                      value="new"
+                      checked={insuranceType === "new"}
+                      onChange={(e) => setInsuranceType(e.target.value)}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Hợp đồng mới</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="insuranceType"
+                      value="renewal"
+                      checked={insuranceType === "renewal"}
+                      onChange={(e) => setInsuranceType(e.target.value)}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Hợp đồng tái tục</span>
+                  </label>
+                </div>
+                {showError && errors.insuranceType && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.insuranceType}
+                  </p>
+                )}
+              </div>
+            </div>
 
-              {generalInfo.insuranceObject === "renewal" && (
-                <Form.Item
-                  name="gcnBksNumber"
-                  label="Số GCNBH/BKS"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng nhập số GCNBH/BKS",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Nhập số GCNBH/BKS" />
-                </Form.Item>
-              )}
-
-              <Form.Item
-                name="numberOfVehicles"
-                label="Số xe mua bảo hiểm"
-                rules={[
-                  { required: true, message: "Vui lòng chọn số lượng xe" },
-                  {
-                    type: "number",
-                    min: 1,
-                    message: "Số lượng xe phải lớn hơn 0",
-                  },
-                ]}
-                getValueFromEvent={(e) => e}
-              >
-                <InputNumber
-                  min={1}
-                  placeholder="Nhập số lượng xe"
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-            </Form>
-          </Card>
-        );
-      case 2:
-        return (
-          <Card
-            title="Thông tin chi tiết xe & bảo hiểm"
-            className="w-full max-w-2xl mx-auto"
-          >
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={vehicleInfo}
-              onValuesChange={handleVehicleInfoChange}
-            >
-              <Form.Item
-                name="ownerType"
-                label="Loại chủ xe"
-                rules={[
-                  { required: true, message: "Vui lòng chọn loại chủ xe" },
-                ]}
-              >
-                <Radio.Group>
-                  <Radio value="individual">Cá nhân</Radio>
-                  <Radio value="organization">Tổ chức</Radio>
-                </Radio.Group>
-              </Form.Item>
-
-              <Form.Item
-                name="identityCard"
-                label={
-                  vehicleInfo.ownerType === "organization"
-                    ? "Mã số thuế"
-                    : "Số CMND/CCCD"
-                }
-                rules={[
-                  {
-                    required: true,
-                    message: `Vui lòng nhập ${
-                      vehicleInfo.ownerType === "organization"
-                        ? "Mã số thuế"
-                        : "Số CMND/CCCD"
-                    }`,
-                  },
-                ]}
-              >
-                <Input
-                  placeholder={`Nhập ${
-                    vehicleInfo.ownerType === "organization"
-                      ? "Mã số thuế"
-                      : "Số CMND/CCCD"
-                  }`}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="purpose"
-                label="Mục đích sử dụng"
-                rules={[
-                  { required: true, message: "Vui lòng chọn mục đích sử dụng" },
-                ]}
-              >
-                <Select placeholder="Chọn mục đích sử dụng">
-                  <Option value="personal">Cá nhân</Option>
-                  <Option value="business">Kinh doanh vận tải</Option>
-                </Select>
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="vehicleType"
-                    label="Loại xe"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn loại xe" },
-                    ]}
-                  >
-                    <Select placeholder="Chọn loại xe">
-                      <Option value="Mô tô 2 bánh">Mô tô 2 bánh</Option>
-                      <Option value="Mô tô 3 bánh">Mô tô 3 bánh</Option>
-                      <Option value="Xe gắn máy">
-                        Xe gắn máy (bao gồm xe máy điện)
-                      </Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  {(vehicleInfo.vehicleType === "Mô tô 2 bánh" ||
-                    vehicleInfo.vehicleType === "Xe gắn máy") && (
-                    <Form.Item
-                      name="engineCapacity"
-                      label="Dung tích xi lanh (cc)"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Vui lòng nhập dung tích xi lanh",
-                        },
-                        {
-                          type: "number",
-                          min: 0,
-                          message: "Dung tích xi lanh phải là số dương",
-                        },
-                      ]}
-                      getValueFromEvent={(e) => e}
-                    >
-                      <InputNumber
-                        min={0}
-                        placeholder="Nhập dung tích xi lanh"
-                        style={{ width: "100%" }}
-                      />
-                    </Form.Item>
+            {insuranceType === "renewal" && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Số GCNBH/BKS
+                  <span className="text-red-600">*</span>
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
+                    value={licensePlateNumber}
+                    onChange={(e) => setLicensePlateNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                    placeholder="Nhập số GCNBH/BKS"
+                  />
+                  {showError && errors.licensePlateNumber && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.licensePlateNumber}
+                    </p>
                   )}
-                </Col>
-              </Row>
+                </div>
+              </div>
+            )}
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="ownerName"
-                    label="Tên chủ xe"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập tên chủ xe" },
-                    ]}
-                  >
-                    <Input placeholder="Nhập tên chủ xe" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="registrationAddress"
-                    label="Địa chỉ đăng ký"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập địa chỉ đăng ký",
-                      },
-                    ]}
-                  >
-                    <Input placeholder="Nhập địa chỉ đăng ký" />
-                  </Form.Item>
-                </Col>
-              </Row>
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Số lượng xe
+                <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <Select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                  value={vehicleCount}
+                  onChange={(e) => setVehicleCount(Number(e))}
+                >
+                  <option value="">-- Chọn số lượng --</option>
+                  <option value="1">1 xe</option>
+                  <option value="2">2 xe</option>
+                  <option value="3">3 xe</option>
+                  <option value="4">4 xe</option>
+                  <option value="5">5 xe</option>
+                </Select>
+                {showError && errors.vehicleCount && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.vehicleCount}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
+        {/* Nút điều hướng */}
+        <div className="flex justify-end mt-8">
+          <button
+            type="button"
+            onClick={() => {
+              console.log("Current step before:", currentStep);
+              handleNextStep();
+              console.log("Current step after:", currentStep);
+            }}
+            className="px-8 py-3 bg-red-600 rounded-md text-white hover:bg-red-700 transition-colors font-medium"
+          >
+            Tiếp tục
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep2Content = () => {
+    return (
+      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+        <div className="bg-[#F4F6F8] p-6 rounded-lg">
+          <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
+            Thông tin xe chi tiết và Thông tin tài khoản
+          </h3>
+          <div className="space-y-6">
+            {/* Dung tích xi lanh xe */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Dung tích xi lanh xe
+                <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <select
+                  name="engineCapacity"
+                  value={vehicleInfo.engineCapacity}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                >
+                  <option value="">-- Chọn dung tích --</option>
+                  <option value="under_50">Dưới 50cc</option>
+                  <option value="over_50">Từ 50cc trở lên</option>
+                </select>
+                {showError && errors.engineCapacity && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.engineCapacity}
+                  </p>
+                )}
+              </div>
+            </div>
+            {/* Owner Type */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Đối tượng chủ sở hữu
+                <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <select
+                  name="ownerType"
+                  value={vehicleInfo.ownerType}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                >
+                  <option value="">-- Chọn đối tượng --</option>
+                  <option value="personal">Cá nhân</option>
+                  <option value="organization">Tổ chức</option>
+                </select>
+                {showError && errors.ownerType && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.ownerType}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Owner Name */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Tên chủ xe <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={vehicleInfo.ownerName}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.ownerName && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.ownerName}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Registration Address */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Địa chỉ đăng ký xe <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="registrationAddress"
+                  value={vehicleInfo.registrationAddress}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.registrationAddress && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.registrationAddress}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Has Plate */}
+            <div className="flex items-center gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Tình trạng biển số
+              </label>
+              <div className="flex-1">
+                <label className="inline-flex items-center mr-6">
+                  <input
+                    type="radio"
                     name="hasPlate"
-                    label="Trạng thái biển số"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn trạng thái biển số",
-                      },
-                    ]}
-                    valuePropName="checked"
-                  >
-                    <Radio.Group>
-                      <Radio value={true}>Mới</Radio>
-                      <Radio value={false}>Chưa có</Radio>
-                    </Radio.Group>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  {vehicleInfo.hasPlate && (
-                    <Form.Item
-                      name="licensePlate"
-                      label="Biển số xe"
-                      rules={[
-                        { required: true, message: "Vui lòng nhập biển số xe" },
-                      ]}
-                    >
-                      <Input placeholder="Nhập biển số xe" />
-                    </Form.Item>
-                  )}
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="chassisNumber"
-                    label="Số khung"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập số khung" },
-                    ]}
-                  >
-                    <Input placeholder="Nhập số khung" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="engineNumber"
-                    label="Số máy"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập số máy" },
-                    ]}
-                  >
-                    <Input placeholder="Nhập số máy" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="insuranceStartDate"
-                    label="Ngày bắt đầu bảo hiểm"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày bắt đầu bảo hiểm",
-                      },
-                    ]}
-                  >
-                    <DatePicker format="YYYY-MM-DD" style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="insuranceTerm"
-                    label="Thời hạn bảo hiểm (năm)"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn thời hạn bảo hiểm",
-                      },
-                      {
-                        type: "number",
-                        min: 1,
-                        message: "Thời hạn phải ít nhất 1 năm",
-                      },
-                    ]}
-                    getValueFromEvent={(e) => e}
-                  >
-                    <InputNumber
-                      min={1}
-                      placeholder="Nhập thời hạn"
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item label="Phí bảo hiểm TNDS bắt buộc (gồm VAT)">
-                <Input
-                  value={tndsFeeDisplay.toLocaleString("vi-VN") + " VNĐ"}
-                  readOnly
-                />
-              </Form.Item>
-
-              <h3 className="text-lg font-semibold mb-4 mt-8">
-                Bảo hiểm tai nạn lái phụ xe & người ngồi trên xe
-              </h3>
-
-              <Form.Item
-                name="accidentCoverageSum"
-                label="Số tiền bảo hiểm tai nạn"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn số tiền bảo hiểm tai nạn",
-                  },
-                ]}
-                getValueFromEvent={(e) => e}
-              >
-                <Select placeholder="Chọn số tiền bảo hiểm">
-                  {accidentCoverageOptions.map((option) => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="insuredPersons"
-                label="Số người được bảo hiểm (bao gồm lái xe)"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập số người được bảo hiểm",
-                  },
-                  {
-                    type: "number",
-                    min: 1,
-                    message: "Số người phải lớn hơn 0",
-                  },
-                ]}
-                getValueFromEvent={(e) => e}
-              >
-                <InputNumber
-                  min={1}
-                  placeholder="Nhập số người"
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-
-              <Form.Item label="Phí bảo hiểm tai nạn (miễn VAT)">
-                <Input
-                  value={accidentFeeDisplay.toLocaleString("vi-VN") + " VNĐ"}
-                  readOnly
-                />
-              </Form.Item>
-            </Form>
-          </Card>
-        );
-      case 3:
-        return (
-          <Card
-            title="Thông tin khách hàng"
-            className="w-full max-w-2xl mx-auto"
-          >
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={customerInfo}
-              onValuesChange={handleCustomerInfoChange}
-            >
-              <Form.Item name="copyFromVehicleOwner" valuePropName="checked">
-                <Checkbox
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      const copiedData = {
-                        fullName: vehicleInfo.ownerName,
-                        address: vehicleInfo.registrationAddress,
-                        identityCard:
-                          vehicleInfo.ownerType === customerInfo.type
-                            ? vehicleInfo.identityCard
-                            : undefined,
-                      };
-                      form.setFieldsValue(copiedData);
-                      setCustomerInfo((prev) => ({
-                        ...prev,
-                        ...copiedData,
-                      }));
-                    } else {
+                    checked={vehicleInfo.hasPlate === true}
+                    onChange={() =>
+                      setVehicleInfo((prev) => ({ ...prev, hasPlate: true }))
                     }
-                  }}
-                >
-                  Sao chép từ thông tin chủ xe
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item
-                name="type"
-                label="Loại đối tượng bảo hiểm"
-                rules={[
-                  { required: true, message: "Vui lòng chọn loại đối tượng" },
-                ]}
-              >
-                <Select placeholder="Chọn loại đối tượng">
-                  <Option value="individual">Cá nhân</Option>
-                  <Option value="organization">Tổ chức</Option>
-                </Select>
-              </Form.Item>
-
-              {customerInfo.type && (
-                <Form.Item
-                  name="identityCard"
-                  label={
-                    customerInfo.type === "organization"
-                      ? "Mã số thuế"
-                      : "Số CMND/CCCD"
-                  }
-                  rules={[
-                    {
-                      required: true,
-                      message: `Vui lòng nhập ${
-                        customerInfo.type === "organization"
-                          ? "Mã số thuế"
-                          : "Số CMND/CCCD"
-                      }`,
-                    },
-                  ]}
-                >
-                  <Input
-                    placeholder={`Nhập ${
-                      customerInfo.type === "organization"
-                        ? "Mã số thuế"
-                        : "Số CMND/CCCD"
-                    }`}
+                    className="form-radio h-4 w-4 text-red-600"
                   />
-                </Form.Item>
-              )}
+                  <span className="ml-2">Đã có biển số</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="hasPlate"
+                    checked={vehicleInfo.hasPlate === false}
+                    onChange={() =>
+                      setVehicleInfo((prev) => ({ ...prev, hasPlate: false }))
+                    }
+                    className="form-radio h-4 w-4 text-red-600"
+                  />
+                  <span className="ml-2">Chưa có biển số</span>
+                </label>
+              </div>
+            </div>
 
-              {customerInfo.type === "individual" && (
-                <Form.Item
-                  name="dateOfBirth"
-                  label="Ngày sinh"
-                  rules={[
-                    { required: true, message: "Vui lòng chọn ngày sinh" },
-                  ]}
+            {/* License Plate */}
+            {vehicleInfo.hasPlate && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Biển kiểm soát <span className="text-red-600">*</span>
+                </label>
+                <div className="w-[28rem] flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={licensePlatePart1}
+                    onChange={(e) => setLicensePlatePart1(e.target.value)}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-center"
+                    placeholder="29H1"
+                  />
+                  <span className="text-xl font-bold">-</span>
+                  <input
+                    type="text"
+                    value={licensePlatePart2}
+                    onChange={(e) => setLicensePlatePart2(e.target.value)}
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                    placeholder="12345"
+                  />
+                </div>
+                {showError && errors.licensePlate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.licensePlate}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Chassis Number */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Số khung xe <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="chassisNumber"
+                  value={vehicleInfo.chassisNumber}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.chassisNumber && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.chassisNumber}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Engine Number */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Số máy xe <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="engineNumber"
+                  value={vehicleInfo.engineNumber}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.engineNumber && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.engineNumber}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Insurance Start Date */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Ngày bắt đầu bảo hiểm <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="date"
+                  name="insuranceStartDate"
+                  value={vehicleInfo.insuranceStartDate}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.insuranceStartDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.insuranceStartDate}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Insurance Term */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Thời hạn bảo hiểm
+                <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <select
+                  name="insuranceTerm"
+                  value={vehicleInfo.insuranceTerm}
+                  onChange={handleVehicleInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
                 >
-                  <DatePicker format="YYYY-MM-DD" style={{ width: "100%" }} />
-                </Form.Item>
-              )}
+                  <option value="1">1 năm</option>
+                  <option value="2">2 năm</option>
+                  <option value="3">3 năm</option>
+                </select>
+                {showError && errors.insuranceTerm && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.insuranceTerm}
+                  </p>
+                )}
+              </div>
+            </div>
 
-              <Form.Item
-                name="fullName"
-                label="Họ và tên"
-                rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
-              >
-                <Input placeholder="Nhập họ và tên" />
-              </Form.Item>
+            {/* Hạn mức tai nạn người ngồi trên xe */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Hạn mức tai nạn người ngồi trên xe
+                <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <select
+                  name="accidentCoverage"
+                  value={accidentCoverage}
+                  onChange={(e) => setAccidentCoverage(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                >
+                  <option value="0">-- Chọn loại hạn mức --</option>
+                  <option value="0">Không</option>
+                  <option value="5000000">5.000.000 VNĐ/người/vụ</option>
+                  <option value="10000000">10.000.000 VNĐ/người/vụ</option>
+                </select>
+                {showError && errors.accidentCoverage && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.accidentCoverage}
+                  </p>
+                )}
+              </div>
+            </div>
 
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: "Vui lòng nhập email" },
-                  { type: "email", message: "Email không hợp lệ" },
-                ]}
-              >
-                <Input placeholder="Nhập email" />
-              </Form.Item>
+            <h3 className="text-3xl font-semibold text-left mb-6 text-red-600 mt-12">
+              Thông tin tài khoản
+            </h3>
+            {/* Customer Type */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Đối tượng người mua <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <select
+                  name="type"
+                  value={customerInfo.type}
+                  onChange={handleCustomerInfoChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                >
+                  <option value="individual">Cá nhân</option>
+                  <option value="organization">Tổ chức</option>
+                </select>
+                {showError && errors.type && (
+                  <p className="text-red-500 text-sm mt-1">{errors.type}</p>
+                )}
+              </div>
+            </div>
 
-              <Form.Item
-                name="phone"
-                label="Số điện thoại"
-                rules={[
-                  { required: true, message: "Vui lòng nhập số điện thoại" },
-                ]}
-              >
-                <Input placeholder="Nhập số điện thoại" />
-              </Form.Item>
+            {/* CMND/CCCD */}
+            {customerInfo.type === "individual" && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  CMND/CCCD <span className="text-red-600">*</span>
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
+                    name="identityCard"
+                    value={customerInfo.identityCard}
+                    onChange={handleCustomerInfoChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                  {showError && errors.identityCard && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.identityCard}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
-              <Form.Item
-                name="address"
-                label="Địa chỉ"
-                rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-              >
-                <Input.TextArea placeholder="Nhập địa chỉ" rows={3} />
-              </Form.Item>
-
-              <Form.Item name="invoice" valuePropName="checked">
-                <Checkbox>Yêu cầu xuất hóa đơn</Checkbox>
-              </Form.Item>
-
-              {customerInfo.invoice && (
-                <>
-                  <h4 className="text-md font-semibold mb-4">
-                    Thông tin xuất hóa đơn
-                  </h4>
-                  <Form.Item
-                    name="companyName"
-                    label="Tên công ty"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập tên công ty" },
-                    ]}
-                  >
-                    <Input placeholder="Nhập tên công ty" />
-                  </Form.Item>
-                  <Form.Item
+            {/* Mã số thuế */}
+            {customerInfo.type === "organization" && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Mã số thuế
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
                     name="taxCode"
-                    label="Mã số thuế"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã số thuế" },
-                    ]}
-                  >
-                    <Input placeholder="Nhập mã số thuế" />
-                  </Form.Item>
-                  <Form.Item
-                    name="companyAddress"
-                    label="Địa chỉ công ty"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập địa chỉ công ty",
-                      },
-                    ]}
-                  >
-                    <Input.TextArea
-                      placeholder="Nhập địa chỉ công ty"
-                      rows={3}
-                    />
-                  </Form.Item>
-                </>
-              )}
-
-              <Form.Item
-                name="receiveMethod"
-                label="Hình thức nhận giấy chứng nhận"
-                rules={[
-                  { required: true, message: "Vui lòng chọn hình thức nhận" },
-                ]}
-              >
-                <Radio.Group>
-                  <Space direction="vertical">
-                    <Radio value="email">Nhận qua Email</Radio>
-                    <Radio value="hardcopy">Nhận bản cứng</Radio>
-                  </Space>
-                </Radio.Group>
-              </Form.Item>
-
-              {customerInfo.receiveMethod === "hardcopy" && (
-                <Form.Item
-                  name="receiveAddress"
-                  label="Địa chỉ nhận bản cứng"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng nhập địa chỉ nhận bản cứng",
-                    },
-                  ]}
-                >
-                  <Input.TextArea
-                    placeholder="Nhập địa chỉ nhận bản cứng"
-                    rows={3}
+                    value={customerInfo.taxCode}
+                    onChange={handleCustomerInfoChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                   />
-                </Form.Item>
-              )}
-            </Form>
-          </Card>
-        );
-      default:
-        return null;
-    }
+                  {showError && errors.taxCode && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.taxCode}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Họ và tên */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Họ và tên <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="fullName"
+                  value={customerInfo.fullName}
+                  onChange={(e) =>
+                    setCustomerInfo({
+                      ...customerInfo,
+                      fullName: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.fullName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Địa chỉ */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Địa chỉ <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="text"
+                  name="address"
+                  value={customerInfo.address}
+                  onChange={(e) =>
+                    setCustomerInfo({
+                      ...customerInfo,
+                      address: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.address && (
+                  <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Email nhận thông báo */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Email nhận thông báo <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="email"
+                  name="email"
+                  value={customerInfo.email}
+                  onChange={(e) =>
+                    setCustomerInfo({
+                      ...customerInfo,
+                      email: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Số điện thoại di động */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Số điện thoại di động <span className="text-red-600">*</span>
+              </label>
+              <div className="w-[28rem]">
+                <input
+                  type="tel"
+                  name="phone"
+                  value={customerInfo.phone}
+                  onChange={(e) =>
+                    setCustomerInfo({
+                      ...customerInfo,
+                      phone: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {showError && errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice Request */}
+            <div className="flex items-center gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Yêu cầu xuất hóa đơn VAT
+              </label>
+              <div className="w-[28rem]">
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="invoice"
+                    checked={customerInfo.invoice}
+                    onChange={handleCustomerInfoChange}
+                    className="form-checkbox h-4 w-4 text-red-600"
+                  />
+                  <span className="ml-2">Có</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Company Name (if invoice requested) */}
+            {customerInfo.invoice && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Tên công ty
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
+                    name="companyName"
+                    value={customerInfo.companyName}
+                    onChange={handleCustomerInfoChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                  {showError && errors.companyName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.companyName}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Company Address (if invoice requested) */}
+            {customerInfo.invoice && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Địa chỉ công ty
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
+                    name="companyAddress"
+                    value={customerInfo.companyAddress}
+                    onChange={handleCustomerInfoChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                  {showError && errors.companyAddress && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.companyAddress}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Receive Method */}
+            <div className="flex items-center gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Hình thức nhận GCNBH
+              </label>
+              <div className="w-[28rem]">
+                <label className="inline-flex items-center mr-6">
+                  <input
+                    type="radio"
+                    name="receiveMethod"
+                    value="email"
+                    checked={customerInfo.receiveMethod === "email"}
+                    onChange={handleCustomerInfoChange}
+                    className="form-radio h-4 w-4 text-red-600"
+                  />
+                  <span className="ml-2">Qua email</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="receiveMethod"
+                    value="address"
+                    checked={customerInfo.receiveMethod === "address"}
+                    onChange={handleCustomerInfoChange}
+                    className="form-radio h-4 w-4 text-red-600"
+                  />
+                  <span className="ml-2">Qua địa chỉ</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Receive Address (if by address) */}
+            {customerInfo.receiveMethod === "address" && (
+              <div className="flex items-start gap-8">
+                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                  Địa chỉ nhận GCNBH <span className="text-red-600">*</span>
+                </label>
+                <div className="w-[28rem]">
+                  <input
+                    type="text"
+                    name="receiveAddress"
+                    value={customerInfo.receiveAddress}
+                    onChange={handleCustomerInfoChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                  {showError && errors.receiveAddress && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.receiveAddress}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Note */}
+            <div className="flex items-start gap-8">
+              <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
+                Ghi chú (nếu có)
+              </label>
+              <div className="w-[28rem]">
+                <textarea
+                  name="note"
+                  value={customerInfo.note}
+                  onChange={(e) =>
+                    setCustomerInfo({
+                      ...customerInfo,
+                      note: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                  rows={3}
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nút điều hướng */}
+        <div className="flex justify-between mt-8">
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="px-8 py-3 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+          >
+            Quay lại
+          </button>
+          <button
+            type="button"
+            onClick={handleNextStep}
+            disabled={isSubmitting}
+            className={`px-8 py-3 rounded-md text-white transition-colors font-medium ${
+              isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-red-600 hover:bg-red-700"
+            }`}
+          >
+            {isSubmitting ? "Đang xử lý..." : "Tiếp tục"}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-
-      <h1 className="text-2xl font-bold mb-4 text-center">
-        Đặt mua bảo hiểm Trách nhiệm dân sự bắt buộc xe máy
-      </h1>
-
-      <Steps current={currentStep - 1} className="mb-8">
-        <Steps.Step title="Thông tin chung" icon={<ClipboardList />} />
-        <Steps.Step
-          title="Thông tin chi tiết xe & bảo hiểm"
-          icon={<UserCircle2 />}
+      {/* Banner sản phẩm */}
+      <div className="w-full pt-[81px]">
+        <img
+          src="/products/banner1.png"
+          alt="Banner bảo hiểm xe máy"
+          className="w-full"
         />
-        <Steps.Step title="Thông tin khách hàng" icon={<UserCircle2 />} />
-      </Steps>
-
-      {renderStepContent()}
-
-      {(currentStep === 2 || currentStep === 3) && (
-        <Card
-          title="Tổng phí bảo hiểm"
-          className="w-full max-w-2xl mx-auto mt-8"
-        >
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-lg font-medium">
-              Phí bảo hiểm TNDS (gồm VAT):
-            </span>
-            <span className="text-lg font-semibold text-red-600">
-              {tndsFeeDisplay.toLocaleString("vi-VN")} VNĐ
-            </span>
-          </div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-lg font-medium">
-              Phí bảo hiểm tai nạn (miễn VAT):
-            </span>
-            <span className="text-lg font-semibold text-red-600">
-              {accidentFeeDisplay.toLocaleString("vi-VN")} VNĐ
-            </span>
-          </div>
-          <div className="flex justify-between items-center border-t pt-4 mt-4">
-            <span className="text-xl font-bold">Tổng cộng:</span>
-            <span className="text-2xl font-bold text-red-600">
-              {totalFeeDisplay.toLocaleString("vi-VN")} VNĐ
-            </span>
-          </div>
-        </Card>
-      )}
-
-      <div className="flex justify-between mt-8 w-full max-w-2xl mx-auto">
-        {currentStep > 1 && (
-          <Button type="default" onClick={handlePrevStep} size="large">
-            Quay lại
-          </Button>
-        )}
-        {currentStep < totalSteps ? (
-          <Button type="primary" onClick={handleNextStep} size="large">
-            Tiếp tục
-          </Button>
-        ) : (
-          <Button type="primary" onClick={handleNextStep} size="large">
-            Xác nhận & Thanh toán
-          </Button>
-        )}
       </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Progress steps */}
+        <div className="flex items-center justify-center gap-4 mb-12">
+          <div className="flex items-center">
+            {/* Icon Thông tin xe */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-24 h-24 rounded-full flex items-center justify-center mb-2 ${
+                  currentStep <= 1 ? "bg-red-600" : "bg-gray-200"
+                }`}
+              >
+                <ClipboardList
+                  className={`w-8 h-8 ${
+                    currentStep <= 1 ? "text-white" : "text-gray-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-m font-bold ${
+                  currentStep <= 1 ? "text-red-600" : "text-gray-600"
+                }`}
+              >
+                Thông tin xe
+              </span>
+            </div>
 
-      {showError && (
-        <div className="text-red-600 mt-4 text-center">
-          Vui lòng điền đầy đủ thông tin bắt buộc.
+            <div className="w-32 h-[2px] bg-gray-300 mx-4"></div>
+
+            {/* Icon Thông tin tài khoản */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-24 h-24 rounded-full flex items-center justify-center mb-2 ${
+                  currentStep === 2 ? "bg-red-600" : "bg-gray-200"
+                }`}
+              >
+                <UserCircle2
+                  className={`w-8 h-8 ${
+                    currentStep === 2 ? "text-white" : "text-gray-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-m font-bold ${
+                  currentStep === 2 ? "text-red-600" : "text-gray-600"
+                }`}
+              >
+                Thông tin tài khoản
+              </span>
+            </div>
+          </div>
         </div>
-      )}
 
-      <Footer />
+        {/* General error display */}
+        {showError && errors.submit && (
+          <div className="max-w-2xl mx-auto mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <p className="text-red-600">{errors.submit}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Render step content */}
+        <div key={currentStep}>
+          {currentStep === 1 ? renderStep1Content() : renderStep2Content()}
+        </div>
+      </div>
       <CustomerSupport />
+      <Footer />
     </div>
   );
 }

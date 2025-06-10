@@ -77,26 +77,20 @@ const AppRoutes = () => {
         path="/mua-bao-hiem/:productId"
         element={<InsuranceOrderRouter />}
       />
+      <Route path="/mua-ngay/:productType" element={<InsuranceOrderRouter />} />
+      <Route path="/dat-hang" element={<CarCivilLiabilityOrderPage />} />
+      {/* Routes cho bảo hiểm TNDS xe máy */}
       <Route
-        path="/mua-ngay/:productType"
+        path="/mua-bao-hiem/:productType/xe-may"
         element={<InsuranceOrderRouter />}
       />
       <Route
-        path="/dat-hang"
-        element={<CarCivilLiabilityOrderPage />}
-      />
-      {/* Routes cho bảo hiểm TNDS xe máy */}
-      <Route
-        path="/nhap-thong-tin-xe-may"
-        element={<MotorcycleInsuranceOrderPage />}
-      />
-      <Route
         path="/mua-bao-hiem-xe-may/:productId"
-        element={<MotorcycleInsuranceOrderPage />}
+        element={<InsuranceOrderRouter />}
       />
       <Route
-        path="/dat-hang-xe-may"
-        element={<MotorcycleInsuranceOrderPage />}
+        path="/dat-bao-hiem-tnds-xe-may"
+        element={<InsuranceOrderRouter />}
       />
       <Route path="/gio-hang.html" element={<CartPage />} />
       {/* Các route cụ thể cho từng sản phẩm */}

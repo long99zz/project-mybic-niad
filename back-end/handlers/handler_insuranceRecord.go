@@ -166,8 +166,8 @@ func CreateMotorbikeInsuranceForm(db *gorm.DB) gin.HandlerFunc {
         // 2. Gán form_id vừa tạo vào motorbikeForm
         motorbikeForm.FormID = &insuranceForm.FormID
 
-        // 3. Lưu MotorbikeInsuranceForm
-        if err := db.Create(&motorbikeForm).Error; err != nil {
+        // 3. Lưu MotorbikeInsuranceForm, bỏ qua trường vehicle_type
+        if err := db.Omit("vehicle_type").Create(&motorbikeForm).Error; err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lưu thông tin xe máy!"})
             return
         }

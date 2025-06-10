@@ -1,14 +1,14 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import CarCivilLiabilityOrderPage from '../CarCivilLiabilityOrderPage';
-import MotorcycleInsuranceOrderPage from './MotorcycleInsuranceOrderPage';
+import React from "react";
+import { useParams } from "react-router-dom";
+import CarCivilLiabilityOrderPage from "../CarCivilLiabilityOrderPage";
+import MotorcycleCivilLiabilityOrderPage from "../MotorcycleCivilLiabilityOrderPage";
 
 export default function InsuranceOrderRouter() {
   const { productId, productType } = useParams();
 
   // Kiểm tra nếu là bảo hiểm xe máy
   const isMotorcycleInsurance = () => {
-    if (productId?.includes('xe-may') || productType?.includes('xe-may')) {
+    if (productId?.includes("xe-may") || productType?.includes("xe-may")) {
       return true;
     }
     return false;
@@ -16,7 +16,7 @@ export default function InsuranceOrderRouter() {
 
   // Render component tương ứng dựa vào loại sản phẩm
   return isMotorcycleInsurance() ? (
-    <MotorcycleInsuranceOrderPage />
+    <MotorcycleCivilLiabilityOrderPage />
   ) : (
     <CarCivilLiabilityOrderPage />
   );

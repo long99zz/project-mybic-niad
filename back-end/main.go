@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// 🔹 Tự động migrate để đảm bảo bảng tồn tại
-	db.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{})
+	db.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{}, &models.MotorbikeInsuranceForm{})
 
 	router := gin.Default()
 
