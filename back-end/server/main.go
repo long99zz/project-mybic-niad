@@ -52,24 +52,39 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// 🔹 Static files cho upload
+	router.Static("/upload", "./upload")
+
 	// 🔹 Định nghĩa API đăng ký & đăng nhập
 	router.POST("/register", handlers.RegisterUser(db))
 	router.POST("/login", handlers.LoginUser(db))
+
+	// 🔹 API công khai (không cần authentication)
+	publicAPI := router.Group("/api")
+	
+	// Post APIs - công khai để hiển thị tin tức
+	publicAPI.GET("/posts", handlers.GetPosts(db))
+	publicAPI.GET("/posts/:id", handlers.GetPost(db))
+	publicAPI.GET("/categories", handlers.GetCategories(db))
+	publicAPI.GET("/products", handlers.GetProducts(db))
 
 	// 🔹 Nhóm API yêu cầu xác thực bằng JWT
 	apiRouter := router.Group("/api")
 	apiRouter.Use(middlewares.AuthMiddleware())
 
+	// Post APIs - cần authentication để quản lý
 	apiRouter.POST("/posts", handlers.AddPost(db))
 	apiRouter.PUT("/posts/:id", handlers.UpdatePost(db))
 	apiRouter.DELETE("/posts/:id", handlers.DeletePost(db))
 
+	// Upload APIs
+	apiRouter.POST("/upload/image", handlers.UploadImage())
+
 	apiRouter.GET("/user", handlers.GetUserInfo(db))  // Lấy thông tin user
-	apiRouter.GET("/products", handlers.GetProducts(db))
 	apiRouter.POST("/products", handlers.AddProduct(db))
 	apiRouter.PUT("/products/:id", handlers.UpdateProduct(db))
 	apiRouter.DELETE("/products/:id", handlers.DeleteProduct(db))
-	apiRouter.GET("/categories", handlers.GetCategories(db))
+	// Categories APIs - cần authentication để quản lý
 	apiRouter.POST("/categories", handlers.AddCategory(db))
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))

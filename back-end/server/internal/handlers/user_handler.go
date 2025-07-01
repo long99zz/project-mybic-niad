@@ -46,7 +46,11 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
         }
 
         // Mã hóa mật khẩu
-        hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+        hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể mã hóa mật khẩu!"})
+            return
+        }
         user.Password = string(hashedPassword)
 
         // Kiểm tra quyền hợp lệ
@@ -56,7 +60,10 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
         }
 
         // Lưu vào database
-        db.Create(&user)
+        if err := db.Create(&user).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo tài khoản!"})
+            return
+        }
 
         // Tạo token JWT ngay sau khi đăng ký
         token, err := GenerateToken(user.ID, user.Role)

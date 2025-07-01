@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: Zingme01!
+      MYSQL_DATABASE: bic_insurance
+    ports:
+      - "3303:3303"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env

@@ -9,14 +9,11 @@ import (
 
 )
 
-// Khóa bí mật JWT (nên lưu vào biến môi trường)
-
-var secretKey = []byte(os.Getenv("JWT_SECRET"))
-
 // Middleware kiểm tra JWT
 func AuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         tokenString := c.GetHeader("Authorization")
+        
         if tokenString == "" {
             c.JSON(http.StatusUnauthorized, gin.H{"error": "Thiếu token"})
             c.Abort()
@@ -24,6 +21,9 @@ func AuthMiddleware() gin.HandlerFunc {
         }
 
         tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+        // Lấy JWT_SECRET từ biến môi trường tại runtime (fix: đọc sau khi .env được load)
+        secretKey := []byte(os.Getenv("JWT_SECRET"))
 
         token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
             return secretKey, nil

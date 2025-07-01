@@ -7,7 +7,7 @@ type Participant struct {
     InvoiceID       uint      `gorm:"index;not null" json:"invoice_id"`
     CmndImg         string    `gorm:"size:255" json:"cmnd_img"`
     FullName        string    `gorm:"size:255;not null" json:"full_name"`
-    Gender          string    `gorm:"type:enum('Nam','Nữ','Khác');not null" json:"gender"`
+    Gender          string    `gorm:"type:text;not null" json:"gender"`
     BirthDate       time.Time `gorm:"type:date;not null" json:"birth_date"`
     IdentityNumber  string    `gorm:"size:50;not null" json:"identity_number"`
     CreatedAt       time.Time `gorm:"autoCreateTime" json:"created_at"`

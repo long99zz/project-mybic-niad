@@ -16,8 +16,8 @@ type Invoice struct { // hóa đơn
     InsuranceEnd      time.Time  `gorm:"type:date;not null" json:"insurance_end"`
     InsuranceAmount   float64    `gorm:"type:decimal(15,2);not null" json:"insurance_amount"`
     InsuranceQuantity uint       `gorm:"default:1" json:"insurance_quantity"`
-    ContractType      string     `gorm:"type:enum('Mới','Tái tục');default:'Mới'" json:"contract_type"`
-    Status            string     `gorm:"type:enum('Đã thanh toán','Chưa thanh toán','Đã hủy');default:'Chưa thanh toán'" json:"status" validate:"required"`
+    ContractType      string     `gorm:"type:text;default:'Mới'" json:"contract_type"`
+    Status            string     `gorm:"type:text;default:'Chưa thanh toán'" json:"status" validate:"required"`
     CreatedAt         time.Time  `gorm:"autoCreateTime" json:"created_at"`
     UpdatedAt         time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
     DeletedAt         *time.Time `gorm:"index" json:"deleted_at,omitempty"`

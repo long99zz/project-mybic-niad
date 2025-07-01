@@ -11,6 +11,7 @@ import ContactPage from "./pages/ContactPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import NewsPage from "./pages/NewsPage";
+import NewsDetail from "./pages/NewsDetail";
 import PromotionsPage from "./pages/PromotionsPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -23,6 +24,8 @@ import Dashboard from "./pages/admin/Dashboard";
 import Orders from "./pages/admin/Orders";
 import Products from "./pages/admin/Products";
 import Posts from "./pages/admin/Posts";
+import AddPost from "./pages/admin/AddPost";
+import EditPost from "./pages/admin/EditPost";
 import Users from "./pages/admin/Users";
 import Comments from "./pages/admin/Comments";
 import Statistics from "./pages/admin/Statistics";
@@ -35,6 +38,7 @@ import PersonalInfoPage from "./pages/user/PersonalInfoPage";
 import ChangePasswordPage from "./pages/user/ChangePasswordPage";
 import OrderHistoryPage from "./pages/user/OrderHistoryPage";
 import OrderDetail from "./pages/admin/OrderDetail";
+
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -63,6 +67,7 @@ const AppRoutes = () => {
       <Route path="/dang-nhap" element={<LoginPage />} />
       <Route path="/dang-ky" element={<RegisterPage />} />
       <Route path="/tin-tuc" element={<NewsPage />} />
+      <Route path="/tin-tuc/:id" element={<NewsDetail />} />
       <Route path="/khuyen-mai" element={<PromotionsPage />} />
       <Route path="/san-pham" element={<ProductsPage />} />
       <Route path="/san-pham/:category" element={<ProductsPage />} />
@@ -156,12 +161,21 @@ const AppRoutes = () => {
         element={<ProductDetailPage productSlug="bao-hiem-an-ninh-mang" />}
       />
       {/* Admin routes */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<Orders />} />
-        <Route path="orders/:id" element={<OrderDetail />} /> {/* Thêm dòng này */}
+        <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="products" element={<Products />} />
         <Route path="posts" element={<Posts />} />
+        <Route path="posts/add" element={<AddPost />} />
+        <Route path="posts/edit/:id" element={<EditPost />} />
         <Route path="users" element={<Users />} />
         <Route path="comments" element={<Comments />} />
         <Route path="statistics" element={<Statistics />} />
