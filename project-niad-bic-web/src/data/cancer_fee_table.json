@@ -1,0 +1,2402 @@
+[
+  {
+    "age": 16,
+    "gender": "male",
+    "program": 1,
+    "fee": 51000
+  },
+  {
+    "age": 16,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 16,
+    "gender": "male",
+    "program": 2,
+    "fee": 47000
+  },
+  {
+    "age": 16,
+    "gender": "female",
+    "program": 2,
+    "fee": 101000
+  },
+  {
+    "age": 16,
+    "gender": "male",
+    "program": 3,
+    "fee": 94000
+  },
+  {
+    "age": 16,
+    "gender": "female",
+    "program": 3,
+    "fee": 152000
+  },
+  {
+    "age": 16,
+    "gender": "male",
+    "program": 4,
+    "fee": 141000
+  },
+  {
+    "age": 16,
+    "gender": "female",
+    "program": 4,
+    "fee": 253000
+  },
+  {
+    "age": 17,
+    "gender": "male",
+    "program": 1,
+    "fee": 51000
+  },
+  {
+    "age": 17,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 17,
+    "gender": "male",
+    "program": 2,
+    "fee": 49000
+  },
+  {
+    "age": 17,
+    "gender": "female",
+    "program": 2,
+    "fee": 102000
+  },
+  {
+    "age": 17,
+    "gender": "male",
+    "program": 3,
+    "fee": 97000
+  },
+  {
+    "age": 17,
+    "gender": "female",
+    "program": 3,
+    "fee": 152000
+  },
+  {
+    "age": 17,
+    "gender": "male",
+    "program": 4,
+    "fee": 145000
+  },
+  {
+    "age": 17,
+    "gender": "female",
+    "program": 4,
+    "fee": 254000
+  },
+  {
+    "age": 18,
+    "gender": "male",
+    "program": 1,
+    "fee": 56000
+  },
+  {
+    "age": 18,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 18,
+    "gender": "male",
+    "program": 2,
+    "fee": 57000
+  },
+  {
+    "age": 18,
+    "gender": "female",
+    "program": 2,
+    "fee": 112000
+  },
+  {
+    "age": 18,
+    "gender": "male",
+    "program": 3,
+    "fee": 114000
+  },
+  {
+    "age": 18,
+    "gender": "female",
+    "program": 3,
+    "fee": 168000
+  },
+  {
+    "age": 18,
+    "gender": "male",
+    "program": 4,
+    "fee": 170000
+  },
+  {
+    "age": 18,
+    "gender": "female",
+    "program": 4,
+    "fee": 279000
+  },
+  {
+    "age": 19,
+    "gender": "male",
+    "program": 1,
+    "fee": 63000
+  },
+  {
+    "age": 19,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 19,
+    "gender": "male",
+    "program": 2,
+    "fee": 67000
+  },
+  {
+    "age": 19,
+    "gender": "female",
+    "program": 2,
+    "fee": 126000
+  },
+  {
+    "age": 19,
+    "gender": "male",
+    "program": 3,
+    "fee": 134000
+  },
+  {
+    "age": 19,
+    "gender": "female",
+    "program": 3,
+    "fee": 189000
+  },
+  {
+    "age": 19,
+    "gender": "male",
+    "program": 4,
+    "fee": 201000
+  },
+  {
+    "age": 19,
+    "gender": "female",
+    "program": 4,
+    "fee": 314000
+  },
+  {
+    "age": 20,
+    "gender": "male",
+    "program": 1,
+    "fee": 72000
+  },
+  {
+    "age": 20,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 20,
+    "gender": "male",
+    "program": 2,
+    "fee": 80000
+  },
+  {
+    "age": 20,
+    "gender": "female",
+    "program": 2,
+    "fee": 144000
+  },
+  {
+    "age": 20,
+    "gender": "male",
+    "program": 3,
+    "fee": 159000
+  },
+  {
+    "age": 20,
+    "gender": "female",
+    "program": 3,
+    "fee": 216000
+  },
+  {
+    "age": 20,
+    "gender": "male",
+    "program": 4,
+    "fee": 238000
+  },
+  {
+    "age": 20,
+    "gender": "female",
+    "program": 4,
+    "fee": 359000
+  },
+  {
+    "age": 21,
+    "gender": "male",
+    "program": 1,
+    "fee": 83000
+  },
+  {
+    "age": 21,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 21,
+    "gender": "male",
+    "program": 2,
+    "fee": 92000
+  },
+  {
+    "age": 21,
+    "gender": "female",
+    "program": 2,
+    "fee": 166000
+  },
+  {
+    "age": 21,
+    "gender": "male",
+    "program": 3,
+    "fee": 183000
+  },
+  {
+    "age": 21,
+    "gender": "female",
+    "program": 3,
+    "fee": 249000
+  },
+  {
+    "age": 21,
+    "gender": "male",
+    "program": 4,
+    "fee": 274000
+  },
+  {
+    "age": 21,
+    "gender": "female",
+    "program": 4,
+    "fee": 415000
+  },
+  {
+    "age": 22,
+    "gender": "male",
+    "program": 1,
+    "fee": 91000
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 22,
+    "gender": "male",
+    "program": 2,
+    "fee": 108000
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "program": 2,
+    "fee": 182000
+  },
+  {
+    "age": 22,
+    "gender": "male",
+    "program": 3,
+    "fee": 216000
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "program": 3,
+    "fee": 272000
+  },
+  {
+    "age": 22,
+    "gender": "male",
+    "program": 4,
+    "fee": 324000
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "program": 4,
+    "fee": 453000
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "program": 1,
+    "fee": 103000
+  },
+  {
+    "age": 23,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "program": 2,
+    "fee": 122000
+  },
+  {
+    "age": 23,
+    "gender": "female",
+    "program": 2,
+    "fee": 206000
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "program": 3,
+    "fee": 244000
+  },
+  {
+    "age": 23,
+    "gender": "female",
+    "program": 3,
+    "fee": 309000
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "program": 4,
+    "fee": 365000
+  },
+  {
+    "age": 23,
+    "gender": "female",
+    "program": 4,
+    "fee": 514000
+  },
+  {
+    "age": 24,
+    "gender": "male",
+    "program": 1,
+    "fee": 117000
+  },
+  {
+    "age": 24,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 24,
+    "gender": "male",
+    "program": 2,
+    "fee": 141000
+  },
+  {
+    "age": 24,
+    "gender": "female",
+    "program": 2,
+    "fee": 234000
+  },
+  {
+    "age": 24,
+    "gender": "male",
+    "program": 3,
+    "fee": 281000
+  },
+  {
+    "age": 24,
+    "gender": "female",
+    "program": 3,
+    "fee": 351000
+  },
+  {
+    "age": 24,
+    "gender": "male",
+    "program": 4,
+    "fee": 422000
+  },
+  {
+    "age": 24,
+    "gender": "female",
+    "program": 4,
+    "fee": 584000
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "program": 1,
+    "fee": 130000
+  },
+  {
+    "age": 25,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "program": 2,
+    "fee": 160000
+  },
+  {
+    "age": 25,
+    "gender": "female",
+    "program": 2,
+    "fee": 259000
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "program": 3,
+    "fee": 319000
+  },
+  {
+    "age": 25,
+    "gender": "female",
+    "program": 3,
+    "fee": 389000
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "program": 4,
+    "fee": 478000
+  },
+  {
+    "age": 25,
+    "gender": "female",
+    "program": 4,
+    "fee": 648000
+  },
+  {
+    "age": 26,
+    "gender": "male",
+    "program": 1,
+    "fee": 144000
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 26,
+    "gender": "male",
+    "program": 2,
+    "fee": 178000
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "program": 2,
+    "fee": 288000
+  },
+  {
+    "age": 26,
+    "gender": "male",
+    "program": 3,
+    "fee": 355000
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "program": 3,
+    "fee": 432000
+  },
+  {
+    "age": 26,
+    "gender": "male",
+    "program": 4,
+    "fee": 532000
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "program": 4,
+    "fee": 720000
+  },
+  {
+    "age": 27,
+    "gender": "male",
+    "program": 1,
+    "fee": 160000
+  },
+  {
+    "age": 27,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 27,
+    "gender": "male",
+    "program": 2,
+    "fee": 195000
+  },
+  {
+    "age": 27,
+    "gender": "female",
+    "program": 2,
+    "fee": 320000
+  },
+  {
+    "age": 27,
+    "gender": "male",
+    "program": 3,
+    "fee": 389000
+  },
+  {
+    "age": 27,
+    "gender": "female",
+    "program": 3,
+    "fee": 479000
+  },
+  {
+    "age": 27,
+    "gender": "male",
+    "program": 4,
+    "fee": 584000
+  },
+  {
+    "age": 27,
+    "gender": "female",
+    "program": 4,
+    "fee": 798000
+  },
+  {
+    "age": 28,
+    "gender": "male",
+    "program": 1,
+    "fee": 179000
+  },
+  {
+    "age": 28,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 28,
+    "gender": "male",
+    "program": 2,
+    "fee": 214000
+  },
+  {
+    "age": 28,
+    "gender": "female",
+    "program": 2,
+    "fee": 358000
+  },
+  {
+    "age": 28,
+    "gender": "male",
+    "program": 3,
+    "fee": 427000
+  },
+  {
+    "age": 28,
+    "gender": "female",
+    "program": 3,
+    "fee": 537000
+  },
+  {
+    "age": 28,
+    "gender": "male",
+    "program": 4,
+    "fee": 641000
+  },
+  {
+    "age": 28,
+    "gender": "female",
+    "program": 4,
+    "fee": 895000
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "program": 1,
+    "fee": 200000
+  },
+  {
+    "age": 29,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "program": 2,
+    "fee": 231000
+  },
+  {
+    "age": 29,
+    "gender": "female",
+    "program": 2,
+    "fee": 399000
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "program": 3,
+    "fee": 462000
+  },
+  {
+    "age": 29,
+    "gender": "female",
+    "program": 3,
+    "fee": 599000
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "program": 4,
+    "fee": 693000
+  },
+  {
+    "age": 29,
+    "gender": "female",
+    "program": 4,
+    "fee": 998000
+  },
+  {
+    "age": 30,
+    "gender": "male",
+    "program": 1,
+    "fee": 218000
+  },
+  {
+    "age": 30,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 30,
+    "gender": "male",
+    "program": 2,
+    "fee": 254000
+  },
+  {
+    "age": 30,
+    "gender": "female",
+    "program": 2,
+    "fee": 436000
+  },
+  {
+    "age": 30,
+    "gender": "male",
+    "program": 3,
+    "fee": 507000
+  },
+  {
+    "age": 30,
+    "gender": "female",
+    "program": 3,
+    "fee": 653000
+  },
+  {
+    "age": 30,
+    "gender": "male",
+    "program": 4,
+    "fee": 760000
+  },
+  {
+    "age": 30,
+    "gender": "female",
+    "program": 4,
+    "fee": 1089000
+  },
+  {
+    "age": 31,
+    "gender": "male",
+    "program": 1,
+    "fee": 245000
+  },
+  {
+    "age": 31,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 31,
+    "gender": "male",
+    "program": 2,
+    "fee": 277000
+  },
+  {
+    "age": 31,
+    "gender": "female",
+    "program": 2,
+    "fee": 490000
+  },
+  {
+    "age": 31,
+    "gender": "male",
+    "program": 3,
+    "fee": 554000
+  },
+  {
+    "age": 31,
+    "gender": "female",
+    "program": 3,
+    "fee": 734000
+  },
+  {
+    "age": 31,
+    "gender": "male",
+    "program": 4,
+    "fee": 830000
+  },
+  {
+    "age": 31,
+    "gender": "female",
+    "program": 4,
+    "fee": 1224000
+  },
+  {
+    "age": 32,
+    "gender": "male",
+    "program": 1,
+    "fee": 272000
+  },
+  {
+    "age": 32,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 32,
+    "gender": "male",
+    "program": 2,
+    "fee": 299000
+  },
+  {
+    "age": 32,
+    "gender": "female",
+    "program": 2,
+    "fee": 544000
+  },
+  {
+    "age": 32,
+    "gender": "male",
+    "program": 3,
+    "fee": 598000
+  },
+  {
+    "age": 32,
+    "gender": "female",
+    "program": 3,
+    "fee": 816000
+  },
+  {
+    "age": 32,
+    "gender": "male",
+    "program": 4,
+    "fee": 896000
+  },
+  {
+    "age": 32,
+    "gender": "female",
+    "program": 4,
+    "fee": 1359000
+  },
+  {
+    "age": 33,
+    "gender": "male",
+    "program": 1,
+    "fee": 302000
+  },
+  {
+    "age": 33,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 33,
+    "gender": "male",
+    "program": 2,
+    "fee": 329000
+  },
+  {
+    "age": 33,
+    "gender": "female",
+    "program": 2,
+    "fee": 604000
+  },
+  {
+    "age": 33,
+    "gender": "male",
+    "program": 3,
+    "fee": 657000
+  },
+  {
+    "age": 33,
+    "gender": "female",
+    "program": 3,
+    "fee": 906000
+  },
+  {
+    "age": 33,
+    "gender": "male",
+    "program": 4,
+    "fee": 985000
+  },
+  {
+    "age": 33,
+    "gender": "female",
+    "program": 4,
+    "fee": 1509000
+  },
+  {
+    "age": 34,
+    "gender": "male",
+    "program": 1,
+    "fee": 337000
+  },
+  {
+    "age": 34,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 34,
+    "gender": "male",
+    "program": 2,
+    "fee": 356000
+  },
+  {
+    "age": 34,
+    "gender": "female",
+    "program": 2,
+    "fee": 674000
+  },
+  {
+    "age": 34,
+    "gender": "male",
+    "program": 3,
+    "fee": 712000
+  },
+  {
+    "age": 34,
+    "gender": "female",
+    "program": 3,
+    "fee": 1011000
+  },
+  {
+    "age": 34,
+    "gender": "male",
+    "program": 4,
+    "fee": 1067000
+  },
+  {
+    "age": 34,
+    "gender": "female",
+    "program": 4,
+    "fee": 1684000
+  },
+  {
+    "age": 35,
+    "gender": "male",
+    "program": 1,
+    "fee": 374000
+  },
+  {
+    "age": 35,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 35,
+    "gender": "male",
+    "program": 2,
+    "fee": 388000
+  },
+  {
+    "age": 35,
+    "gender": "female",
+    "program": 2,
+    "fee": 747000
+  },
+  {
+    "age": 35,
+    "gender": "male",
+    "program": 3,
+    "fee": 775000
+  },
+  {
+    "age": 35,
+    "gender": "female",
+    "program": 3,
+    "fee": 1121000
+  },
+  {
+    "age": 35,
+    "gender": "male",
+    "program": 4,
+    "fee": 1162000
+  },
+  {
+    "age": 35,
+    "gender": "female",
+    "program": 4,
+    "fee": 1867000
+  },
+  {
+    "age": 36,
+    "gender": "male",
+    "program": 1,
+    "fee": 418000
+  },
+  {
+    "age": 36,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 36,
+    "gender": "male",
+    "program": 2,
+    "fee": 420000
+  },
+  {
+    "age": 36,
+    "gender": "female",
+    "program": 2,
+    "fee": 836000
+  },
+  {
+    "age": 36,
+    "gender": "male",
+    "program": 3,
+    "fee": 840000
+  },
+  {
+    "age": 36,
+    "gender": "female",
+    "program": 3,
+    "fee": 1253000
+  },
+  {
+    "age": 36,
+    "gender": "male",
+    "program": 4,
+    "fee": 1259000
+  },
+  {
+    "age": 36,
+    "gender": "female",
+    "program": 4,
+    "fee": 2089000
+  },
+  {
+    "age": 37,
+    "gender": "male",
+    "program": 1,
+    "fee": 462000
+  },
+  {
+    "age": 37,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 37,
+    "gender": "male",
+    "program": 2,
+    "fee": 454000
+  },
+  {
+    "age": 37,
+    "gender": "female",
+    "program": 2,
+    "fee": 923000
+  },
+  {
+    "age": 37,
+    "gender": "male",
+    "program": 3,
+    "fee": 907000
+  },
+  {
+    "age": 37,
+    "gender": "female",
+    "program": 3,
+    "fee": 1384000
+  },
+  {
+    "age": 37,
+    "gender": "male",
+    "program": 4,
+    "fee": 1360000
+  },
+  {
+    "age": 37,
+    "gender": "female",
+    "program": 4,
+    "fee": 2306000
+  },
+  {
+    "age": 38,
+    "gender": "male",
+    "program": 1,
+    "fee": 518000
+  },
+  {
+    "age": 38,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 38,
+    "gender": "male",
+    "program": 2,
+    "fee": 495000
+  },
+  {
+    "age": 38,
+    "gender": "female",
+    "program": 2,
+    "fee": 1036000
+  },
+  {
+    "age": 38,
+    "gender": "male",
+    "program": 3,
+    "fee": 989000
+  },
+  {
+    "age": 38,
+    "gender": "female",
+    "program": 3,
+    "fee": 1553000
+  },
+  {
+    "age": 38,
+    "gender": "male",
+    "program": 4,
+    "fee": 1483000
+  },
+  {
+    "age": 38,
+    "gender": "female",
+    "program": 4,
+    "fee": 2589000
+  },
+  {
+    "age": 39,
+    "gender": "male",
+    "program": 1,
+    "fee": 586000
+  },
+  {
+    "age": 39,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 39,
+    "gender": "male",
+    "program": 2,
+    "fee": 540000
+  },
+  {
+    "age": 39,
+    "gender": "female",
+    "program": 2,
+    "fee": 1171000
+  },
+  {
+    "age": 39,
+    "gender": "male",
+    "program": 3,
+    "fee": 1080000
+  },
+  {
+    "age": 39,
+    "gender": "female",
+    "program": 3,
+    "fee": 1756000
+  },
+  {
+    "age": 39,
+    "gender": "male",
+    "program": 4,
+    "fee": 1620000
+  },
+  {
+    "age": 39,
+    "gender": "female",
+    "program": 4,
+    "fee": 2927000
+  },
+  {
+    "age": 40,
+    "gender": "male",
+    "program": 1,
+    "fee": 653000
+  },
+  {
+    "age": 40,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 40,
+    "gender": "male",
+    "program": 2,
+    "fee": 585000
+  },
+  {
+    "age": 40,
+    "gender": "female",
+    "program": 2,
+    "fee": 1306000
+  },
+  {
+    "age": 40,
+    "gender": "male",
+    "program": 3,
+    "fee": 1170000
+  },
+  {
+    "age": 40,
+    "gender": "female",
+    "program": 3,
+    "fee": 1959000
+  },
+  {
+    "age": 40,
+    "gender": "male",
+    "program": 4,
+    "fee": 1754000
+  },
+  {
+    "age": 40,
+    "gender": "female",
+    "program": 4,
+    "fee": 3265000
+  },
+  {
+    "age": 41,
+    "gender": "male",
+    "program": 1,
+    "fee": 728000
+  },
+  {
+    "age": 41,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 41,
+    "gender": "male",
+    "program": 2,
+    "fee": 635000
+  },
+  {
+    "age": 41,
+    "gender": "female",
+    "program": 2,
+    "fee": 1455000
+  },
+  {
+    "age": 41,
+    "gender": "male",
+    "program": 3,
+    "fee": 1270000
+  },
+  {
+    "age": 41,
+    "gender": "female",
+    "program": 3,
+    "fee": 2182000
+  },
+  {
+    "age": 41,
+    "gender": "male",
+    "program": 4,
+    "fee": 1905000
+  },
+  {
+    "age": 41,
+    "gender": "female",
+    "program": 4,
+    "fee": 3636000
+  },
+  {
+    "age": 42,
+    "gender": "male",
+    "program": 1,
+    "fee": 812000
+  },
+  {
+    "age": 42,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 42,
+    "gender": "male",
+    "program": 2,
+    "fee": 690000
+  },
+  {
+    "age": 42,
+    "gender": "female",
+    "program": 2,
+    "fee": 1624000
+  },
+  {
+    "age": 42,
+    "gender": "male",
+    "program": 3,
+    "fee": 1379000
+  },
+  {
+    "age": 42,
+    "gender": "female",
+    "program": 3,
+    "fee": 2436000
+  },
+  {
+    "age": 42,
+    "gender": "male",
+    "program": 4,
+    "fee": 2068000
+  },
+  {
+    "age": 42,
+    "gender": "female",
+    "program": 4,
+    "fee": 4060000
+  },
+  {
+    "age": 43,
+    "gender": "male",
+    "program": 1,
+    "fee": 904000
+  },
+  {
+    "age": 43,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 43,
+    "gender": "male",
+    "program": 2,
+    "fee": 745000
+  },
+  {
+    "age": 43,
+    "gender": "female",
+    "program": 2,
+    "fee": 1807000
+  },
+  {
+    "age": 43,
+    "gender": "male",
+    "program": 3,
+    "fee": 1490000
+  },
+  {
+    "age": 43,
+    "gender": "female",
+    "program": 3,
+    "fee": 2710000
+  },
+  {
+    "age": 43,
+    "gender": "male",
+    "program": 4,
+    "fee": 2235000
+  },
+  {
+    "age": 43,
+    "gender": "female",
+    "program": 4,
+    "fee": 4516000
+  },
+  {
+    "age": 44,
+    "gender": "male",
+    "program": 1,
+    "fee": 1004000
+  },
+  {
+    "age": 44,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 44,
+    "gender": "male",
+    "program": 2,
+    "fee": 806000
+  },
+  {
+    "age": 44,
+    "gender": "female",
+    "program": 2,
+    "fee": 2008000
+  },
+  {
+    "age": 44,
+    "gender": "male",
+    "program": 3,
+    "fee": 1611000
+  },
+  {
+    "age": 44,
+    "gender": "female",
+    "program": 3,
+    "fee": 3012000
+  },
+  {
+    "age": 44,
+    "gender": "male",
+    "program": 4,
+    "fee": 2416000
+  },
+  {
+    "age": 44,
+    "gender": "female",
+    "program": 4,
+    "fee": 5020000
+  },
+  {
+    "age": 45,
+    "gender": "male",
+    "program": 1,
+    "fee": 1100000
+  },
+  {
+    "age": 45,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 45,
+    "gender": "male",
+    "program": 2,
+    "fee": 865000
+  },
+  {
+    "age": 45,
+    "gender": "female",
+    "program": 2,
+    "fee": 2200000
+  },
+  {
+    "age": 45,
+    "gender": "male",
+    "program": 3,
+    "fee": 1730000
+  },
+  {
+    "age": 45,
+    "gender": "female",
+    "program": 3,
+    "fee": 3300000
+  },
+  {
+    "age": 45,
+    "gender": "male",
+    "program": 4,
+    "fee": 2595000
+  },
+  {
+    "age": 45,
+    "gender": "female",
+    "program": 4,
+    "fee": 5500000
+  },
+  {
+    "age": 46,
+    "gender": "male",
+    "program": 1,
+    "fee": 1198000
+  },
+  {
+    "age": 46,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 46,
+    "gender": "male",
+    "program": 2,
+    "fee": 918000
+  },
+  {
+    "age": 46,
+    "gender": "female",
+    "program": 2,
+    "fee": 2396000
+  },
+  {
+    "age": 46,
+    "gender": "male",
+    "program": 3,
+    "fee": 1835000
+  },
+  {
+    "age": 46,
+    "gender": "female",
+    "program": 3,
+    "fee": 3594000
+  },
+  {
+    "age": 46,
+    "gender": "male",
+    "program": 4,
+    "fee": 2752000
+  },
+  {
+    "age": 46,
+    "gender": "female",
+    "program": 4,
+    "fee": 5990000
+  },
+  {
+    "age": 47,
+    "gender": "male",
+    "program": 1,
+    "fee": 1288000
+  },
+  {
+    "age": 47,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 47,
+    "gender": "male",
+    "program": 2,
+    "fee": 969000
+  },
+  {
+    "age": 47,
+    "gender": "female",
+    "program": 2,
+    "fee": 2576000
+  },
+  {
+    "age": 47,
+    "gender": "male",
+    "program": 3,
+    "fee": 1938000
+  },
+  {
+    "age": 47,
+    "gender": "female",
+    "program": 3,
+    "fee": 3864000
+  },
+  {
+    "age": 47,
+    "gender": "male",
+    "program": 4,
+    "fee": 2907000
+  },
+  {
+    "age": 47,
+    "gender": "female",
+    "program": 4,
+    "fee": 6440000
+  },
+  {
+    "age": 48,
+    "gender": "male",
+    "program": 1,
+    "fee": 1390000
+  },
+  {
+    "age": 48,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 48,
+    "gender": "male",
+    "program": 2,
+    "fee": 1021000
+  },
+  {
+    "age": 48,
+    "gender": "female",
+    "program": 2,
+    "fee": 2780000
+  },
+  {
+    "age": 48,
+    "gender": "male",
+    "program": 3,
+    "fee": 2041000
+  },
+  {
+    "age": 48,
+    "gender": "female",
+    "program": 3,
+    "fee": 4170000
+  },
+  {
+    "age": 48,
+    "gender": "male",
+    "program": 4,
+    "fee": 3061000
+  },
+  {
+    "age": 48,
+    "gender": "female",
+    "program": 4,
+    "fee": 6949000
+  },
+  {
+    "age": 49,
+    "gender": "male",
+    "program": 1,
+    "fee": 1486000
+  },
+  {
+    "age": 49,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 49,
+    "gender": "male",
+    "program": 2,
+    "fee": 1073000
+  },
+  {
+    "age": 49,
+    "gender": "female",
+    "program": 2,
+    "fee": 2972000
+  },
+  {
+    "age": 49,
+    "gender": "male",
+    "program": 3,
+    "fee": 2145000
+  },
+  {
+    "age": 49,
+    "gender": "female",
+    "program": 3,
+    "fee": 4457000
+  },
+  {
+    "age": 49,
+    "gender": "male",
+    "program": 4,
+    "fee": 3217000
+  },
+  {
+    "age": 49,
+    "gender": "female",
+    "program": 4,
+    "fee": 7428000
+  },
+  {
+    "age": 50,
+    "gender": "male",
+    "program": 1,
+    "fee": 1579000
+  },
+  {
+    "age": 50,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 50,
+    "gender": "male",
+    "program": 2,
+    "fee": 1119000
+  },
+  {
+    "age": 50,
+    "gender": "female",
+    "program": 2,
+    "fee": 3157000
+  },
+  {
+    "age": 50,
+    "gender": "male",
+    "program": 3,
+    "fee": 2237000
+  },
+  {
+    "age": 50,
+    "gender": "female",
+    "program": 3,
+    "fee": 4736000
+  },
+  {
+    "age": 50,
+    "gender": "male",
+    "program": 4,
+    "fee": 3355000
+  },
+  {
+    "age": 50,
+    "gender": "female",
+    "program": 4,
+    "fee": 7893000
+  },
+  {
+    "age": 51,
+    "gender": "male",
+    "program": 1,
+    "fee": 1675000
+  },
+  {
+    "age": 51,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 51,
+    "gender": "male",
+    "program": 2,
+    "fee": 1165000
+  },
+  {
+    "age": 51,
+    "gender": "female",
+    "program": 2,
+    "fee": 3350000
+  },
+  {
+    "age": 51,
+    "gender": "male",
+    "program": 3,
+    "fee": 2330000
+  },
+  {
+    "age": 51,
+    "gender": "female",
+    "program": 3,
+    "fee": 5024000
+  },
+  {
+    "age": 51,
+    "gender": "male",
+    "program": 4,
+    "fee": 3494000
+  },
+  {
+    "age": 51,
+    "gender": "female",
+    "program": 4,
+    "fee": 8373000
+  },
+  {
+    "age": 52,
+    "gender": "male",
+    "program": 1,
+    "fee": 1760000
+  },
+  {
+    "age": 52,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 52,
+    "gender": "male",
+    "program": 2,
+    "fee": 1202000
+  },
+  {
+    "age": 52,
+    "gender": "female",
+    "program": 2,
+    "fee": 3520000
+  },
+  {
+    "age": 52,
+    "gender": "male",
+    "program": 3,
+    "fee": 2403000
+  },
+  {
+    "age": 52,
+    "gender": "female",
+    "program": 3,
+    "fee": 5280000
+  },
+  {
+    "age": 52,
+    "gender": "male",
+    "program": 4,
+    "fee": 3605000
+  },
+  {
+    "age": 52,
+    "gender": "female",
+    "program": 4,
+    "fee": 8800000
+  },
+  {
+    "age": 53,
+    "gender": "male",
+    "program": 1,
+    "fee": 1837000
+  },
+  {
+    "age": 53,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 53,
+    "gender": "male",
+    "program": 2,
+    "fee": 1235000
+  },
+  {
+    "age": 53,
+    "gender": "female",
+    "program": 2,
+    "fee": 3674000
+  },
+  {
+    "age": 53,
+    "gender": "male",
+    "program": 3,
+    "fee": 2470000
+  },
+  {
+    "age": 53,
+    "gender": "female",
+    "program": 3,
+    "fee": 5511000
+  },
+  {
+    "age": 53,
+    "gender": "male",
+    "program": 4,
+    "fee": 3705000
+  },
+  {
+    "age": 53,
+    "gender": "female",
+    "program": 4,
+    "fee": 9185000
+  },
+  {
+    "age": 54,
+    "gender": "male",
+    "program": 1,
+    "fee": 1909000
+  },
+  {
+    "age": 54,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 54,
+    "gender": "male",
+    "program": 2,
+    "fee": 1262000
+  },
+  {
+    "age": 54,
+    "gender": "female",
+    "program": 2,
+    "fee": 3818000
+  },
+  {
+    "age": 54,
+    "gender": "male",
+    "program": 3,
+    "fee": 2523000
+  },
+  {
+    "age": 54,
+    "gender": "female",
+    "program": 3,
+    "fee": 5727000
+  },
+  {
+    "age": 54,
+    "gender": "male",
+    "program": 4,
+    "fee": 3784000
+  },
+  {
+    "age": 54,
+    "gender": "female",
+    "program": 4,
+    "fee": 9545000
+  },
+  {
+    "age": 55,
+    "gender": "male",
+    "program": 1,
+    "fee": 1979000
+  },
+  {
+    "age": 55,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 55,
+    "gender": "male",
+    "program": 2,
+    "fee": 1284000
+  },
+  {
+    "age": 55,
+    "gender": "female",
+    "program": 2,
+    "fee": 3957000
+  },
+  {
+    "age": 55,
+    "gender": "male",
+    "program": 3,
+    "fee": 2568000
+  },
+  {
+    "age": 55,
+    "gender": "female",
+    "program": 3,
+    "fee": 5936000
+  },
+  {
+    "age": 55,
+    "gender": "male",
+    "program": 4,
+    "fee": 3851000
+  },
+  {
+    "age": 55,
+    "gender": "female",
+    "program": 4,
+    "fee": 9892000
+  },
+  {
+    "age": 56,
+    "gender": "male",
+    "program": 1,
+    "fee": 2056000
+  },
+  {
+    "age": 56,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 56,
+    "gender": "male",
+    "program": 2,
+    "fee": 1306000
+  },
+  {
+    "age": 56,
+    "gender": "female",
+    "program": 2,
+    "fee": 4112000
+  },
+  {
+    "age": 56,
+    "gender": "male",
+    "program": 3,
+    "fee": 2611000
+  },
+  {
+    "age": 56,
+    "gender": "female",
+    "program": 3,
+    "fee": 6168000
+  },
+  {
+    "age": 56,
+    "gender": "male",
+    "program": 4,
+    "fee": 3916000
+  },
+  {
+    "age": 56,
+    "gender": "female",
+    "program": 4,
+    "fee": 10280000
+  },
+  {
+    "age": 57,
+    "gender": "male",
+    "program": 1,
+    "fee": 2128000
+  },
+  {
+    "age": 57,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 57,
+    "gender": "male",
+    "program": 2,
+    "fee": 1322000
+  },
+  {
+    "age": 57,
+    "gender": "female",
+    "program": 2,
+    "fee": 4256000
+  },
+  {
+    "age": 57,
+    "gender": "male",
+    "program": 3,
+    "fee": 2644000
+  },
+  {
+    "age": 57,
+    "gender": "female",
+    "program": 3,
+    "fee": 6384000
+  },
+  {
+    "age": 57,
+    "gender": "male",
+    "program": 4,
+    "fee": 3966000
+  },
+  {
+    "age": 57,
+    "gender": "female",
+    "program": 4,
+    "fee": 10640000
+  },
+  {
+    "age": 58,
+    "gender": "male",
+    "program": 1,
+    "fee": 2195000
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 58,
+    "gender": "male",
+    "program": 2,
+    "fee": 1330000
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "program": 2,
+    "fee": 4390000
+  },
+  {
+    "age": 58,
+    "gender": "male",
+    "program": 3,
+    "fee": 2660000
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "program": 3,
+    "fee": 6585000
+  },
+  {
+    "age": 58,
+    "gender": "male",
+    "program": 4,
+    "fee": 3989000
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "program": 4,
+    "fee": 10975000
+  },
+  {
+    "age": 59,
+    "gender": "male",
+    "program": 1,
+    "fee": 2263000
+  },
+  {
+    "age": 59,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 59,
+    "gender": "male",
+    "program": 2,
+    "fee": 1339000
+  },
+  {
+    "age": 59,
+    "gender": "female",
+    "program": 2,
+    "fee": 4526000
+  },
+  {
+    "age": 59,
+    "gender": "male",
+    "program": 3,
+    "fee": 2677000
+  },
+  {
+    "age": 59,
+    "gender": "female",
+    "program": 3,
+    "fee": 6788000
+  },
+  {
+    "age": 59,
+    "gender": "male",
+    "program": 4,
+    "fee": 4015000
+  },
+  {
+    "age": 59,
+    "gender": "female",
+    "program": 4,
+    "fee": 11314000
+  },
+  {
+    "age": 60,
+    "gender": "male",
+    "program": 1,
+    "fee": 2330000
+  },
+  {
+    "age": 60,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 60,
+    "gender": "male",
+    "program": 2,
+    "fee": 1340000
+  },
+  {
+    "age": 60,
+    "gender": "female",
+    "program": 2,
+    "fee": 4659000
+  },
+  {
+    "age": 60,
+    "gender": "male",
+    "program": 3,
+    "fee": 2680000
+  },
+  {
+    "age": 60,
+    "gender": "female",
+    "program": 3,
+    "fee": 6988000
+  },
+  {
+    "age": 60,
+    "gender": "male",
+    "program": 4,
+    "fee": 4020000
+  },
+  {
+    "age": 60,
+    "gender": "female",
+    "program": 4,
+    "fee": 11647000
+  },
+  {
+    "age": 61,
+    "gender": "male",
+    "program": 1,
+    "fee": 2400000
+  },
+  {
+    "age": 61,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 61,
+    "gender": "male",
+    "program": 2,
+    "fee": 1342000
+  },
+  {
+    "age": 61,
+    "gender": "female",
+    "program": 2,
+    "fee": 4799000
+  },
+  {
+    "age": 61,
+    "gender": "male",
+    "program": 3,
+    "fee": 2684000
+  },
+  {
+    "age": 61,
+    "gender": "female",
+    "program": 3,
+    "fee": 7198000
+  },
+  {
+    "age": 61,
+    "gender": "male",
+    "program": 4,
+    "fee": 4025000
+  },
+  {
+    "age": 61,
+    "gender": "female",
+    "program": 4,
+    "fee": 11996000
+  },
+  {
+    "age": 62,
+    "gender": "male",
+    "program": 1,
+    "fee": 2462000
+  },
+  {
+    "age": 62,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 62,
+    "gender": "male",
+    "program": 2,
+    "fee": 1344000
+  },
+  {
+    "age": 62,
+    "gender": "female",
+    "program": 2,
+    "fee": 4923000
+  },
+  {
+    "age": 62,
+    "gender": "male",
+    "program": 3,
+    "fee": 2687000
+  },
+  {
+    "age": 62,
+    "gender": "female",
+    "program": 3,
+    "fee": 7384000
+  },
+  {
+    "age": 62,
+    "gender": "male",
+    "program": 4,
+    "fee": 4031000
+  },
+  {
+    "age": 62,
+    "gender": "female",
+    "program": 4,
+    "fee": 12307000
+  },
+  {
+    "age": 63,
+    "gender": "male",
+    "program": 1,
+    "fee": 2526000
+  },
+  {
+    "age": 63,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 63,
+    "gender": "male",
+    "program": 2,
+    "fee": 1346000
+  },
+  {
+    "age": 63,
+    "gender": "female",
+    "program": 2,
+    "fee": 5051000
+  },
+  {
+    "age": 63,
+    "gender": "male",
+    "program": 3,
+    "fee": 2691000
+  },
+  {
+    "age": 63,
+    "gender": "female",
+    "program": 3,
+    "fee": 7577000
+  },
+  {
+    "age": 63,
+    "gender": "male",
+    "program": 4,
+    "fee": 4036000
+  },
+  {
+    "age": 63,
+    "gender": "female",
+    "program": 4,
+    "fee": 12628000
+  },
+  {
+    "age": 64,
+    "gender": "male",
+    "program": 1,
+    "fee": 2574000
+  },
+  {
+    "age": 64,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 64,
+    "gender": "male",
+    "program": 2,
+    "fee": 1348000
+  },
+  {
+    "age": 64,
+    "gender": "female",
+    "program": 2,
+    "fee": 5147000
+  },
+  {
+    "age": 64,
+    "gender": "male",
+    "program": 3,
+    "fee": 2695000
+  },
+  {
+    "age": 64,
+    "gender": "female",
+    "program": 3,
+    "fee": 7720000
+  },
+  {
+    "age": 64,
+    "gender": "male",
+    "program": 4,
+    "fee": 4042000
+  },
+  {
+    "age": 64,
+    "gender": "female",
+    "program": 4,
+    "fee": 12866000
+  },
+  {
+    "age": 65,
+    "gender": "male",
+    "program": 1,
+    "fee": 2611000
+  },
+  {
+    "age": 65,
+    "gender": "female",
+    "program": 1,
+    "fee": null
+  },
+  {
+    "age": 65,
+    "gender": "male",
+    "program": 2,
+    "fee": 1349000
+  },
+  {
+    "age": 65,
+    "gender": "female",
+    "program": 2,
+    "fee": 5222000
+  },
+  {
+    "age": 65,
+    "gender": "male",
+    "program": 3,
+    "fee": 2698000
+  },
+  {
+    "age": 65,
+    "gender": "female",
+    "program": 3,
+    "fee": 7833000
+  },
+  {
+    "age": 65,
+    "gender": "male",
+    "program": 4,
+    "fee": 4047000
+  },
+  {
+    "age": 65,
+    "gender": "female",
+    "program": 4,
+    "fee": 13054000
+  }
+]
