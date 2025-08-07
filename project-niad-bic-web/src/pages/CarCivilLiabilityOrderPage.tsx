@@ -288,7 +288,7 @@ export default function CarCivilLiabilityOrderPage() {
               : "",
             chassis_number: vehicleInfo.chassisNumber,
             engine_number: vehicleInfo.engineNumber,
-            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
+            insurance_start: vehicleInfo.insuranceStartDate, // Gửi ngày dạng YYYY-MM-DD
             insurance_duration: vehicleInfo.insuranceTerm,
             insurance_fee: totalFeeDisplay,
             insurance_amount: vehicleInfo.accidentCoverage,
@@ -328,7 +328,8 @@ export default function CarCivilLiabilityOrderPage() {
 
           const customerResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/create_customer_registration`,
-            customerRegistrationPayload
+            customerRegistrationPayload,
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
           console.log("CustomerRegistration response:", customerResponse.data);
@@ -336,16 +337,16 @@ export default function CarCivilLiabilityOrderPage() {
 
           // 3. Create Invoice
           const invoicePayload = {
-            product_id: 1,
+            product_id: 6,
             contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
             insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)),
-            insurance_start: vehicleInfo.insuranceStartDate + "T00:00:00Z",
+            insurance_start: vehicleInfo.insuranceStartDate,
             insurance_end: new Date(
               new Date(vehicleInfo.insuranceStartDate).setFullYear(
                 new Date(vehicleInfo.insuranceStartDate).getFullYear() +
                   vehicleInfo.insuranceTerm
               )
-            ).toISOString(),
+            ).toISOString().split('T')[0],
             insurance_quantity: 1,
             customer_id: customerId,
             form_id: formId,
@@ -355,7 +356,8 @@ export default function CarCivilLiabilityOrderPage() {
 
           const invoiceResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/create_invoice`,
-            invoicePayload
+            invoicePayload,
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
           console.log("Invoice response:", invoiceResponse.data);
@@ -372,7 +374,8 @@ export default function CarCivilLiabilityOrderPage() {
 
           const confirmResponse = await axios.post(
             `${API_URL}/api/insurance_car_owner/confirm_purchase`,
-            confirmPurchasePayload
+            confirmPurchasePayload,
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
           console.log("ConfirmPurchase response:", confirmResponse.data);

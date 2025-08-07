@@ -9,124 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const regions = [
-  {
-    value: "asean",
-    label:
-      "ASEAN: Brunei, Campuchia, Indonesia, Lào, Malaysia, Myanmar (Burma), Philippines, Singapore, Thái Lan, Đông Timo.",
-  },
-  {
-    value: "asia",
-    label: "CHÂU Á: Các nước Châu Á, loại trừ Nhật Bản, Úc, New Zealand.",
-  },
-  {
-    value: "global",
-    label: "TOÀN CẦU: Các nước còn lại (bao gồm Nhật Bản, Úc, New Zealand).",
-  },
-];
-
-const insurancePrograms = {
-  A: {
-    benefits_vnd: 250000000,
-    benefits_usd: 9502,
-    benefits_eur: 8031,
-    fee: 50000,
-  },
-  B: {
-    benefits_vnd: 500000000,
-    benefits_usd: 19004,
-    benefits_eur: 16062,
-    fee: 75000,
-  },
-  C: {
-    benefits_vnd: 750000000,
-    benefits_usd: 28506,
-    benefits_eur: 24093,
-    fee: 100000,
-  },
-  D: {
-    benefits_vnd: 1250000000,
-    benefits_usd: 47510,
-    benefits_eur: 40155,
-    fee: 125000,
-  },
-  E: {
-    benefits_vnd: 2500000000,
-    benefits_usd: 95021,
-    benefits_eur: 80310,
-    fee: 150000,
-  },
-};
-
-type InsuranceProgramKey = keyof typeof insurancePrograms;
-
-// 1. Thêm bảng phí chuẩn hóa
-const travelFeeTable = {
-  asean: [
-    { maxDay: 3, A: 125000, B: 150000, C: 175000, D: 225000, E: 275000 },
-    { maxDay: 5, A: 150000, B: 200000, C: 250000, D: 325000, E: 375000 },
-    { maxDay: 8, A: 200000, B: 275000, C: 300000, D: 375000, E: 450000 },
-    { maxDay: 15, A: 250000, B: 300000, C: 375000, D: 475000, E: 650000 },
-    { maxDay: 24, A: 350000, B: 425000, C: 500000, D: 650000, E: 900000 },
-    { maxDay: 31, A: 425000, B: 475000, C: 650000, D: 900000, E: 1075000 },
-    { maxDay: 45, A: 600000, B: 675000, C: 975000, D: 1300000, E: 1650000 },
-    { maxDay: 60, A: 725000, B: 825000, C: 1275000, D: 1675000, E: 1950000 },
-    { maxDay: 90, A: 1025000, B: 1100000, C: 1850000, D: 2300000, E: 2900000 },
-    { maxDay: 120, A: 1300000, B: 1375000, C: 2375000, D: 3000000, E: 3600000 },
-    { maxDay: 150, A: 1575000, B: 1650000, C: 2900000, D: 3450000, E: 4450000 },
-    { maxDay: 180, A: 1850000, B: 1900000, C: 3475000, D: 4325000, E: 5275000 },
-  ],
-  asia: [
-    { maxDay: 3, A: 150000, B: 175000, C: 200000, D: 250000, E: 300000 },
-    { maxDay: 5, A: 200000, B: 225000, C: 300000, D: 375000, E: 400000 },
-    { maxDay: 8, A: 275000, B: 300000, C: 400000, D: 525000, E: 600000 },
-    { maxDay: 15, A: 325000, B: 375000, C: 425000, D: 550000, E: 875000 },
-    { maxDay: 24, A: 450000, B: 575000, C: 700000, D: 775000, E: 1225000 },
-    { maxDay: 31, A: 525000, B: 700000, C: 875000, D: 1050000, E: 1375000 },
-    { maxDay: 45, A: 700000, B: 860000, C: 1300000, D: 1725000, E: 2050000 },
-    { maxDay: 60, A: 1125000, B: 1375000, C: 1875000, D: 2400000, E: 2900000 },
-    { maxDay: 90, A: 1625000, B: 1925000, C: 2465000, D: 3075000, E: 4625000 },
-    { maxDay: 120, A: 1675000, B: 1900000, C: 3475000, D: 4000000, E: 4600000 },
-    { maxDay: 150, A: 1825000, B: 1950000, C: 3550000, D: 4425000, E: 5750000 },
-  ],
-  global: [
-    { maxDay: 3, A: 175000, B: 225000, C: 275000, D: 300000, E: 325000 },
-    { maxDay: 5, A: 250000, B: 300000, C: 375000, D: 450000, E: 500000 },
-    { maxDay: 8, A: 300000, B: 350000, C: 425000, D: 625000, E: 700000 },
-    { maxDay: 15, A: 350000, B: 450000, C: 625000, D: 800000, E: 1125000 },
-    { maxDay: 24, A: 500000, B: 625000, C: 850000, D: 1100000, E: 1400000 },
-    { maxDay: 31, A: 675000, B: 875000, C: 1075000, D: 1400000, E: 1900000 },
-    { maxDay: 45, A: 1150000, B: 1295000, C: 2075000, D: 2475000, E: 3300000 },
-    { maxDay: 60, A: 1425000, B: 1900000, C: 2475000, D: 3150000, E: 4225000 },
-    { maxDay: 90, A: 1725000, B: 2000000, C: 3650000, D: 4550000, E: 5425000 },
-    { maxDay: 120, A: 1950000, B: 2000000, C: 3650000, D: 4550000, E: 6625000 },
-  ],
-};
-
-// 2. Hàm tra cứu phí theo bảng
-function getTravelInsuranceFee(
-  region: keyof typeof travelFeeTable,
-  program: "A" | "B" | "C" | "D" | "E",
-  days: number
-): number {
-  const table = travelFeeTable[region] || [];
-  for (let i = 0; i < table.length; i++) {
-    if (days <= table[i].maxDay) {
-      return table[i][program] || 0;
-    }
-  }
-  // Nếu vượt quá max, lấy dòng cuối cùng
-  if (table.length > 0) return table[table.length - 1][program] || 0;
-  return 0;
-}
-
-function formatDateToISOString(dateStr: string) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toISOString().split(".")[0] + "Z";
-}
-
-const DOMESTIC_TRAVEL_PRODUCT_ID = 7; // Cập nhật đúng ID sản phẩm bảo hiểm du lịch trong nước nếu cần
+const DOMESTIC_TRAVEL_PRODUCT_ID = 12; // Bảo hiểm du lịch trong nước (TRV)
 
 // Bảng phí bảo hiểm du lịch trong nước
 const domesticTravelFeeTable = [
@@ -180,8 +63,6 @@ function TravelDomesticInsuranceOrderPage() {
     itinerary: "",
   });
 
-  const [insuranceProgram, setInsuranceProgram] =
-    useState<InsuranceProgramKey>("A");
   const [participants, setParticipants] = useState([
     { fullName: "", gender: "", dob: "", idNumber: "" },
   ]);
@@ -206,7 +87,6 @@ function TravelDomesticInsuranceOrderPage() {
     phone: "",
     address: "",
   });
-  const [wantsInvoice, setWantsInvoice] = useState(false);
 
   const [totalFee, setTotalFee] = useState(0);
 
@@ -248,44 +128,6 @@ function TravelDomesticInsuranceOrderPage() {
       }
     }
   }, [form.departureDate, form.returnDate]);
-
-  useEffect(() => {
-    // Trang trong nước không có region, mặc định dùng 'asean' để tính phí
-    const region = "asean";
-    const program = insuranceProgram;
-    const days = form.numberOfDays;
-    const numPeople = participants.length || form.numberOfPeople;
-
-    // Kiểm tra có người trên 70 tuổi không
-    let hasOver70 = false;
-    for (const p of participants) {
-      if (p.dob) {
-        const dob = new Date(p.dob);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-        if (age >= 70) {
-          hasOver70 = true;
-          break;
-        }
-      }
-    }
-
-    // Tính phí cơ bản
-    let feePerPerson = getTravelInsuranceFee(region, program, days);
-    // Nếu có người trên 70 tuổi, nhân 1.5
-    if (hasOver70) feePerPerson = Math.round(feePerPerson * 1.5);
-    const calculatedFee = feePerPerson * numPeople;
-    setTotalFee(calculatedFee);
-  }, [
-    insuranceProgram,
-    form.numberOfDays,
-    participants,
-    form.numberOfPeople,
-    form.returnDate,
-    form.departureDate,
-  ]);
 
   useEffect(() => {
     const numPeople = Number(form.numberOfPeople) || 0;
@@ -340,6 +182,20 @@ function TravelDomesticInsuranceOrderPage() {
     } else {
       // Bước xác nhận & thanh toán
       try {
+        // Lấy token từ session storage
+        const token = sessionStorage.getItem('token');
+        console.log("[DEBUG] Token when submitting:", token);
+
+        // Kiểm tra xem có token không
+        if (!token) {
+          console.log("[DEBUG] No token found when submitting, redirecting to login");
+          // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
+          sessionStorage.setItem('redirectPath', window.location.pathname);
+          alert("Vui lòng đăng nhập để tiếp tục");
+          navigate('/login');
+          return;
+        }
+        
         // 1. Tạo hóa đơn du lịch trong nước
         const invoiceRes = await axios.post(
           `${API_URL}/api/insurance_travel/create_travel_invoice`,
@@ -351,6 +207,7 @@ function TravelDomesticInsuranceOrderPage() {
             total_duration: form.numberOfDays,
             group_size: form.numberOfPeople,
             total_amount: totalFee,
+            status: "Chưa thanh toán",
             product_id: DOMESTIC_TRAVEL_PRODUCT_ID,
             participants: participants.map((p) => ({
               full_name: p.fullName,
@@ -363,8 +220,10 @@ function TravelDomesticInsuranceOrderPage() {
               birth_date: toISOStringDate(p.dob),
               identity_number: p.idNumber,
             })),
-          }
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log("[DEBUG] Response create_travel_invoice:", invoiceRes.data);
         const invoice_id = invoiceRes.data.invoice_id;
 
         // 2. Đăng ký khách hàng
@@ -379,8 +238,10 @@ function TravelDomesticInsuranceOrderPage() {
             email: buyerInfo.email,
             phone_number: buyerInfo.phone,
             invoice_request: buyerInfo.invoice,
-          }
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log("[DEBUG] Response create_customer_registration:", customerRes.data);
         const customer_id = customerRes.data.customer_id;
 
         // 3. Gán customer_id vào hóa đơn
@@ -389,8 +250,10 @@ function TravelDomesticInsuranceOrderPage() {
           {
             invoice_id,
             customer_id,
-          }
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log("[DEBUG] Update invoice customer successful");
         alert("Đặt mua bảo hiểm thành công!");
         // Lưu đơn hàng vào localStorage
         const cartItem = {
@@ -408,9 +271,14 @@ function TravelDomesticInsuranceOrderPage() {
         // Chuyển hướng sang giỏ hàng
         window.location.href = "/gio-hang.html";
       } catch (error: any) {
+        console.error("[ERROR] Thực hiện đặt bảo hiểm:", error);
+        if (error.response) {
+          console.error("[ERROR] Response data:", error.response.data);
+          console.error("[ERROR] Response status:", error.response.status);
+        }
         alert(
           "Có lỗi xảy ra khi đặt mua bảo hiểm: " +
-            (error?.response?.data?.message || error.message)
+            (error?.response?.data?.error || error.message)
         );
       }
     }

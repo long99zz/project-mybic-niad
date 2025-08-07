@@ -335,7 +335,7 @@ export default function OrderPage() {
 
           // 3. Create Invoice
           const invoicePayload = {
-            product_id: 1, // Cần thay thế bằng ID sản phẩm thực tế nếu có
+            product_id: 6, // Bảo hiểm TNDS xe ô tô
             contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
             insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)), // Làm tròn đến 2 chữ số thập phân và đảm bảo là số
             insurance_start: vehicleInfo.insuranceStartDate.slice(0, 10), // Lấy định dạng YYYY-MM-DD

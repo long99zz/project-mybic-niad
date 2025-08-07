@@ -2520,8 +2520,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API cho hệ thống bảo hiểm",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

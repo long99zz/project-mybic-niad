@@ -272,7 +272,7 @@ const HomeInsuranceOrderPage: React.FC = () => {
         insurance_start: insuredDate
           ? new Date(insuredDate).toISOString()
           : new Date().toISOString(),
-        product_id: 12,
+        product_id: 17,
         // Có thể bổ sung thêm các trường khác nếu backend yêu cầu
       };
       const token = sessionStorage.getItem("token");

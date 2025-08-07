@@ -41,4 +41,9 @@ func (s *InvoiceService) ConfirmPurchase(invoiceID, customerID, formID, userID u
         }).Error
 }
 
-// ...Thêm các hàm khác tương tự
+// Lấy danh sách hóa đơn theo user_id
+func (s *InvoiceService) GetInvoicesByUserID(userID uint) ([]models.Invoice, error) {
+    var invoices []models.Invoice
+    err := s.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&invoices).Error
+    return invoices, err
+}

@@ -74,14 +74,15 @@ func main() {
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
 	apiRouter.GET("/cart", handlers.GetCart(db))
+	apiRouter.GET("/my-invoices", handlers.GetMyInvoices(db)) // Lấy danh sách hóa đơn của user hiện tại
 		carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
-    {
-        carapi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
-        carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(db)) // Lưu bảo hiểm xe
-        carapi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
-        carapi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
+	{
+		carapi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
+		carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(db)) // Lưu bảo hiểm xe
+		carapi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
+		carapi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
 		carapi.POST("/create_vehicle_insurance_form", handlers.CreateVehicleInsuranceForm(db)) // Lưu bảo hiểm vật chất xe ô tô
-    }
+	}
 		motorbikeApi := router.Group("/api/insurance_motorbike_owner", middlewares.AuthMiddleware())
 	{
 		motorbikeApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
@@ -89,13 +90,13 @@ func main() {
 		motorbikeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
 		motorbikeApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
 	}
-	    cancerApi := router.Group("/api/insurance_cancer", middlewares.AuthMiddleware())
-    {
-        cancerApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
-        cancerApi.POST("/create_insurance_participant_info", handlers.CreateCancerInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
-        cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
-        cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
-    }
+		cancerApi := router.Group("/api/insurance_cancer", middlewares.AuthMiddleware())
+	{
+		cancerApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
+		cancerApi.POST("/create_insurance_participant_info", handlers.CreateCancerInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
+		cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Lưu khách hàng
+		cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
+	}
 		personalApi := router.Group("/api/insurance_personal", middlewares.AuthMiddleware())
 	{
 		personalApi.POST("/create_invoice", handlers.CreateInvoice(db)) // Lưu hóa đơn
@@ -141,8 +142,8 @@ func main() {
 	// 🔹 Khởi chạy server
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	port := cfg.Port
-    if port == "" {
-        port = "5000"
-    }
+	if port == "" {
+		port = "5000"
+	}
 	router.Run(":" + port)
 }

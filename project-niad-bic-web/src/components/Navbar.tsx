@@ -25,11 +25,7 @@ const productMenuData = [
         title: "Bảo hiểm trách nhiệm dân sự chủ xe ô tô",
         href: "/san-pham/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to",
       },
-      {
-        id: "car-physical",
-        title: "Bảo hiểm vật chất ô tô",
-        href: "/san-pham/bao-hiem-vat-chat-o-to",
-      },
+      // Đã loại bỏ bảo hiểm vật chất ô tô
     ],
   },
   {
@@ -188,24 +184,18 @@ function ProductMenu({ isActive = false }) {
   const [dropdownPosition, setDropdownPosition] = useState({ left: 0 });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Cập nhật vị trí của dropdown menu dựa trên vị trí của nút "SẢN PHẨM"
   useEffect(() => {
     if (productMenuRef.current) {
       const rect = productMenuRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        left: rect.left,
-      });
+      setDropdownPosition({ left: rect.left });
     }
   }, []);
 
-  // Cập nhật lại vị trí khi cửa sổ thay đổi kích thước
   useEffect(() => {
     const handleResize = () => {
       if (productMenuRef.current) {
         const rect = productMenuRef.current.getBoundingClientRect();
-        setDropdownPosition({
-          left: rect.left,
-        });
+        setDropdownPosition({ left: rect.left });
       }
     };
 
@@ -215,10 +205,8 @@ function ProductMenu({ isActive = false }) {
     };
   }, []);
 
-  // Kiểm tra vị trí để điều chỉnh hướng hiển thị của dropdown cấp 2
   useEffect(() => {
     const checkSubmenuPosition = () => {
-      // Chỉ kiểm tra khi có activeSubmenu
       if (activeSubmenu && productMenuRef.current) {
         const submenuContainer = document.querySelector(
           `[data-submenu="${activeSubmenu}"]`
@@ -227,7 +215,6 @@ function ProductMenu({ isActive = false }) {
           const rect = submenuContainer.getBoundingClientRect();
           const windowWidth = window.innerWidth;
 
-          // Nếu submenu sẽ vượt ra ngoài màn hình
           if (rect.right > windowWidth) {
             submenuContainer.style.left = "auto";
             submenuContainer.style.right = "100%";
@@ -246,7 +233,6 @@ function ProductMenu({ isActive = false }) {
     };
   }, [activeSubmenu]);
 
-  // Xử lý click bên ngoài dropdown để đóng dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -263,7 +249,6 @@ function ProductMenu({ isActive = false }) {
     };
   }, []);
 
-  // Reset activeSubmenu khi dropdown đóng
   useEffect(() => {
     if (!isDropdownOpen) {
       setActiveSubmenu(null);
@@ -289,7 +274,6 @@ function ProductMenu({ isActive = false }) {
         href="/san-pham"
         className="lg:px-1.5 xl:px-2 py-1.5 lg:mx-2 xl:mx-3 text-sm font-medium relative text-red-600 border border-red-600 rounded-md"
         onClick={(e) => {
-          // Chỉ ngăn chặn chuyển hướng trong trường hợp đặc biệt
           if (window.innerWidth >= 1024 && isDropdownOpen) {
             e.preventDefault();
             setIsDropdownOpen(!isDropdownOpen);
@@ -299,7 +283,6 @@ function ProductMenu({ isActive = false }) {
         SẢN PHẨM
       </a>
 
-      {/* Indicator for hover - đảm bảo căn chỉnh giống các mục khác */}
       {isActive ? (
         <div className="absolute bottom-[-30px] left-0 w-full flex flex-col items-center">
           <ChevronDown className="w-4 h-4 text-red-600" />
@@ -312,7 +295,6 @@ function ProductMenu({ isActive = false }) {
         </div>
       )}
 
-      {/* First level dropdown - positioned exactly at top of slider with correct horizontal position */}
       <div
         className={`fixed top-[82px] w-64 bg-white shadow-lg rounded-md ${
           isDropdownOpen ? "opacity-100 visible" : "opacity-0 invisible"
@@ -335,30 +317,35 @@ function ProductMenu({ isActive = false }) {
                 }
               }}
             >
-              <Link
-                to={item.href}
-                onClick={() => setIsDropdownOpen(false)}
-                className="text-[15px] font-medium text-gray-800 hover:text-red-600 flex-1 text-left"
-              >
-                {item.title}
-              </Link>
-              <ChevronRight
-                className="w-4 h-4 flex-shrink-0 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
+              {/* Gộp title và ChevronRight sang 2 đầu 1 dòng */}
+              <div
+                className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-[15px] font-medium text-gray-800 hover:text-red-600"
+                onClick={() => {
                   setActiveSubmenu(activeSubmenu === item.id ? null : item.id);
                 }}
-              />
+              >
+                <Link
+                  to={item.href}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDropdownOpen(false);
+                  }}
+                  className="flex-1 text-left"
+                >
+                  {item.title}
+                </Link>
+                {item.subMenu?.length > 0 && (
+                  <ChevronRight className="w-4 h-4 ml-2 text-gray-500" />
+                )}
+              </div>
 
-              {/* Second level dropdown - always show when parent is hovered */}
               {activeSubmenu === item.id && (
                 <div
                   className="absolute left-full top-0 w-[256px] bg-white shadow-lg rounded-md z-[60]"
                   data-submenu={item.id}
                 >
                   <ul className="py-2">
-                    {/* If submenu exists, show those items */}
-                    {item.subMenu && item.subMenu.length > 0 ? (
+                    {item.subMenu?.length > 0 ? (
                       item.subMenu.map((subItem) => (
                         <li key={subItem.id}>
                           <Link
@@ -372,7 +359,6 @@ function ProductMenu({ isActive = false }) {
                         </li>
                       ))
                     ) : (
-                      // If no submenu, repeat the parent item
                       <li>
                         <Link
                           to={item.href}

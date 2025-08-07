@@ -117,7 +117,7 @@ function getTravelInsuranceFee(
   }
   // Nếu vượt quá max, lấy dòng cuối cùng
   if (table.length > 0) return table[table.length - 1][program] || 0;
-  return 0;
+return 0;
 }
 
 function formatDateToISOString(dateStr: string) {
@@ -299,6 +299,20 @@ function TravelInsuranceOrderPage() {
     } else {
       // Bước xác nhận & thanh toán
       try {
+        // Lấy token từ session storage
+        const token = sessionStorage.getItem('token');
+        console.log("[DEBUG] Token when submitting:", token);
+
+        // Kiểm tra xem có token không
+        if (!token) {
+          console.log("[DEBUG] No token found when submitting, redirecting to login");
+          // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
+          sessionStorage.setItem('redirectPath', window.location.pathname);
+          alert("Vui lòng đăng nhập để tiếp tục");
+          navigate('/login');
+          return;
+        }
+
         // 1. Tạo invoice du lịch quốc tế
         const travelInvoicePayload = {
           departure_location: "Việt Nam",
@@ -309,7 +323,8 @@ function TravelInsuranceOrderPage() {
           group_size: participants.length || form.numberOfPeople,
           insurance_program: insuranceProgram,
           total_amount: totalFee,
-          product_id: 6,
+          product_id: 11,
+          status: "Chưa thanh toán",
           participants: participants.map((p) => ({
             full_name: p.fullName,
             gender:
@@ -326,37 +341,81 @@ function TravelInsuranceOrderPage() {
           "Payload gửi lên /create_travel_invoice:",
           travelInvoicePayload
         );
-        const invoiceRes = await axios.post(
-          `${API_URL}/api/insurance_travel/create_travel_invoice`,
-          travelInvoicePayload
-        );
+        
+        let invoiceRes;
+        try {
+          invoiceRes = await axios.post(
+            `${API_URL}/api/insurance_travel/create_travel_invoice`,
+            travelInvoicePayload,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          console.log("[DEBUG] Response create_travel_invoice:", invoiceRes.data);
+        } catch (err) {
+          console.error("[ERROR] create_travel_invoice:", err);
+          if ((err as any).response) {
+            console.error(
+              "[ERROR] create_travel_invoice response:",
+              (err as any).response.data
+            );
+          }
+          throw err;
+        }
+        
         const invoice_id = invoiceRes.data.invoice_id;
         const form_id = invoiceRes.data.form_id;
 
         // 2. Đăng ký khách hàng
-        const customerRes = await axios.post(
-          `${API_URL}/api/insurance_travel/create_customer_registration`,
-          {
-            customer_type:
-              buyerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
-            identity_number: buyerInfo.identityCard,
-            full_name: buyerInfo.fullName,
-            address: buyerInfo.address,
-            email: buyerInfo.email,
-            phone_number: buyerInfo.phone,
-            invoice_request: buyerInfo.invoice,
+        let customerRes;
+        try {
+          customerRes = await axios.post(
+            `${API_URL}/api/insurance_travel/create_customer_registration`,
+            {
+              customer_type:
+                buyerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
+              identity_number: buyerInfo.identityCard,
+              full_name: buyerInfo.fullName,
+              address: buyerInfo.address,
+              email: buyerInfo.email,
+              phone_number: buyerInfo.phone,
+              invoice_request: buyerInfo.invoice,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          console.log("[DEBUG] Response create_customer_registration:", customerRes.data);
+        } catch (err) {
+          console.error("[ERROR] create_customer_registration:", err);
+          if ((err as any).response) {
+            console.error(
+              "[ERROR] create_customer_registration response:",
+              (err as any).response.data
+            );
           }
-        );
+          throw err;
+        }
         const customer_id = customerRes.data.customer_id;
 
         // 3. Gán customer_id vào hóa đơn
-        await axios.post(
-          `${API_URL}/api/insurance_travel/update_invoice_customer`,
-          {
-            invoice_id,
-            customer_id,
+        try {
+          await axios.post(
+            `${API_URL}/api/insurance_travel/update_invoice_customer`,
+            {
+              invoice_id,
+              customer_id,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          console.log("[DEBUG] Update invoice customer successful");
+        } catch (err) {
+          console.error("[ERROR] update_invoice_customer:", err);
+          if ((err as any).response) {
+            console.error(
+              "[ERROR] update_invoice_customer response:",
+              (err as any).response.data
+            );
           }
-        );
+          throw err;
+        }
+        
         alert("Đặt mua bảo hiểm thành công!");
         // Lưu đơn hàng vào localStorage
         const cartItem = {
@@ -374,9 +433,14 @@ function TravelInsuranceOrderPage() {
         // Chuyển hướng sang giỏ hàng
         window.location.href = "/gio-hang.html";
       } catch (error: any) {
+        console.error("[ERROR] Thực hiện đặt bảo hiểm:", error);
+        if (error.response) {
+          console.error("[ERROR] Response data:", error.response.data);
+          console.error("[ERROR] Response status:", error.response.status);
+        }
         alert(
           "Có lỗi xảy ra khi đặt mua bảo hiểm: " +
-            (error?.response?.data?.message || error.message)
+            (error?.response?.data?.error || error.message)
         );
       }
     }

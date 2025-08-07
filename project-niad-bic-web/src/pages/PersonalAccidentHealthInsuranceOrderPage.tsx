@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { ClipboardList, UserCircle2, CreditCard } from "lucide-react";
@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -54,6 +55,7 @@ interface CustomerInfo {
   insuranceStartDate?: string;
 }
 
+// @ts-ignore
 interface HealthDeclared {
   height: number;
   weight: number;
@@ -64,6 +66,7 @@ interface HealthDeclared {
   medicalTreatment: boolean;
 }
 
+// @ts-ignore
 interface InsurancePackage {
   id: "fundamental" | "basic" | "silver" | "gold" | "advance" | "premium";
   name: string;
@@ -120,10 +123,21 @@ const PREMIUM_DATA = {
 
 export default function PersonalAccidentHealthInsuranceOrderPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showError, setShowError] = useState(false);
   const totalSteps = 4;
+  
+  // Kiểm tra xem người dùng đã đăng nhập chưa khi vào bước cuối
+  useEffect(() => {
+    if (currentStep === totalSteps && !isAuthenticated) {
+      // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
+      sessionStorage.setItem('redirectPath', window.location.pathname);
+      alert("Vui lòng đăng nhập để hoàn tất đơn hàng");
+      navigate('/login');
+    }
+  }, [currentStep, isAuthenticated, navigate, totalSteps]);
 
   const [insuranceType, setInsuranceType] = useState("new");
   const [insuredCount, setInsuredCount] = useState(1);
@@ -195,6 +209,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
   ) => {
     const newInsuredPersons = [...insuredPersons];
     (newInsuredPersons[index] as any)[field] = value;
+    
+    // Nếu gender được đặt thành male, tự động đặt maternityExtension thành false
+    if (field === 'gender' && value === 'male') {
+      (newInsuredPersons[index] as any)['maternityExtension'] = false;
+    }
+    
     setInsuredPersons(newInsuredPersons);
   };
 
@@ -426,13 +446,27 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
 
   const handleSubmit = async () => {
     try {
+      // Lấy token từ session storage
+      const token = sessionStorage.getItem('token');
+      console.log("[DEBUG] Token when submitting:", token);
+
+      // Kiểm tra xem có token không
+      if (!token) {
+        console.log("[DEBUG] No token found when submitting, redirecting to login");
+        // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
+        sessionStorage.setItem('redirectPath', window.location.pathname);
+        alert("Vui lòng đăng nhập để tiếp tục");
+        navigate('/login');
+        return;
+      }
+
       // 1. Chuẩn bị payload tạo hóa đơn (invoice)
       const insuranceStart = dayjs(
         customerInfo.insuranceStartDate
-      ).toISOString();
+      ).format('YYYY-MM-DD');
       const insuranceEnd = dayjs(customerInfo.insuranceStartDate)
         .add(1, "year")
-        .toISOString();
+        .format('YYYY-MM-DD');
       const invoicePayload = {
         insurance_package: "Bảo hiểm tai nạn con người 24/24",
         insurance_start: insuranceStart,
@@ -440,12 +474,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
         insurance_amount: getTotalPremium(),
         contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
         status: "Chưa thanh toán",
-        product_id: 5,
+        product_id: 10,
         participants: insuredPersons.map((p) => ({
           full_name: p.fullName,
           gender:
             p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
-          birth_date: dayjs(p.dateOfBirth).toISOString(),
+          birth_date: dayjs(p.dateOfBirth).format('YYYY-MM-DD') + "T00:00:00Z",
           identity_number: p.identityCard,
         })),
       };
@@ -457,7 +491,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       try {
         invoiceRes = await axios.post(
           `${API_URL}/api/insurance_accident/create_accident`,
-          invoicePayload
+          invoicePayload,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log("[DEBUG] Response create_accident:", invoiceRes.data);
       } catch (err) {
@@ -477,9 +512,9 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       try {
         const personalFormPayload = {
           full_name: insuredPersons[0].fullName,
-          cmnd_img: "", // Nếu có upload ảnh thì truyền, còn không để rỗng
+          cmnd_img: "default.jpg", // Provide a default value for required field
           identity_number: insuredPersons[0].identityCard,
-          birth_date: dayjs(insuredPersons[0].dateOfBirth).toISOString(),
+          birth_date: dayjs(insuredPersons[0].dateOfBirth).format('YYYY-MM-DD') + "T00:00:00Z",
           gender:
             insuredPersons[0].gender === "male"
               ? "Nam"
@@ -487,15 +522,16 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
               ? "Nữ"
               : "Khác",
           insurance_program: "Bảo hiểm tai nạn con người 24/24",
-          dental_extension: false, // Nếu có tuỳ chọn thì lấy từ form, mặc định false
-          maternity_extension: false, // Nếu có tuỳ chọn thì lấy từ form, mặc định false
-          insurance_start: insuranceStart,
+          dental_extension: insuredPersons[0].dentalExtension, // Lấy giá trị từ form 
+          maternity_extension: insuredPersons[0].maternityExtension, // Lấy giá trị từ form
+          insurance_start: insuranceStart + "T00:00:00Z", // Add the time component
           insurance_duration: 12, // 1 năm = 12 tháng
           insurance_fee: getTotalPremium(),
         };
         const formRes = await axios.post(
           `${API_URL}/api/insurance_accident/create_personal_form`,
-          personalFormPayload
+          personalFormPayload,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         formId = formRes.data.form_id;
         console.log("[DEBUG] Response create_personal_form:", formRes.data);
@@ -530,7 +566,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       try {
         customerRes = await axios.post(
           `${API_URL}/api/insurance_accident/create_customer_registration`,
-          customerPayload
+          customerPayload,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log(
           "[DEBUG] Response create_customer_registration:",
@@ -553,13 +590,14 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
         invoice_id: invoiceId,
         customer_id: customerId,
         form_id: formId,
-        product_id: 5,
+        product_id: 10,
       };
       console.log("[DEBUG] Payload gửi lên confirm_purchase:", confirmPayload);
       try {
         const confirmRes = await axios.post(
           `${API_URL}/api/insurance_accident/confirm_purchase`,
-          confirmPayload
+          confirmPayload,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log("[DEBUG] Response confirm_purchase:", confirmRes.data);
       } catch (err) {
@@ -773,61 +811,46 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
             Thông tin người tham gia bảo hiểm
           </h3>
           {/* Table */}
-          <div className="overflow-x-auto">
-            <div className="min-w-full">
-              <div className="grid grid-cols-11 gap-0 bg-red-600 text-white font-semibold text-sm p-3 rounded-t-md">
-                <div className="col-span-1 text-center border-r border-white">
-                  STT
-                </div>
-                <div className="col-span-2 text-center border-r border-white">
-                  Số CMND/Hộ chiếu
-                </div>
-                <div className="col-span-2 text-center border-r border-white">
-                  Ngày sinh
-                </div>
-                <div className="col-span-1 text-center border-r border-white">
-                  Giới tính
-                </div>
-                <div className="col-span-2 text-center border-r border-white">
-                  Chương trình
-                </div>
-                <div className="col-span-1 text-center border-r border-white">
-                  Mở rộng nha khoa
-                </div>
-                <div className="col-span-1 text-center border-r border-white">
-                  Mở rộng thai sản
-                </div>
-                <div className="col-span-1 text-center">Phí BH (miễn VAT)</div>
-              </div>
-              {/* Body */}
-              <div className="bg-white rounded-b-md">
+          <div className="overflow-x-auto w-full" style={{ minWidth: "1000px" }}>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-red-600 text-white text-sm whitespace-nowrap">
+                  <th className="p-3 border-r border-white text-center" style={{ width: "5%" }}>
+                    STT
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
+                    Số CMND/Hộ chiếu
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "13%" }}>
+                    Ngày sinh
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "8%" }}>
+                    Giới tính
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
+                    Chương trình
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "12%" }}>
+                    Mở rộng nha khoa
+                  </th>
+                  <th className="p-3 border-r border-white text-center" style={{ width: "16%" }}>
+                    Mở rộng thai sản
+                  </th>
+                  <th className="p-3 text-center" style={{ width: "16%" }}>
+                    Phí BH (miễn VAT)
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white rounded-b-md">
                 {insuredPersons.map((person, index) => (
-                  <div
+                  <tr
                     key={index}
-                    className="grid grid-cols-11 gap-0 items-center p-2 border-b last:border-b-0"
+                    className="border-b last:border-b-0 whitespace-nowrap"
                   >
-                    <div className="col-span-1 text-center border-r">
+                    <td className="p-2 border-r text-center">
                       {index + 1}
-                    </div>
-                    <div className="col-span-1 flex justify-center border-r">
-                      <button className="p-2 hover:bg-gray-100 rounded-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-green-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="col-span-2 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <input
                         type="text"
                         placeholder="CMND/CCCD"
@@ -846,8 +869,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                           {errors[`person${index}Id`]}
                         </p>
                       )}
-                    </div>
-                    <div className="col-span-2 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <input
                         type="date"
                         placeholder="dd/mm/yyyy"
@@ -866,8 +889,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                           {errors[`person${index}Birth`]}
                         </p>
                       )}
-                    </div>
-                    <div className="col-span-1 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <select
                         className="w-full px-2 py-1 border border-gray-300 rounded-md"
                         value={person.gender}
@@ -888,8 +911,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                           {errors[`person${index}Gender`]}
                         </p>
                       )}
-                    </div>
-                    <div className="col-span-2 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <select
                         className="w-full px-2 py-1 border border-gray-300 rounded-md"
                         value={person.insuredPackage}
@@ -928,8 +951,8 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                           {errors[`person${index}Package`]}
                         </p>
                       )}
-                    </div>
-                    <div className="col-span-1 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <select
                         className="w-full px-2 py-1 border border-gray-300 rounded-md"
                         value={String(person.dentalExtension)}
@@ -944,11 +967,11 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                         <option value="false">Không</option>
                         <option value="true">Có</option>
                       </select>
-                    </div>
-                    <div className="col-span-1 border-r">
+                    </td>
+                    <td className="p-2 border-r">
                       <select
                         className="w-full px-2 py-1 border border-gray-300 rounded-md"
-                        value={String(person.maternityExtension)}
+                        value={person.gender === "male" ? "false" : String(person.maternityExtension)}
                         onChange={(e) =>
                           handleInsuredPersonChange(
                             index,
@@ -956,18 +979,22 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                             e.target.value === "true"
                           )
                         }
+                        disabled={person.gender === "male"}
                       >
                         <option value="false">Không</option>
                         <option value="true">Có</option>
                       </select>
-                    </div>
-                    <div className="col-span-1 text-center font-semibold text-red-600">
+                      {person.gender === "male" && (
+                        <div className="text-xs text-gray-500 mt-1">Không áp dụng cho nam giới</div>
+                      )}
+                    </td>
+                    <td className="p-2 text-center font-semibold text-red-600">
                       {person.premium.toLocaleString("vi-VN")}
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
           {/* Total Fee */}
           <div className="mt-8 text-left space-y-2">
@@ -1017,9 +1044,23 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
     );
   };
 
-  const hasAnyHealthYes = Object.values(healthAnswers).some(
-    (answers) => answers && answers.some((ans) => ans === true)
-  );
+  // Kiểm tra xem có câu trả lời "Có" nào trong khai báo sức khỏe không
+  const hasAnyHealthYes = useMemo(() => {
+    if (!healthAnswers || !Array.isArray(healthAnswers)) return false;
+    
+    for (let i = 0; i < healthAnswers.length; i++) {
+      const personAnswers = healthAnswers[i];
+      if (personAnswers && Array.isArray(personAnswers)) {
+        for (let j = 0; j < personAnswers.length; j++) {
+          if (personAnswers[j] === true) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }, [healthAnswers]);
 
   const handleShowHealthDeclaration = (index: number) => {
     const newShow = [...showHealthDeclaration];
@@ -1045,44 +1086,48 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
     setHealthDetail((prev) => ({ ...prev, [personIdx]: value }));
   };
 
-  const renderStep3Content = () => (
-    <div style={{ maxWidth: "1200px" }} className="mx-auto">
-      <div className="bg-[#F4F6F8] p-8 rounded-lg shadow-md">
-        <h3 className="text-3xl font-semibold text-left mb-8 text-red-600">
-          Xác nhận & Thanh toán
-        </h3>
-        <div className="overflow-x-auto mb-8">
-          <div className="min-w-full">
-            <div className="grid grid-cols-7 gap-0 bg-red-600 text-white font-semibold text-sm p-3 rounded-t-md">
-              <div className="col-span-1 text-center border-r border-white">
-                STT
-              </div>
-              <div className="col-span-2 text-center border-r border-white">
-                Họ tên
-              </div>
-              <div className="col-span-1 text-center border-r border-white">
-                Giới tính
-              </div>
-              <div className="col-span-1 text-center border-r border-white">
-                Ngày sinh
-              </div>
-              <div className="col-span-1 text-center border-r border-white">
-                Phí BH (miễn VAT)
-              </div>
-              <div className="col-span-1 text-center">
-                Khai báo tiền sử bệnh
-              </div>
-            </div>
-            <div className="bg-white rounded-b-md">
-              {insuredPersons.map((person, idx) => [
-                <div
+  const renderStep3Content = () => {
+    return (
+      <div style={{ maxWidth: "1200px" }} className="mx-auto">
+        <div className="bg-[#F4F6F8] p-8 rounded-lg shadow-md">
+          <h3 className="text-3xl font-semibold text-left mb-8 text-red-600">
+            Xác nhận & Thanh toán
+          </h3>
+          <div className="overflow-x-auto mb-8">
+            <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="bg-red-600 text-white font-semibold text-sm p-3 rounded-t-md">
+                <th className="p-3 border-r border-white text-center" style={{ width: "8%" }}>
+                  STT
+                </th>
+                <th className="p-3 border-r border-white text-center" style={{ width: "25%" }}>
+                  Họ tên
+                </th>
+                <th className="p-3 border-r border-white text-center" style={{ width: "12%" }}>
+                  Giới tính
+                </th>
+                <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
+                  Ngày sinh
+                </th>
+                <th className="p-3 border-r border-white text-center" style={{ width: "18%" }}>
+                  Phí BH (miễn VAT)
+                </th>
+                <th className="p-3 text-center" style={{ width: "22%" }}>
+                  Khai báo tiền sử bệnh
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white rounded-b-md">
+              {insuredPersons.map((person, idx) => (
+                <>
+                <tr
                   key={"row-" + idx}
-                  className="grid grid-cols-7 gap-0 items-center p-2 border-b last:border-b-0"
+                  className="border-b last:border-b-0"
                 >
-                  <div className="col-span-1 text-center border-r">
+                  <td className="p-2 text-center border-r">
                     {idx + 1}
-                  </div>
-                  <div className="col-span-2 text-center border-r">
+                  </td>
+                  <td className="p-2 text-center border-r">
                     <input
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded-md"
@@ -1096,23 +1141,23 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                         )
                       }
                     />
-                  </div>
-                  <div className="col-span-1 text-center border-r">
+                  </td>
+                  <td className="p-2 text-center border-r">
                     {person.gender === "male"
                       ? "Nam"
                       : person.gender === "female"
                       ? "Nữ"
                       : ""}
-                  </div>
-                  <div className="col-span-1 text-center border-r">
+                  </td>
+                  <td className="p-2 text-center border-r">
                     {person.dateOfBirth
                       ? dayjs(person.dateOfBirth).format("DD/MM/YYYY")
                       : ""}
-                  </div>
-                  <div className="col-span-1 text-center border-r">
+                  </td>
+                  <td className="p-2 text-center border-r">
                     {person.premium.toLocaleString("vi-VN")}VNĐ
-                  </div>
-                  <div className="col-span-1 text-center">
+                  </td>
+                  <td className="p-2 text-center">
                     <button
                       type="button"
                       className="text-red-600 underline hover:text-red-800"
@@ -1125,77 +1170,79 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                         (Vui lòng khai báo thông tin)
                       </div>
                     )}
-                  </div>
-                </div>,
-                showHealthDeclaration[idx] && (
-                  <table
-                    key={"declare-" + idx}
-                    className="w-full border-t border-gray-200 mb-4"
-                  >
-                    <tbody>
-                      {[
-                        "Bạn hoặc bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc bệnh bẩm sinh, khuyết tật hay thương tật nào không",
-                        "Trong 5 năm qua, bạn hay bất kỳ người được bảo hiểm nào phải điều trị, nằm viện, hay phẫu thuật trong một bệnh viện, viện điều dưỡng, phòng khám hoặc các tổ chức y tế khác? Hoặc ở trong tình trạng cần phải điều trị trong bệnh viện trong vòng 12 tháng tới?",
-                        "Trong 5 năm qua, bạn hay bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc hoặc điều trị một hay nhiều trong các chứng bệnh sau: bệnh lao, tiểu đường, thấp khớp, viêm gan, rối loạn nội hấp, phổi bệnh tim, giãn tĩnh mạch, rối loạn đường ruột, bệnh gout, mắt, thần kinh sinh dục tiết niệu hoặc các bệnh lây qua đường tình dục, ung thư hoặc u bướu, chấn thương, thần kinh, tâm thần, xương khớp, dạ dày, da, chứng thoát vị hoặc bệnh phụ khoa?",
-                        "Người được bảo hiểm có tham gia hợp đồng bảo hiểm sức khỏe tại BIC hoặc tại Công ty bảo hiểm khác trong vòng 5 năm gần đây không?",
-                        "Người được bảo hiểm đã từng yêu cầu bồi thường bảo hiểm y tế, tai nạn con người tại BIC chưa?",
-                        "Người được bảo hiểm đã bao giờ bị một công ty bảo hiểm từ chối nhận bảo hiểm hoặc từ chối tái tục hợp đồng bảo hiểm sức khỏe hoặc được chấp nhận nhưng có các điều khoản bổ sung đặc biệt đi kèm chưa?",
-                      ].map((q, qIdx) => (
-                        <tr key={qIdx}>
-                          <td className="w-8 text-center align-top font-bold border-b border-gray-200">
-                            {qIdx + 1}.
-                          </td>
-                          <td className="align-top text-left border-b border-gray-200">
-                            {q}
-                          </td>
-                          <td className="w-40 text-center border-b border-gray-200">
-                            <label className="mr-2">
-                              <input
-                                type="radio"
-                                name={`health-q${qIdx}-person${idx}`}
-                                checked={healthAnswers[idx]?.[qIdx] === true}
-                                onChange={() =>
-                                  handleHealthAnswer(idx, qIdx, true)
+                  </td>
+                </tr>
+                {showHealthDeclaration[idx] && (
+                  <tr key={"health-" + idx} className="bg-gray-50">
+                    <td colSpan={6} className="p-0">
+                      <table className="w-full border-t border-gray-200">
+                        <tbody>
+                          {[
+                            "Bạn hoặc bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc bệnh bẩm sinh, khuyết tật hay thương tật nào không",
+                            "Trong 5 năm qua, bạn hay bất kỳ người được bảo hiểm nào phải điều trị, nằm viện, hay phẫu thuật trong một bệnh viện, viện điều dưỡng, phòng khám hoặc các tổ chức y tế khác? Hoặc ở trong tình trạng cần phải điều trị trong bệnh viện trong vòng 12 tháng tới?",
+                            "Trong 5 năm qua, bạn hay bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc hoặc điều trị một hay nhiều trong các chứng bệnh sau: bệnh lao, tiểu đường, thấp khớp, viêm gan, rối loạn nội hấp, phổi bệnh tim, giãn tĩnh mạch, rối loạn đường ruột, bệnh gout, mắt, thần kinh sinh dục tiết niệu hoặc các bệnh lây qua đường tình dục, ung thư hoặc u bướu, chấn thương, thần kinh, tâm thần, xương khớp, dạ dày, da, chứng thoát vị hoặc bệnh phụ khoa?",
+                            "Người được bảo hiểm có tham gia hợp đồng bảo hiểm sức khỏe tại BIC hoặc tại Công ty bảo hiểm khác trong vòng 5 năm gần đây không?",
+                            "Người được bảo hiểm đã từng yêu cầu bồi thường bảo hiểm y tế, tai nạn con người tại BIC chưa?",
+                            "Người được bảo hiểm đã bao giờ bị một công ty bảo hiểm từ chối nhận bảo hiểm hoặc từ chối tái tục hợp đồng bảo hiểm sức khỏe hoặc được chấp nhận nhưng có các điều khoản bổ sung đặc biệt đi kèm chưa?",
+                          ].map((q, qIdx) => (
+                            <tr key={qIdx}>
+                              <td className="w-8 p-3 text-center align-top font-bold border-b border-gray-200">
+                                {qIdx + 1}.
+                              </td>
+                              <td className="p-3 align-top text-left border-b border-gray-200">
+                                {q}
+                              </td>
+                              <td className="w-40 p-3 text-center border-b border-gray-200">
+                                <label className="mr-2">
+                                  <input
+                                    type="radio"
+                                    name={`health-q${qIdx}-person${idx}`}
+                                    checked={healthAnswers[idx]?.[qIdx] === true}
+                                    onChange={() =>
+                                      handleHealthAnswer(idx, qIdx, true)
+                                    }
+                                  />{" "}
+                                  Có
+                                </label>
+                                <label>
+                                  <input
+                                    type="radio"
+                                    name={`health-q${qIdx}-person${idx}`}
+                                    checked={healthAnswers[idx]?.[qIdx] === false}
+                                    onChange={() =>
+                                      handleHealthAnswer(idx, qIdx, false)
+                                    }
+                                  />{" "}
+                                  Không
+                                </label>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr>
+                            <td colSpan={3} className="p-3">
+                              Nếu câu hỏi nào ở trên trả lời là Có, xin hãy nêu
+                              chi tiết:
+                              <br />
+                              <textarea
+                                className="w-full border border-gray-300 rounded mt-1 p-2"
+                                rows={2}
+                                value={healthDetail[idx] || ""}
+                                onChange={(e) =>
+                                  handleHealthDetail(idx, e.target.value)
                                 }
-                              />{" "}
-                              Có
-                            </label>
-                            <label>
-                              <input
-                                type="radio"
-                                name={`health-q${qIdx}-person${idx}`}
-                                checked={healthAnswers[idx]?.[qIdx] === false}
-                                onChange={() =>
-                                  handleHealthAnswer(idx, qIdx, false)
-                                }
-                              />{" "}
-                              Không
-                            </label>
-                          </td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td colSpan={3} className="pt-2">
-                          Nếu câu hỏi nào ở trên trả lời là Có, xin hãy nêu chi
-                          tiết:
-                          <br />
-                          <textarea
-                            className="w-full border border-gray-300 rounded mt-1 p-2"
-                            rows={2}
-                            value={healthDetail[idx] || ""}
-                            onChange={(e) =>
-                              handleHealthDetail(idx, e.target.value)
-                            }
-                            disabled={!hasAnyHealthYes}
-                          />
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                ),
-              ])}
-            </div>
-          </div>
+                                disabled={!hasAnyHealthYes}
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
@@ -1474,10 +1521,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       </div>
     </div>
   );
+  };
 
-  const renderStep4Content = () => (
-    <div style={{ maxWidth: "1000px" }} className="mx-auto">
-      <div className="bg-[#F4F6F8] p-6 rounded-lg">
+  const renderStep4Content = () => {
+    return (
+      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+        <div className="bg-[#F4F6F8] p-6 rounded-lg">
         <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
           Thông tin tài khoản
         </h3>
@@ -1633,6 +1682,7 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       </div>
     </div>
   );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">

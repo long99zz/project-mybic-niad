@@ -143,13 +143,25 @@ const GPAOrderPage: React.FC = () => {
 
   const handleOrder = async () => {
     try {
+      // Lấy token từ session storage
+      const token = sessionStorage.getItem('token');
+      console.log("[DEBUG] Token when submitting:", token);
+
+      // Kiểm tra xem có token không
+      if (!token) {
+        console.log("[DEBUG] No token found when submitting, redirecting to login");
+        alert("Vui lòng đăng nhập để tiếp tục");
+        navigate('/dang-nhap');
+        return;
+      }
+
       // 1. Chuẩn bị dữ liệu invoice với định dạng RFC3339
       const startDate = insuranceStart ? new Date(insuranceStart) : new Date();
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + insuranceDuration);
 
       const invoice = {
-        ProductID: 9,
+        ProductID: 14,
         InsuranceAmount: amount,
         InsuranceQuantity: Number(numPeople),
         InsuranceStart: startDate.toISOString(), // RFC3339 format
@@ -171,8 +183,10 @@ const GPAOrderPage: React.FC = () => {
         {
           invoice,
           participants: participantsPayload,
-        }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log("[DEBUG] Response create_accident:", res.data);
       const invoice_id = res.data.invoice?.invoice_id;
       // 4. (Tuỳ chọn) Gọi API update customer cho invoice nếu cần
       // await axios.post(`${API_URL}/api/insurance_accident/update_invoice_customer`, { invoice_id, customer_id: ... });

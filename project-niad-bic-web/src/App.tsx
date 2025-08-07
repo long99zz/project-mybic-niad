@@ -13,6 +13,7 @@ import RegisterPage from "./pages/RegisterPage";
 import NewsPage from "./pages/NewsPage";
 import PromotionsPage from "./pages/PromotionsPage";
 import ProductsPage from "./pages/ProductsPage";
+import AccountPage from "./pages/AccountPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import OrderPage from "./pages/OrderPage";
 import CartPage from "./pages/CartPage";
@@ -57,6 +58,7 @@ const AppRoutes = () => {
       <Route path="/tin-tuc" element={<NewsPage />} />
       <Route path="/khuyen-mai" element={<PromotionsPage />} />
       <Route path="/san-pham" element={<ProductsPage />} />
+      <Route path="/tai-khoan" element={<AccountPage />} />
       <Route
         path="/san-pham/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to"
         element={

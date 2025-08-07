@@ -71,7 +71,7 @@ const insuranceProducts = [
   },
   {
     id: "du-lich-quoc-te",
-    image: "/products/bic-du-lich-quoc-te.png",
+    image: "/products/Du-lich-quoc-te.jpg",
     tag: "Du lịch quốc tế",
     title: "Bảo hiểm du lịch quốc tế (ITI)",
     contactLink: "/lien-he/du-lich-quoc-te",
@@ -162,7 +162,7 @@ export default function ProductShowcase() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
 
-        <div className="p-6 flex flex-col min-h-[160px] bg-white">
+        <div className="p-6 flex flex-col min-h-[220px] bg-white">
           <div className="text-red-600 font-medium text-center mb-2">
             {product.tag}
           </div>
@@ -171,7 +171,7 @@ export default function ProductShowcase() {
             {product.title}
           </h3>
 
-          <div className="flex justify-between items-center mt-4">
+          <div className="mt-auto flex justify-between items-center gap-2">
             <Link
               to={`/mua-ngay/${product.id}`}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"

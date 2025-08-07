@@ -116,23 +116,17 @@ const productsByCategory = {
   "bao-hiem-o-to-9": [
     {
       id: 1,
-      image: "/products/bic-tnds-oto.png?height=200&width=300",
+      image: "/products/bic-tnds-oto.png?height=500&width=800",
       title: "Bảo hiểm trách nhiệm dân sự chủ xe ô tô",
       detailUrl: "/san-pham/bao-hiem-trach-nhiem-dan-su-chu-xe-o-to",
       buyUrl: "/mua-bao-hiem/bao-hiem-o-to/tnds-bat-buoc",
     },
-    {
-      id: 2,
-      image: "/products/vc-oto.png?height=200&width=300",
-      title: "Bảo hiểm vật chất ô tô",
-      detailUrl: "/san-pham/bao-hiem-vat-chat-o-to",
-      buyUrl: "/mua-bao-hiem/bao-hiem-o-to/vat-chat-xe",
-    },
+    // Đã loại bỏ bảo hiểm vật chất ô tô
   ],
   "bao-hiem-xe-may-10": [
     {
       id: 3,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-tnds-xe-may.png?height=500&width=800",
       title: "Bảo hiểm TNDS bắt buộc xe máy",
       detailUrl: "/san-pham/bao-hiem-tnds-xe-may",
       buyUrl: "/mua-bao-hiem/bao-hiem-xe-may/tnds-bat-buoc",
@@ -141,14 +135,14 @@ const productsByCategory = {
   "bao-hiem-suc-khoe-11": [
     {
       id: 4,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-tam-an.png?height=500&width=800",
       title: "Bảo hiểm sức khỏe và tai nạn cá nhân BIC Tâm An",
       detailUrl: "/san-pham/bao-hiem-suc-khoe-tam-an",
       buyUrl: "/mua-bao-hiem/bao-hiem-suc-khoe/bic-tam-an",
     },
     {
       id: 5,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-phuc-tam-an.png?height=500&width=800",
       title: "Bảo hiểm bệnh ung thư BIC Phúc Tâm An",
       detailUrl: "/san-pham/bao-hiem-benh-ung-thu-phuc-tam-an",
       buyUrl: "/mua-bao-hiem/bao-hiem-suc-khoe/bic-phuc-tam-an",
@@ -157,21 +151,21 @@ const productsByCategory = {
   "bao-hiem-du-lich-13": [
     {
       id: 6,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/Du-lich-quoc-te.jpg?height=500&width=800",
       title: "Bảo hiểm du lịch quốc tế (ITI)",
       detailUrl: "/san-pham/bao-hiem-du-lich-quoc-te",
       buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/quoc-te",
     },
     {
       id: 7,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-du-lich-noi-dia.png?height=500&width=800",
       title: "Bảo hiểm du lịch trong nước (TRV)",
       detailUrl: "/san-pham/bao-hiem-du-lich-trong-nuoc",
       buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/trong-nuoc",
     },
     {
       id: 8,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-travel-care.png?height=500&width=800",
       title: "BIC TRAVEL CARE\nBảo hiểm tai nạn khách du lịch (TVC)",
       detailUrl: "/san-pham/bao-hiem-tai-nan-khach-du-lich",
       buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/tai-nan-khach-du-lich",
@@ -180,14 +174,14 @@ const productsByCategory = {
   "bao-hiem-tai-nan-12": [
     {
       id: 9,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-tai-nan-24h.png?height=500&width=800",
       title: "Bảo hiểm tai nạn 24/24",
       detailUrl: "/san-pham/bao-hiem-tai-nan-24-24",
       buyUrl: "/mua-bao-hiem/bao-hiem-tai-nan/24-24",
     },
     {
       id: 10,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/Anh-Bao-hiem-tai-nan-nguoi-su-dung-dien.webp?height=500&width=800",
       title: "Bảo hiểm tai nạn người sử dụng điện",
       detailUrl: "/san-pham/bao-hiem-tai-nan-nguoi-su-dung-dien",
       buyUrl:
@@ -195,7 +189,7 @@ const productsByCategory = {
     },
     {
       id: 11,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/01-ANH-SAN-PHAM-BAO-HIEM-TAI-NAN-MO-RONG.webp?height=500&width=800",
       title: "Bảo hiểm tai nạn mở rộng",
       detailUrl: "/san-pham/bao-hiem-tai-nan-mo-rong",
       buyUrl: "/mua-bao-hiem/bao-hiem-tai-nan/bao-hiem-tai-nan-mo-rong",
@@ -204,7 +198,7 @@ const productsByCategory = {
   "bao-hiem-nha-tu-nhan-14": [
     {
       id: 10,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-home.webp?height=500&width=800",
       title: "Bảo hiểm toàn diện nhà tư nhân",
       detailUrl: "/san-pham/bao-hiem-toan-dien-nha-tu-nhan",
       buyUrl: "/mua-bao-hiem/bao-hiem-nha-tu-nhan/toan-dien",
@@ -213,7 +207,7 @@ const productsByCategory = {
   "bao-hiem-an-ninh-mang-15": [
     {
       id: 11,
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/products/bic-cyber-risk.png?height=500&width=800",
       title: "Bảo hiểm an ninh mạng",
       detailUrl: "/san-pham/bao-hiem-an-ninh-mang",
       buyUrl: "/mua-bao-hiem/bao-hiem-an-ninh-mang/ca-nhan",
@@ -224,12 +218,12 @@ const productsByCategory = {
 // Banner images for each category
 const categoryBanners = {
   "bao-hiem-o-to-9": "/banner1.png?height=400&width=1920",
-  "bao-hiem-xe-may-10": "/placeholder.svg?height=400&width=1920",
-  "bao-hiem-suc-khoe-11": "/placeholder.svg?height=400&width=1920",
-  "bao-hiem-du-lich-13": "/placeholder.svg?height=400&width=1920",
-  "bao-hiem-tai-nan-12": "/placeholder.svg?height=400&width=1920",
-  "bao-hiem-nha-tu-nhan-14": "/placeholder.svg?height=400&width=1920",
-  "bao-hiem-an-ninh-mang-15": "/placeholder.svg?height=400&width=1920",
+  "bao-hiem-xe-may-10": "/categories/San-pham-MC.jpg?height=400&width=1920",
+  "bao-hiem-suc-khoe-11": "/categories/San-pham-BH-suc-khoe.webp?height=400&width=1920",
+  "bao-hiem-du-lich-13": "/categories/San-pham-du-lich.webp?height=400&width=1920",
+  "bao-hiem-tai-nan-12": "/categories/San-pham-GPA.jpg?height=400&width=1920",
+  "bao-hiem-nha-tu-nhan-14": "/categories/San-pham-TDN.jpg?height=400&width=1920",
+  "bao-hiem-an-ninh-mang-15": "/categories/BH-Cyber.jpg?height=400&width=1920",
 };
 
 // Category titles

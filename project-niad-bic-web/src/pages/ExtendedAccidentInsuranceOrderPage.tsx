@@ -398,6 +398,12 @@ export default function CancerInsuranceOrderPage() {
 
   const handleOrderAccidentExtended = async () => {
     try {
+      // Lấy token từ sessionStorage
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        alert("Vui lòng đăng nhập để thực hiện thao tác này.");
+        return;
+      }
       // Chuẩn bị invoice
       const insuranceStart = customerInfo.insuranceStartDate
         ? new Date(customerInfo.insuranceStartDate)
@@ -408,7 +414,7 @@ export default function CancerInsuranceOrderPage() {
       );
       const invoice = {
         customer_id: null, // Có thể cập nhật sau nếu có
-        product_id: 11, // ID sản phẩm bảo hiểm tai nạn mở rộng (cần xác nhận lại nếu backend quy định khác)
+        product_id: 16, // ID sản phẩm bảo hiểm tai nạn mở rộng
         user_id: null, // Có thể lấy từ context đăng nhập nếu có
         form_id: null,
         insurance_package:
@@ -431,14 +437,17 @@ export default function CancerInsuranceOrderPage() {
         identity_number: p.identityCard,
         cmnd_img: "",
       }));
-      // Gọi API
+      // Gọi API với token
       const res = await fetch(
         `${
           import.meta.env.VITE_API_URL || "http://localhost:5000"
         }/api/insurance_accident/create_accident`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ invoice, participants: participantsPayload }),
         }
       );
@@ -467,7 +476,7 @@ export default function CancerInsuranceOrderPage() {
 
   const renderStep1Content = () => {
     return (
-      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+      <div className="mx-auto">
         <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
             Thông tin
@@ -478,7 +487,7 @@ export default function CancerInsuranceOrderPage() {
               <thead>
                 <tr className="bg-red-600 text-white">
                   <th
-                    className="p-3 text-center border align-middle"
+                    className="p-1 text-center border align-middle"
                     rowSpan={2}
                   >
                     Điều kiện
@@ -571,10 +580,10 @@ export default function CancerInsuranceOrderPage() {
                 {/* Điều kiện C */}
                 <tr>
                   <td className="border p-2 align-middle" rowSpan={3}>
-                    <b>C (lựa chọn)</b>
+                    <b>C (tuỳ chọn)</b>
                   </td>
                   <td className="border p-2 align-middle">
-                    Trợ cấp nằm viện/phẫu thuật do ốm đau, bệnh tật
+                    Trợ cấp nằm viện/phẫu thuật do bệnh tật
                   </td>
                   <td className="border p-2 text-center align-middle">
                     10,000,000
@@ -591,7 +600,7 @@ export default function CancerInsuranceOrderPage() {
                 </tr>
                 <tr>
                   <td className="border p-2 align-middle">
-                    - Trợ cấp cho 1 ngày nằm viện do ốm đau, bệnh tật. Tối đa 60
+                    Trợ cấp cho 1 ngày nằm viện do ốm đau, bệnh tật. Tối đa 60
                     ngày/năm
                   </td>
                   <td className="border p-2 text-center align-middle">
@@ -609,7 +618,7 @@ export default function CancerInsuranceOrderPage() {
                 </tr>
                 <tr>
                   <td className="border p-2 align-middle">
-                    - Trợ cấp phẫu thuật do ốm đau, bệnh tật
+                    Trợ cấp phẫu thuật do ốm đau, bệnh tật
                   </td>
                   <td
                     className="border p-2 text-center align-middle"
@@ -656,7 +665,7 @@ export default function CancerInsuranceOrderPage() {
 
   const renderStep2Content = () => {
     return (
-      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+      <div  className="mx-auto">
         <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
             Thông tin người tham gia bảo hiểm
@@ -1093,7 +1102,7 @@ export default function CancerInsuranceOrderPage() {
 
   const renderStep3Content = () => {
     return (
-      <div style={{ maxWidth: "1000px" }} className="mx-auto">
+      <div className="mx-auto">
         <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
             Thông tin tài khoản
@@ -1298,7 +1307,7 @@ export default function CancerInsuranceOrderPage() {
           className="w-full"
         />
       </div>
-      <div className="max-w-[1200px] mx-auto p-6 bg-white rounded-lg shadow-md">
+      <div className="max-w-full mx-auto p-6 bg-white rounded-lg shadow-md">
         {/* Progress steps */}
         <div className="flex items-center justify-center gap-4 mb-12">
           <div className="flex items-center">

@@ -1,12 +1,12 @@
 import { ClipboardList, UserCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Form, Select } from "antd";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -45,13 +45,22 @@ interface CustomerInfo {
 
 export default function MotorcycleCivilLiabilityOrderPage() {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = 2;
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showError, setShowError] = useState(false);
   const [insuranceType, setInsuranceType] = useState("new");
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('[DEBUG] User not authenticated, redirecting to login');
+      const currentPath = window.location.pathname;
+      sessionStorage.setItem('redirectAfterLogin', currentPath);
+      navigate('/dang-nhap?from=insurance-form');
+    }
+  }, [isAuthenticated, navigate]);
   const [licensePlateNumber, setLicensePlateNumber] = useState("");
   const [vehicleCount, setVehicleCount] = useState<number>(1);
 
@@ -131,6 +140,8 @@ export default function MotorcycleCivilLiabilityOrderPage() {
     }
   }, [accidentCoverage]);
 
+
+
   const handleVehicleInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -158,6 +169,20 @@ export default function MotorcycleCivilLiabilityOrderPage() {
     console.log("Customer info:", customerInfo);
     setShowError(false);
     let currentStepErrors: { [key: string]: string } = {};
+
+    // Chỉ kiểm tra token ở bước cuối
+    if (currentStep === totalSteps) {
+      const token = sessionStorage.getItem('token');
+      console.log("[DEBUG] Token when submitting:", token);
+      
+      if (!token) {
+        console.log("[DEBUG] No token found when submitting, saving path");
+        const currentPath = window.location.pathname;
+        sessionStorage.setItem('redirectAfterLogin', currentPath);
+        navigate('/dang-nhap?from=insurance-form');
+        return;
+      }
+    }
 
     try {
       if (currentStep === 1) {
@@ -285,14 +310,33 @@ export default function MotorcycleCivilLiabilityOrderPage() {
       setShowError(false);
       setErrors({});
 
-      // 1. Tạo hóa đơn (Invoice)
+      // Check authentication before submit
+      if (!isAuthenticated) {
+        console.log("[DEBUG] User not authenticated, redirecting to login");
+        const currentPath = window.location.pathname;
+        sessionStorage.setItem('redirectAfterLogin', currentPath);
+        navigate('/dang-nhap?from=insurance-form');
+        return;
+      }
+
+      const token = sessionStorage.getItem('token');
+
       const invoiceResponse = await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/create_invoice`,
         {
           // Remove insurance_quantity and contract_type from here
           // They will be sent in confirm_purchase
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token || ''}`
+          }
         }
       );
+
+      if (!invoiceResponse.data) {
+        throw new Error('Không thể tạo hóa đơn. Vui lòng kiểm tra lại đăng nhập.');
+      }
       const invoiceId = invoiceResponse.data.invoice_id;
 
       // 2. Tạo form bảo hiểm xe máy (MotorbikeInsuranceForm)
@@ -324,7 +368,12 @@ export default function MotorcycleCivilLiabilityOrderPage() {
 
       const formResponse = await axios.post(
         `${API_URL}/api/insurance_motorbike_owner/create_motorbike_insurance_form`,
-        motorbikeFormPayload
+        motorbikeFormPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
       const formId = formResponse.data.form_id;
 
@@ -341,6 +390,11 @@ export default function MotorcycleCivilLiabilityOrderPage() {
           phone_number: customerInfo.phone,
           invoice_request: customerInfo.invoice,
           notes: "Khách đăng ký bảo hiểm xe máy",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       const customerId = customerResponse.data.customer_id;
@@ -365,12 +419,17 @@ export default function MotorcycleCivilLiabilityOrderPage() {
           invoice_id: invoiceId,
           customer_id: customerId,
           form_id: formId,
-          product_id: vehicleInfo.productId,
+          product_id: 8,
           insurance_start: dayjs(vehicleInfo.insuranceStartDate).toISOString(),
           insurance_end: insuranceEndDate,
           insurance_amount: tndsFeeDisplay * vehicleCount,
           insurance_quantity: vehicleCount,
           contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 
@@ -390,14 +449,16 @@ export default function MotorcycleCivilLiabilityOrderPage() {
             });
             break;
           case 401:
-            setErrors({
-              submit: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-            });
+            // Nếu token hết hạn, chuyển hướng về trang đăng nhập
+            sessionStorage.removeItem('token');
+            navigate('/dang-nhap');
             break;
           case 403:
             setErrors({
-              submit: "Bạn không có quyền thực hiện thao tác này.",
+              submit: "Bạn không có quyền thực hiện thao tác này. Vui lòng đăng nhập lại.",
             });
+            sessionStorage.removeItem('token');
+            navigate('/dang-nhap');
             break;
           case 404:
             setErrors({
@@ -419,6 +480,9 @@ export default function MotorcycleCivilLiabilityOrderPage() {
           submit:
             "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.",
         });
+      } else if (error.message === 'Bạn cần đăng nhập để thực hiện thao tác này') {
+        localStorage.removeItem('token');
+        navigate('/dang-nhap');
       } else {
         setErrors({
           submit: "Có lỗi xảy ra khi xử lý đơn hàng. Vui lòng thử lại sau.",
@@ -432,7 +496,6 @@ export default function MotorcycleCivilLiabilityOrderPage() {
   const renderStep1Content = () => {
     return (
       <div style={{ maxWidth: "1000px" }} className="mx-auto">
-        <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
             Thông tin chung
           </h3>
@@ -485,7 +548,7 @@ export default function MotorcycleCivilLiabilityOrderPage() {
                     type="text"
                     value={licensePlateNumber}
                     onChange={(e) => setLicensePlateNumber(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                    className="w-full px-3 py-2 focus:outline-none"
                     placeholder="Nhập số GCNBH/BKS"
                   />
                   {showError && errors.licensePlateNumber && (
@@ -503,10 +566,10 @@ export default function MotorcycleCivilLiabilityOrderPage() {
                 <span className="text-red-600">*</span>
               </label>
               <div className="w-[28rem]">
-                <Select
+                <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
                   value={vehicleCount}
-                  onChange={(e) => setVehicleCount(Number(e))}
+                  onChange={(e) => setVehicleCount(Number(e.target.value))}
                 >
                   <option value="">-- Chọn số lượng --</option>
                   <option value="1">1 xe</option>
@@ -514,7 +577,7 @@ export default function MotorcycleCivilLiabilityOrderPage() {
                   <option value="3">3 xe</option>
                   <option value="4">4 xe</option>
                   <option value="5">5 xe</option>
-                </Select>
+                </select>
                 {showError && errors.vehicleCount && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.vehicleCount}
@@ -523,7 +586,7 @@ export default function MotorcycleCivilLiabilityOrderPage() {
               </div>
             </div>
           </div>
-        </div>
+      
 
         {/* Nút điều hướng */}
         <div className="flex justify-end mt-8">
@@ -647,31 +710,33 @@ export default function MotorcycleCivilLiabilityOrderPage() {
               <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
                 Tình trạng biển số
               </label>
-              <div className="flex-1">
-                <label className="inline-flex items-center mr-6">
-                  <input
-                    type="radio"
-                    name="hasPlate"
-                    checked={vehicleInfo.hasPlate === true}
-                    onChange={() =>
-                      setVehicleInfo((prev) => ({ ...prev, hasPlate: true }))
-                    }
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Đã có biển số</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="hasPlate"
-                    checked={vehicleInfo.hasPlate === false}
-                    onChange={() =>
-                      setVehicleInfo((prev) => ({ ...prev, hasPlate: false }))
-                    }
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Chưa có biển số</span>
-                </label>
+              <div className="w-[28rem]">
+                <div className="flex gap-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="hasPlate"
+                      checked={vehicleInfo.hasPlate === true}
+                      onChange={() =>
+                        setVehicleInfo((prev) => ({ ...prev, hasPlate: true }))
+                      }
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Đã có biển số</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="hasPlate"
+                      checked={vehicleInfo.hasPlate === false}
+                      onChange={() =>
+                        setVehicleInfo((prev) => ({ ...prev, hasPlate: false }))
+                      }
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Chưa có biển số</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -890,31 +955,28 @@ export default function MotorcycleCivilLiabilityOrderPage() {
               </div>
             )}
 
-            {/* Họ và tên */}
+            {/* Full Name */}
             <div className="flex items-start gap-8">
               <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
-                Họ và tên <span className="text-red-600">*</span>
+                {customerInfo.type === "organization" ? "Tên công ty" : "Họ và tên"} <span className="text-red-600">*</span>
               </label>
               <div className="w-[28rem]">
                 <input
                   type="text"
                   name="fullName"
                   value={customerInfo.fullName}
-                  onChange={(e) =>
-                    setCustomerInfo({
-                      ...customerInfo,
-                      fullName: e.target.value,
-                    })
-                  }
+                  onChange={handleCustomerInfoChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
                 {showError && errors.fullName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.fullName}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Địa chỉ */}
+            {/* Address */}
             <div className="flex items-start gap-8">
               <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
                 Địa chỉ <span className="text-red-600">*</span>
@@ -924,16 +986,13 @@ export default function MotorcycleCivilLiabilityOrderPage() {
                   type="text"
                   name="address"
                   value={customerInfo.address}
-                  onChange={(e) =>
-                    setCustomerInfo({
-                      ...customerInfo,
-                      address: e.target.value,
-                    })
-                  }
+                  onChange={handleCustomerInfoChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
                 {showError && errors.address && (
-                  <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.address}
+                  </p>
                 )}
               </div>
             </div>
@@ -987,69 +1046,35 @@ export default function MotorcycleCivilLiabilityOrderPage() {
             </div>
 
             {/* Invoice Request */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-start gap-8">
               <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
                 Yêu cầu xuất hóa đơn VAT
               </label>
               <div className="w-[28rem]">
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    name="invoice"
-                    checked={customerInfo.invoice}
-                    onChange={handleCustomerInfoChange}
-                    className="form-checkbox h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Có</span>
-                </label>
+                <div className="flex gap-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="invoice"
+                      checked={customerInfo.invoice === true}
+                      onChange={() => setCustomerInfo(prev => ({...prev, invoice: true}))}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Có</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="invoice"
+                      checked={customerInfo.invoice === false}
+                      onChange={() => setCustomerInfo(prev => ({...prev, invoice: false}))}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Không</span>
+                  </label>
+                </div>
               </div>
             </div>
-
-            {/* Company Name (if invoice requested) */}
-            {customerInfo.invoice && (
-              <div className="flex items-start gap-8">
-                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
-                  Tên công ty
-                </label>
-                <div className="w-[28rem]">
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={customerInfo.companyName}
-                    onChange={handleCustomerInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-                  />
-                  {showError && errors.companyName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.companyName}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Company Address (if invoice requested) */}
-            {customerInfo.invoice && (
-              <div className="flex items-start gap-8">
-                <label className="w-[300px] text-lg font-medium text-gray-700 flex justify-start">
-                  Địa chỉ công ty
-                </label>
-                <div className="w-[28rem]">
-                  <input
-                    type="text"
-                    name="companyAddress"
-                    value={customerInfo.companyAddress}
-                    onChange={handleCustomerInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-                  />
-                  {showError && errors.companyAddress && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.companyAddress}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Receive Method */}
             <div className="flex items-center gap-8">
@@ -1057,28 +1082,30 @@ export default function MotorcycleCivilLiabilityOrderPage() {
                 Hình thức nhận GCNBH
               </label>
               <div className="w-[28rem]">
-                <label className="inline-flex items-center mr-6">
-                  <input
-                    type="radio"
-                    name="receiveMethod"
-                    value="email"
-                    checked={customerInfo.receiveMethod === "email"}
-                    onChange={handleCustomerInfoChange}
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Qua email</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="receiveMethod"
-                    value="address"
-                    checked={customerInfo.receiveMethod === "address"}
-                    onChange={handleCustomerInfoChange}
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Qua địa chỉ</span>
-                </label>
+                <div className="flex gap-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="receiveMethod"
+                      value="email"
+                      checked={customerInfo.receiveMethod === "email"}
+                      onChange={handleCustomerInfoChange}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Qua email</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="receiveMethod"
+                      value="address"
+                      checked={customerInfo.receiveMethod === "address"}
+                      onChange={handleCustomerInfoChange}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Qua địa chỉ</span>
+                  </label>
+                </div>
               </div>
             </div>
 

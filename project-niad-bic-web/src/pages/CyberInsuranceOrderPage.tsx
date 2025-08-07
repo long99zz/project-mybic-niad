@@ -160,6 +160,7 @@ const CyberInsuranceOrderPage: React.FC = () => {
       endDate.setMonth(endDate.getMonth() + 12); // Default to 12 months
 
       const payload = {
+        product_id: 18,
         insurance_package: "Bảo hiểm an ninh mạng",
         insurance_start: toYMD(startDate), // YYYY-MM-DD
         insurance_end: toYMD(endDate), // YYYY-MM-DD
@@ -170,7 +171,7 @@ const CyberInsuranceOrderPage: React.FC = () => {
           full_name: p.fullName,
           gender:
             p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
-          birth_date: p.dob ? toYMD(new Date(p.dob)) : null, // YYYY-MM-DD
+          birth_date: p.dob ? new Date(p.dob).toISOString() : null, // ISO string
           identity_number: p.idNumber,
         })),
       };
@@ -178,11 +179,22 @@ const CyberInsuranceOrderPage: React.FC = () => {
       console.log("Payload gửi lên:", payload);
 
       const token = sessionStorage.getItem("token");
+      console.log("[DEBUG] Token when submitting:", token);
+
+      // Kiểm tra xem có token không
+      if (!token) {
+        console.log("[DEBUG] No token found when submitting, redirecting to login");
+        alert("Vui lòng đăng nhập để tiếp tục");
+        window.location.href = "/dang-nhap";
+        return;
+      }
+
       const res = await axios.post(
         `${API_URL}/api/insurance_accident/create_accident`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log("[DEBUG] Response create_accident:", res.data);
       const invoice_id = res.data.invoice_id;
       const cartItem = {
         id: "CYBER",

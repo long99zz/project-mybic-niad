@@ -16,7 +16,7 @@ const productDetails = {
     subtitle: "TNDS Ô tô",
     description:
       "Bảo hiểm trách nhiệm dân sự (TNDS) của chủ xe ô tô là loại bảo hiểm bắt buộc theo quy định của pháp luật. Sản phẩm này bảo vệ quyền lợi của chủ xe trước những thiệt hại về người và tài sản đối với bên thứ ba do xe gây ra.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-tnds-oto.png?height=500&width=800",
     price: "Từ 436.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-o-to/tnds-bat-buoc",
     category: "bao-hiem-o-to-9",
@@ -72,7 +72,7 @@ const productDetails = {
     subtitle: "TNDS xe máy",
     description:
       "Bảo hiểm trách nhiệm dân sự (TNDS) của chủ xe máy là loại bảo hiểm bắt buộc theo quy định của pháp luật. Sản phẩm này bảo vệ quyền lợi của chủ xe trước những thiệt hại về người và tài sản đối với bên thứ ba do xe gây ra.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-tnds-xe-may.png?height=500&width=800",
     price: "Từ 60.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-xe-may/tnds-bat-buoc",
     category: "bao-hiem-xe-may-10",
@@ -99,7 +99,7 @@ const productDetails = {
     subtitle: "BIC Tâm An",
     description:
       "Bảo hiểm sức khỏe và tai nạn cá nhân BIC Tâm An mang đến sự bảo vệ toàn diện cho sức khỏe và tính mạng của bạn và gia đình. Với nhiều lựa chọn phù hợp với nhu cầu và ngân sách khác nhau.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-tam-an.png?height=500&width=800",
     price: "Từ 300.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-suc-khoe/bic-tam-an",
     category: "bao-hiem-suc-khoe-11",
@@ -127,7 +127,7 @@ const productDetails = {
     subtitle: "BIC Phúc Tâm An",
     description:
       "Bảo hiểm bệnh ung thư BIC Phúc Tâm An cung cấp sự bảo vệ tài chính trước nguy cơ mắc bệnh ung thư. Sản phẩm này giúp giảm gánh nặng tài chính khi không may mắc bệnh hiểm nghèo.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-phuc-tam-an.png?height=500&width=800",
     price: "Từ 200.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-suc-khoe/bic-phuc-tam-an",
     category: "bao-hiem-suc-khoe-11",
@@ -155,7 +155,7 @@ const productDetails = {
     subtitle: "ITI",
     description:
       "Bảo hiểm du lịch quốc tế (ITI) cung cấp sự bảo vệ toàn diện cho bạn khi đi du lịch nước ngoài. Sản phẩm này bảo vệ bạn trước các rủi ro như tai nạn, ốm đau, mất hành lý, và nhiều rủi ro khác trong chuyến đi.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/Du-lich-quoc-te.jpg?height=500&width=800",
     price: "Từ 150.000đ/chuyến đi",
     buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/quoc-te",
     category: "bao-hiem-du-lich-13",
@@ -184,7 +184,7 @@ const productDetails = {
     subtitle: "TRV",
     description:
       "Bảo hiểm du lịch trong nước (TRV) cung cấp sự bảo vệ cho bạn khi đi du lịch trong lãnh thổ Việt Nam. Sản phẩm này bảo vệ bạn trước các rủi ro như tai nạn, ốm đau và các rủi ro khác trong chuyến đi.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-du-lich-noi-dia.png?height=500&width=800",
     price: "Từ 30.000đ/chuyến đi",
     buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/trong-nuoc",
     category: "bao-hiem-du-lich-13",
@@ -212,7 +212,7 @@ const productDetails = {
     subtitle: "BIC TRAVEL CARE",
     description:
       "Bảo hiểm tai nạn khách du lịch (TVC) cung cấp sự bảo vệ đặc biệt cho khách du lịch trước các rủi ro tai nạn trong chuyến đi. Sản phẩm này phù hợp cho cả chuyến đi trong nước và quốc tế.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-travel-care.png?height=500&width=800",
     price: "Từ 20.000đ/chuyến đi",
     buyUrl: "/mua-bao-hiem/bao-hiem-du-lich/tai-nan-khach-du-lich",
     category: "bao-hiem-du-lich-13",
@@ -240,7 +240,7 @@ const productDetails = {
     subtitle: "Bảo vệ 24/24",
     description:
       "Bảo hiểm tai nạn 24/24 cung cấp sự bảo vệ toàn diện trước các rủi ro tai nạn có thể xảy ra bất cứ lúc nào, bất cứ nơi đâu, 24 giờ một ngày và 7 ngày một tuần.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-tai-nan-24h.png?height=500&width=800",
     price: "Từ 100.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-tai-nan/24-24",
     category: "bao-hiem-tai-nan-12",
@@ -268,7 +268,7 @@ const productDetails = {
     subtitle: "Bảo vệ tổ ấm của bạn",
     description:
       "Bảo hiểm toàn diện nhà tư nhân bảo vệ ngôi nhà và tài sản của bạn trước các rủi ro như cháy nổ, thiên tai, trộm cắp và các rủi ro khác. Đây là giải pháp bảo vệ toàn diện cho tổ ấm của bạn.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-home.webp?height=500&width=800",
     price: "Từ 300.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-nha-tu-nhan/toan-dien",
     category: "bao-hiem-nha-tu-nhan-14",
@@ -296,7 +296,7 @@ const productDetails = {
     subtitle: "An toàn trong thời đại số",
     description:
       "Bảo hiểm an ninh mạng bảo vệ bạn trước các rủi ro trong thời đại số như mất cắp dữ liệu cá nhân, lừa đảo trực tuyến, tấn công mạng và các rủi ro khác liên quan đến hoạt động trên không gian mạng.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/bic-cyber-risk.png?height=500&width=800",
     price: "Từ 500.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-an-ninh-mang/ca-nhan",
     category: "bao-hiem-an-ninh-mang-15",
@@ -324,7 +324,7 @@ const productDetails = {
     subtitle: "Bảo vệ trước rủi ro điện giật, tai nạn điện",
     description:
       "Bảo hiểm dành cho người sử dụng điện, bảo vệ trước các rủi ro tai nạn liên quan đến điện trong sinh hoạt và lao động.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/Anh-Bao-hiem-tai-nan-nguoi-su-dung-dien.webp?height=500&width=800",
     price: "Từ 50.000đ/năm",
     buyUrl:
       "/mua-bao-hiem/bao-hiem-tai-nan/bao-hiem-tai-nan-nguoi-su-dung-dien",
@@ -350,7 +350,7 @@ const productDetails = {
     subtitle: "Bảo vệ toàn diện trước nhiều rủi ro tai nạn",
     description:
       "Bảo hiểm mở rộng phạm vi bảo vệ cho người được bảo hiểm trước nhiều rủi ro tai nạn trong sinh hoạt, lao động, học tập.",
-    bannerImage: "/placeholder.svg?height=500&width=800",
+    bannerImage: "/products/01-ANH-SAN-PHAM-BAO-HIEM-TAI-NAN-MO-RONG.webp?height=500&width=800",
     price: "Từ 80.000đ/năm",
     buyUrl: "/mua-bao-hiem/bao-hiem-tai-nan/bao-hiem-tai-nan-mo-rong",
     category: "bao-hiem-tai-nan-12",

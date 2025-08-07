@@ -401,14 +401,18 @@ export default function CancerInsuranceOrderPage() {
 
   const handleSubmit = async () => {
     try {
+      // Get token from session storage
+      const token = sessionStorage.getItem("token");
+      
       // 1. Tạo invoice
       const invoiceResponse = await axios.post(
         `${API_URL}/api/insurance_cancer/create_invoice`,
         {
           insurance_quantity: participantCount,
           contract_type: "Mới",
-          product_id: 4,
-        }
+          product_id: 9,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const invoiceId = invoiceResponse.data.invoice_id;
 
@@ -435,7 +439,8 @@ export default function CancerInsuranceOrderPage() {
         };
         const participantRes = await axios.post(
           `${API_URL}/api/insurance_cancer/create_insurance_participant_info`,
-          payload
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!formId && participantRes.data.form_id)
           formId = participantRes.data.form_id;
@@ -454,7 +459,8 @@ export default function CancerInsuranceOrderPage() {
           phone_number: customerInfo.phone,
           invoice_request: customerInfo.invoice,
           notes: customerInfo.note || "",
-        }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const customerId = customerRes.data.customer_id;
 
@@ -463,8 +469,9 @@ export default function CancerInsuranceOrderPage() {
         invoice_id: invoiceId,
         customer_id: customerId,
         form_id: formId,
-        product_id: 4,
-      });
+        product_id: 9,
+      },
+      { headers: { Authorization: `Bearer ${token}` } });
 
       navigate("/gio-hang.html");
     } catch (error) {
