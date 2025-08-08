@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -12,7 +13,20 @@ import { getProducts } from "../services/product";
 import { getInvoiceDetail } from "../services/invoice";
 
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState("profile");
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Lấy tab từ query param nếu có
+  const getTabFromQuery = () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    return tab && ["profile","info","password","orders"].includes(tab) ? tab : "profile";
+  };
+  const [activeTab, setActiveTab] = useState(getTabFromQuery());
+
+  // Khi location.search thay đổi, cập nhật tab
+  useEffect(() => {
+    setActiveTab(getTabFromQuery());
+  }, [location.search]);
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -35,9 +49,10 @@ export default function AccountPage() {
   const [pwMsg, setPwMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [detailModal, setDetailModal] = useState<{open: boolean, data?: any}>({open: false});
+  const [orderSearch, setOrderSearch] = useState("");
   const tabs = [
     { key: "profile", label: "Trang cá nhân" },
-    { key: "info", label: "Thông tin cá nhân" },
+    { key: "info", label: "Cập nhật thông tin" },
     { key: "password", label: "Đổi mật khẩu" },
     { key: "orders", label: "Quản lý đơn hàng" },
   ];
@@ -69,7 +84,16 @@ export default function AccountPage() {
       getUserOrders()
         .then((data) => {
           console.log('Dữ liệu đơn hàng trả về:', data);
-          setOrders(data);
+          // Nếu data null, undefined, hoặc không phải mảng thì setOrders([])
+          if (!Array.isArray(data)) {
+            setOrders([]);
+          } else {
+            setOrders(data);
+          }
+        })
+        .catch((err) => {
+          console.error('Lỗi lấy đơn hàng:', err);
+          setOrders([]);
         })
         .finally(() => setLoading(false));
     }
@@ -132,7 +156,9 @@ export default function AccountPage() {
                       ? "bg-red-50 md:bg-red-100 text-red-600 border-red-600"
                       : "text-gray-700 border-transparent hover:bg-gray-50"
                     }`}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => {
+                    navigate(`/tai-khoan?tab=${tab.key}`);
+                  }}
                 >
                   {tab.label}
                 </button>
@@ -205,7 +231,7 @@ export default function AccountPage() {
           )}
           {activeTab === "info" && (
             <div>
-              <h2 className="text-3xl font-bold mb-6 text-center">Thông tin cá nhân</h2>
+              <h2 className="text-3xl font-bold mb-6 text-center">Cập nhật thông tin</h2>
               <form className="space-y-5 max-w-lg mx-auto" onSubmit={handleInfoSubmit}>
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2">
@@ -326,28 +352,28 @@ export default function AccountPage() {
             <div>
               <h2 className="text-3xl font-bold mb-6 text-center">Đổi mật khẩu</h2>
               <form className="space-y-5 max-w-lg mx-auto" onSubmit={handlePwSubmit}>
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold">Mật khẩu hiện tại</label>
+                <div className="flex items-center gap-4 mb-4">
+                  <label className="font-semibold min-w-[180px] text-left block">Mật khẩu hiện tại</label>
                   <input
-                    className="border rounded px-3 py-2"
+                    className="border rounded px-3 py-2 flex-1 block"
                     type="password"
                     value={pwForm.oldPassword}
                     onChange={e => setPwForm(f => ({ ...f, oldPassword: e.target.value }))}
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold">Mật khẩu mới</label>
+                <div className="flex items-center gap-4 mb-4">
+                  <label className="font-semibold min-w-[180px] text-left block">Mật khẩu mới</label>
                   <input
-                    className="border rounded px-3 py-2"
+                    className="border rounded px-3 py-2 flex-1 block"
                     type="password"
                     value={pwForm.newPassword}
                     onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold">Nhập lại mật khẩu mới</label>
+                <div className="flex items-center gap-4 mb-4">
+                  <label className="font-semibold min-w-[180px] text-left block">Nhập lại mật khẩu mới</label>
                   <input
-                    className="border rounded px-3 py-2"
+                    className="border rounded px-3 py-2 flex-1 block"
                     type="password"
                     value={pwForm.confirm}
                     onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
@@ -365,6 +391,15 @@ export default function AccountPage() {
           {activeTab === "orders" && (
             <div>
               <h2 className="text-3xl font-bold mb-6 text-center">Quản lý đơn hàng</h2>
+              <div className="mb-4 flex justify-end">
+                <input
+                  type="text"
+                  className="border rounded px-3 py-2 w-full max-w-xs"
+                  placeholder="Tìm kiếm đơn hàng..."
+                  value={orderSearch}
+                  onChange={e => setOrderSearch(e.target.value)}
+                />
+              </div>
               {loading ? (
                 <p>Đang tải...</p>
               ) : (
@@ -382,123 +417,140 @@ export default function AccountPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="text-center py-4">Không có đơn hàng nào.</td>
-                        </tr>
-                      )}
-                      {orders.map((order: any, idx: number) => (
-                        <tr key={(order.invoice_id || order.id || "") + "-" + idx} className="border-b">
-                          <td className="px-3 py-2 border text-center">{order.invoice_id || order.InvoiceID || order.id || "—"}</td>
-                          <td className="px-3 py-2 border">{order.product_name || order.product_id || "Không xác định"}</td>
-                          <td className="px-3 py-2 border text-center">{order.created_at ? new Date(order.created_at).toLocaleDateString() : (order.CreatedAt ? new Date(order.CreatedAt).toLocaleDateString() : "—")}</td>
-                          <td className="px-3 py-2 border text-center">{
-                            (() => {
-                              const d = order.insurance_start || order.InsuranceStart;
-                              if (!d) return "—";
-                              const date = new Date(d);
+                      {(() => {
+                        const search = orderSearch.trim().toLowerCase();
+                        const filtered = orders.filter((order: any) => {
+                          if (!search) return true;
+                          const fields = [
+                            order.invoice_id || order.InvoiceID || order.id || "",
+                            order.product_name || order.product_id || "",
+                            order.created_at || order.CreatedAt || "",
+                            order.insurance_start || order.InsuranceStart || "",
+                            order.insurance_end || order.InsuranceEnd || "",
+                            order.status || ""
+                          ];
+                          return fields.join(" ").toLowerCase().includes(search);
+                        });
+                        if (filtered.length === 0) {
+                          return [
+                            <tr key="no-orders">
+                              <td colSpan={7} className="text-center py-4">Không có đơn hàng nào.</td>
+                            </tr>
+                          ];
+                        }
+                        return filtered.map((order: any, idx: number) => (
+                          <tr key={(order.invoice_id || order.id || "") + "-" + idx} className="border-b">
+                            <td className="px-3 py-2 border text-center">{order.invoice_id || order.InvoiceID || order.id || "—"}</td>
+                            <td className="px-3 py-2 border">{order.product_name || order.product_id || "Không xác định"}</td>
+                            <td className="px-3 py-2 border text-center">{order.created_at ? new Date(order.created_at).toLocaleDateString() : (order.CreatedAt ? new Date(order.CreatedAt).toLocaleDateString() : "—")}</td>
+                            <td className="px-3 py-2 border text-center">{(() => {
+                              // Lấy ngày bắt đầu: ưu tiên insurance_start, nếu không có thì departure_date
+                              const d = order.insurance_start || order.InsuranceStart || order.departure_date || order.DepartureDate || "";
+                              if (!d || typeof d !== "string" || d.trim() === "") return "—";
+                              // Nếu là chuỗi có dạng yyyy-mm-dd hh:mm:ss thì cắt lấy yyyy-mm-dd
+                              const dateStr = d.length >= 10 ? d.slice(0, 10) : d;
+                              const date = new Date(dateStr);
                               if (isNaN(date.getTime())) return "—";
                               return date.toLocaleDateString();
-                            })()
-                          }</td>
-                          <td className="px-3 py-2 border text-center">{
-                            (() => {
-                              const d = order.insurance_end || order.InsuranceEnd;
-                              if (!d) return "—";
-                              const date = new Date(d);
+                            })()}</td>
+                            <td className="px-3 py-2 border text-center">{(() => {
+                              // Lấy ngày hết hạn: ưu tiên insurance_end, nếu không có thì return_date
+                              const d = order.insurance_end || order.InsuranceEnd || order.return_date || order.ReturnDate || "";
+                              if (!d || typeof d !== "string" || d.trim() === "") return "—";
+                              const dateStr = d.length >= 10 ? d.slice(0, 10) : d;
+                              const date = new Date(dateStr);
                               if (isNaN(date.getTime())) return "—";
                               return date.toLocaleDateString();
-                            })()
-                          }</td>
-                          <td className="px-3 py-2 border text-center">{order.status}</td>
-                          <td className="px-3 py-2 border text-center">
-                            {order.invoice_id || order.id ? (
-                              <button
-                                className="text-blue-600 underline hover:text-blue-800"
-                                onClick={async () => {
-                                  const invoiceId = order.invoice_id || order.id;
-                                  if (!invoiceId) return;
-                                  setDetailModal({open: true, data: undefined});
-                                  try {
-                                    const data = await getInvoiceDetail(invoiceId);
-                                    console.log('Chi tiết đơn hàng:', data); // Log response chi tiết đơn hàng
-                                    setDetailModal({open: true, data});
-                                  } catch {
-                                    setDetailModal({open: true, data: {error: "Không lấy được chi tiết đơn hàng!"}});
-                                  }
-                                }}
-                              >Xem chi tiết</button>
+                            })()}</td>
+                            <td className="px-3 py-2 border text-center">{order.status}</td>
+                            <td className="px-3 py-2 border text-center">
+                              {order.invoice_id || order.id ? (
+                                <button
+                                  className="text-blue-600 underline hover:text-blue-800"
+                                  onClick={async () => {
+                                    const invoiceId = order.invoice_id || order.id;
+                                    if (!invoiceId) return;
+                                    setDetailModal({open: true, data: undefined});
+                                    try {
+                                      const data = await getInvoiceDetail(invoiceId);
+                                      console.log('Chi tiết đơn hàng:', data);
+                                      setDetailModal({open: true, data});
+                                    } catch {
+                                      setDetailModal({open: true, data: {error: "Không lấy được chi tiết đơn hàng!"}});
+                                    }
+                                  }}
+                                >Xem chi tiết</button>
+                              ) : (
+                                <span className="text-gray-400">Không có</span>
+                              )}
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                  {/* Modal chi tiết đơn hàng nằm ngoài table */}
+                </div>
+              )}
+              {detailModal.open && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+                    <button className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl" onClick={() => setDetailModal({open: false})}>&times;</button>
+                    <h3 className="text-xl font-bold mb-4 text-center">Chi tiết đơn hàng</h3>
+                    {detailModal.data ? (
+                      detailModal.data.error ? (
+                        <div className="text-red-600 text-left">{detailModal.data.error}</div>
+                      ) : (
+                        <div className="space-y-2 text-left">
+                          <div><b>Mã đơn hàng:</b> {detailModal.data.invoice_id}</div>
+                          <div><b>Tên sản phẩm:</b> {detailModal.data.product_name}</div>
+                          <div><b>Trạng thái:</b> {detailModal.data.status}</div>
+                          <div><b>Ngày tạo:</b> {detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString() : "—"}</div>
+                          <div><b>Ngày bắt đầu:</b> {(() => {
+                            const d = detailModal.data.insurance_start;
+                            if (!d) return "—";
+                            const date = new Date(d);
+                            if (isNaN(date.getTime())) return "—";
+                            return date.toLocaleDateString();
+                          })()}</div>
+                          <div><b>Ngày hết hạn:</b> {(() => {
+                            const d = detailModal.data.insurance_end;
+                            if (!d) return "—";
+                            const date = new Date(d);
+                            if (isNaN(date.getTime())) return "—";
+                            return date.toLocaleDateString();
+                          })()}</div>
+                          {/* Ẩn dòng khách hàng */}
+                          <div>
+                            <b>Danh sách người tham gia:</b>
+                            {detailModal.data.participants && detailModal.data.participants.length > 0 ? (
+                              <div className="space-y-2 mt-2">
+                                {detailModal.data.participants.map((p: any, idx: number) => (
+                                  <div key={p.participant_id || idx} className="border rounded p-2 bg-gray-50">
+                                    <div><b>Họ tên:</b> {p.full_name}</div>
+                                    <div><b>Ngày sinh:</b> {p.birth_date}</div>
+                                    <div><b>Giới tính:</b> {p.gender}</div>
+                                    <div><b>Số CCCD:</b> {p.identity_number}</div>
+                                  </div>
+                                ))}
+                              </div>
                             ) : (
-                              <span className="text-gray-400">Không có</span>
+                              <div className="ml-6 italic text-gray-500">Không có người tham gia</div>
                             )}
-                          </td>
-                        </tr>
-                      ))}
-      {/* Modal chi tiết đơn hàng */}
-
-      {detailModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl" onClick={() => setDetailModal({open: false})}>&times;</button>
-            <h3 className="text-xl font-bold mb-4 text-center">Chi tiết đơn hàng</h3>
-            {detailModal.data ? (
-              detailModal.data.error ? (
-                <div className="text-red-600 text-left">{detailModal.data.error}</div>
-              ) : (
-                <div className="space-y-2 text-left">
-                  <div><b>Mã đơn hàng:</b> {detailModal.data.invoice_id}</div>
-                  <div><b>Tên sản phẩm:</b> {detailModal.data.product_name}</div>
-                  <div><b>Trạng thái:</b> {detailModal.data.status}</div>
-                  <div><b>Ngày tạo:</b> {detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString() : "—"}</div>
-                  <div><b>Ngày bắt đầu:</b> {(() => {
-                    const d = detailModal.data.insurance_start;
-                    if (!d) return "—";
-                    const date = new Date(d);
-                    if (isNaN(date.getTime())) return "—";
-                    return date.toLocaleDateString();
-                  })()}</div>
-                  <div><b>Ngày hết hạn:</b> {(() => {
-                    const d = detailModal.data.insurance_end;
-                    if (!d) return "—";
-                    const date = new Date(d);
-                    if (isNaN(date.getTime())) return "—";
-                    return date.toLocaleDateString();
-                  })()}</div>
-                  {/* Ẩn dòng khách hàng */}
-                  <div>
-                    <b>Danh sách người tham gia:</b>
-                    {detailModal.data.participants && detailModal.data.participants.length > 0 ? (
-                      <div className="space-y-2 mt-2">
-                        {detailModal.data.participants.map((p: any, idx: number) => (
-                          <div key={p.participant_id || idx} className="border rounded p-2 bg-gray-50">
-                            <div><b>Họ tên:</b> {p.full_name}</div>
-                            <div><b>Ngày sinh:</b> {p.birth_date}</div>
-                            <div><b>Giới tính:</b> {p.gender}</div>
-                            <div><b>Số CCCD:</b> {p.identity_number}</div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )
                     ) : (
-                      <div className="ml-6 italic text-gray-500">Không có người tham gia</div>
+                      <div className="text-left">Đang tải...</div>
                     )}
                   </div>
                 </div>
-              )
-            ) : (
-              <div className="text-left">Đang tải...</div>
             )}
           </div>
-        </div>
-      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-      <Footer />
-    </>
+        )}
+      </main>
+    </div>
+    <Footer />
+  </>
   );
 }

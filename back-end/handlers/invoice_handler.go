@@ -1,9 +1,11 @@
 package handlers
 
 import (
-   "fmt"
-   "github.com/gin-gonic/gin"
-   "gorm.io/gorm"
+	"database/sql"
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetMyInvoices godoc
@@ -14,33 +16,73 @@ import (
 // @Failure 401 {object} map[string]interface{}
 // @Router /api/my-invoices [get]
 func GetMyInvoices(db *gorm.DB) gin.HandlerFunc {
-   return func(c *gin.Context) {
-	   userID, exists := c.Get("user_id")
-	   if !exists {
-		   c.JSON(401, gin.H{"error": "Bạn chưa đăng nhập!"})
-		   return
-	   }
-	   uid := userID.(uint)
-	   // Sử dụng service nếu có, hoặc truy vấn trực tiếp
-	   var invoices []struct {
-		   InvoiceID   uint   `json:"invoice_id"`
-		   ProductID   uint   `json:"product_id"`
-		   ProductName string `json:"product_name"`
-		   Status      string `json:"status"`
-		   CreatedAt   string `json:"created_at"`
-	   }
-	   err := db.Table("invoices").
-		   Select("invoices.invoice_id, invoices.product_id, products.name as product_name, invoices.status, invoices.created_at").
-		   Joins("left join products on invoices.product_id = products.product_id").
-		   Where("invoices.user_id = ?", uid).
-		   Scan(&invoices).Error
-	   if err != nil {
-		   c.JSON(500, gin.H{"error": "Không lấy được danh sách hóa đơn!"})
-		   return
-	   }
-	   c.JSON(200, invoices)
-   }
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(401, gin.H{"error": "Bạn chưa đăng nhập!"})
+			return
+		}
+		uid := userID.(uint)
+		fmt.Printf("[DEBUG] uid: %v\n", uid)
+		// Sử dụng service nếu có, hoặc truy vấn trực tiếp
+		// Trả về cả các trường ngày bảo hiểm cho từng loại hóa đơn
+		var invoices = make([]map[string]interface{}, 0)
+		rows, err := db.Table("invoices").
+			Select("invoices.invoice_id, invoices.product_id, products.name as product_name, invoices.status, invoices.created_at, invoices.insurance_start, invoices.insurance_end").
+			Joins("left join products on invoices.product_id = products.product_id").
+			Where("invoices.user_id = ?", uid).
+			Rows()
+		if err != nil {
+			// Nếu lỗi truy vấn, trả về mảng rỗng thay vì null
+			c.JSON(200, invoices)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var invoiceID uint
+			var productID sql.NullInt64
+			var productName sql.NullString
+			var status string
+			var createdAt, insuranceStart, insuranceEnd interface{}
+			errScan := rows.Scan(&invoiceID, &productID, &productName, &status, &createdAt, &insuranceStart, &insuranceEnd)
+			if errScan != nil {
+				continue
+			}
+			// Tìm thêm ngày du lịch nếu có
+			var departureDate, returnDate interface{}
+			db.Table("travel_insurance_invoices").
+				Select("departure_date, return_date").
+				Where("invoice_id = ?", invoiceID).
+				Row().Scan(&departureDate, &returnDate)
+			invoices = append(invoices, map[string]interface{}{
+				"invoice_id": invoiceID,
+				"product_id": func() interface{} {
+					if productID.Valid {
+						return productID.Int64
+					} else {
+						return nil
+					}
+				}(),
+				"product_name": func() interface{} {
+					if productName.Valid {
+						return productName.String
+					} else {
+						return nil
+					}
+				}(),
+				"status":          status,
+				"created_at":      createdAt,
+				"insurance_start": insuranceStart,
+				"insurance_end":   insuranceEnd,
+				"departure_date":  departureDate,
+				"return_date":     returnDate,
+			})
+		}
+		fmt.Printf("[DEBUG] invoices: %#v\n", invoices)
+		c.JSON(200, invoices)
+	}
 }
+
 // GetInvoiceDetailUser godoc
 // @Summary Lấy chi tiết hóa đơn của user
 // @Tags Invoice
@@ -55,14 +97,14 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 		// Log invoiceID nhận được
 		println("[DEBUG] Nhận được invoiceID:", invoiceID)
 		var invoice struct {
-			InvoiceID   uint   `json:"invoice_id"`
-			ProductID   uint   `json:"product_id"`
-			ProductName string `json:"product_name"`
-			Status      string `json:"status"`
-			CreatedAt   string `json:"created_at"`
+			InvoiceID      uint   `json:"invoice_id"`
+			ProductID      uint   `json:"product_id"`
+			ProductName    string `json:"product_name"`
+			Status         string `json:"status"`
+			CreatedAt      string `json:"created_at"`
 			InsuranceStart string `json:"insurance_start"`
 			InsuranceEnd   string `json:"insurance_end"`
-			CustomerID  *uint  `json:"customer_id"`
+			CustomerID     *uint  `json:"customer_id"`
 		}
 		err := db.Table("invoices").
 			Select("invoices.invoice_id, invoices.product_id, products.name as product_name, invoices.status, invoices.created_at, invoices.insurance_start, invoices.insurance_end, invoices.customer_id").
@@ -78,9 +120,9 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 		}
 		// Lấy thông tin khách hàng
 		var customer struct {
-			CustomerID uint   `json:"customer_id"`
-			FullName   string `json:"full_name"`
-			Email      string `json:"email"`
+			CustomerID  uint   `json:"customer_id"`
+			FullName    string `json:"full_name"`
+			Email       string `json:"email"`
 			PhoneNumber string `json:"phone_number"`
 		}
 		if invoice.CustomerID != nil {
@@ -142,14 +184,14 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 			}
 		}
 		response := gin.H{
-			"invoice_id": invoice.InvoiceID,
-			"product_name": invoice.ProductName,
-			"status": invoice.Status,
-			"created_at": invoice.CreatedAt,
+			"invoice_id":      invoice.InvoiceID,
+			"product_name":    invoice.ProductName,
+			"status":          invoice.Status,
+			"created_at":      invoice.CreatedAt,
 			"insurance_start": invoice.InsuranceStart,
-			"insurance_end": invoice.InsuranceEnd,
-			"customer": customer,
-			"participants": participants,
+			"insurance_end":   invoice.InsuranceEnd,
+			"customer":        customer,
+			"participants":    participants,
 		}
 		// Log response trả về
 		println("[DEBUG] Response trả về:")
@@ -159,11 +201,3 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(200, response)
 	}
 }
-
-
-
-
-
-
-
-

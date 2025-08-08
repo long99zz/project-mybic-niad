@@ -704,15 +704,15 @@ export default function Navbar() {
                     </Link>
                     {/* Personal Info Link */}
                     <Link
-                      to="/tai-khoan/thong-tin-ca-nhan"
+                      to="/tai-khoan?tab=info"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
-                      Thông tin cá nhân
+                      Cập nhật thông tin
                     </Link>
                     {/* Change Password Link */}
                     <Link
-                      to="/tai-khoan/doi-mat-khau"
+                      to="/tai-khoan?tab=password"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
@@ -720,7 +720,7 @@ export default function Navbar() {
                     </Link>
                     {/* Order History Link */}
                     <Link
-                      to="/tai-khoan/don-hang"
+                      to="/tai-khoan?tab=orders"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >

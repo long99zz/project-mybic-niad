@@ -85,7 +85,8 @@ func main() {
 	apiRouter := router.Group("/api")
 	apiRouter.Use(middlewares.AuthMiddleware())
 
-	apiRouter.GET("/user", handlers.GetUserInfo(db)) // Lấy thông tin user
+apiRouter.GET("/user", handlers.GetUserInfo(db)) // Lấy thông tin user
+apiRouter.POST("/user/change-password", handlers.ChangePassword(db)) // Đổi mật khẩu
 	apiRouter.GET("/invoice-detail/:id", handlers.GetInvoiceDetailUser(db)) // Lấy chi tiết đơn hàng cho user
 	apiRouter.GET("/products", handlers.GetProducts(db))
 	apiRouter.POST("/products", handlers.AddProduct(db))

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func main() {
+func HashDemo() {
 	password := "123456"
 	
 	// Tạo hash mới
