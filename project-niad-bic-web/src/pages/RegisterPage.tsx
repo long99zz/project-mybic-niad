@@ -4,7 +4,7 @@ import Footer from "../components/Footer"
 import CustomerSupport from "../components/CustomerSupport"
 import type React from "react"
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { RefreshCw } from "lucide-react"
 
 export default function RegisterPage() {
@@ -21,10 +21,9 @@ export default function RegisterPage() {
         birthDay: "",
         birthMonth: "",
         birthYear: "",
-        province: "",
-        city: "",
-        district: "",
-        ward: "",
+    province: "",
+    district: "",
+    ward: "",
         houseNumber: "",
         useAsDefaultAddress: false,
         captcha: "",
@@ -36,10 +35,61 @@ export default function RegisterPage() {
         setFormData((prev) => ({ ...prev, [name]: val }))
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const navigate = useNavigate()
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Handle registration submission
-        console.log("Registration submitted:", formData)
+        try {
+            // Prepare payload matching backend model
+            const payload: any = {
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                phone: formData.phone,
+                email: formData.email,
+                password: formData.password,
+                citizen_id: formData.idNumber,
+                gender: formData.gender,
+                province: formData.province,
+                district: formData.district,
+                sub_district: formData.ward,
+                house_number: formData.houseNumber,
+                role: "Customer",
+            }
+
+            // Only include date_of_birth when all parts are provided and valid
+            const y = formData.birthYear?.toString?.().trim()
+            const m = formData.birthMonth?.toString?.().trim()
+            const d = formData.birthDay?.toString?.().trim()
+            
+            // Check if all date parts are filled (not empty strings)
+            if (y && y !== "" && m && m !== "" && d && d !== "") {
+                // pad month/day to 2 digits
+                const mm = m.padStart(2, "0")
+                const dd = d.padStart(2, "0")
+                payload.date_of_birth = `${y}-${mm}-${dd}`
+            }
+
+            // Debug: log payload to inspect what will be sent
+            console.debug("Register payload:", payload)
+
+            // Ensure date_of_birth is present (backend expects non-nullable DATE)
+            if (!payload.date_of_birth) {
+                alert("Vui lòng chọn ngày, tháng và năm sinh.")
+                return
+            }
+
+            const { registerUser } = await import("../services/user")
+            const res = await registerUser(payload)
+            console.log("Register response:", res)
+            if (res && res.token) {
+                sessionStorage.setItem("token", res.token)
+            }
+            // Redirect to home or login
+            navigate("/")
+        } catch (err: any) {
+            console.error("Register error:", err)
+            alert(err?.response?.data?.error || err?.message || "Đăng ký thất bại")
+        }
     }
 
     return (
@@ -312,54 +362,18 @@ export default function RegisterPage() {
                                     Tỉnh
                                 </label>
                                 <div className="md:col-span-2">
-                                    <select
+                                    <input
                                         id="province"
                                         name="province"
+                                        type="text"
                                         value={formData.province}
                                         onChange={handleChange}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 appearance-none bg-white"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E")`,
-                                            backgroundRepeat: "no-repeat",
-                                            backgroundPosition: "right 0.5rem center",
-                                            backgroundSize: "1.5em 1.5em",
-                                            paddingRight: "2.5rem",
-                                        }}
-                                    >
-                                        <option value="">-- Chọn --</option>
-                                        <option value="hanoi">Hà Nội</option>
-                                        <option value="hochiminh">Hồ Chí Minh</option>
-                                        <option value="danang">Đà Nẵng</option>
-                                        {/* Add more provinces as needed */}
-                                    </select>
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                        placeholder="Nhập tỉnh/TP"
+                                    />
                                 </div>
                             </div>
 
-                            {/* City field */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 items-center mt-6">
-                                <label htmlFor="city" className="block text-sm font-medium text-gray-700 md:text-left">
-                                    Thành phố
-                                </label>
-                                <div className="md:col-span-2">
-                                    <select
-                                        id="city"
-                                        name="city"
-                                        value={formData.city}
-                                        onChange={handleChange}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 appearance-none bg-white"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E")`,
-                                            backgroundRepeat: "no-repeat",
-                                            backgroundPosition: "right 0.5rem center",
-                                            backgroundSize: "1.5em 1.5em",
-                                            paddingRight: "2.5rem",
-                                        }}
-                                    >
-                                        <option value="">-- Chọn --</option>
-                                        {/* Options would be populated based on selected province */}
-                                    </select>
-                                </div>
-                            </div>
 
                             {/* District field */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 items-center mt-6">
@@ -367,23 +381,15 @@ export default function RegisterPage() {
                                     Quận/Huyện
                                 </label>
                                 <div className="md:col-span-2">
-                                    <select
+                                    <input
                                         id="district"
                                         name="district"
+                                        type="text"
                                         value={formData.district}
                                         onChange={handleChange}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 appearance-none bg-white"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E")`,
-                                            backgroundRepeat: "no-repeat",
-                                            backgroundPosition: "right 0.5rem center",
-                                            backgroundSize: "1.5em 1.5em",
-                                            paddingRight: "2.5rem",
-                                        }}
-                                    >
-                                        <option value="">-- Chọn --</option>
-                                        {/* Options would be populated based on selected city */}
-                                    </select>
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                        placeholder="Nhập quận/huyện"
+                                    />
                                 </div>
                             </div>
 
@@ -393,23 +399,15 @@ export default function RegisterPage() {
                                     Phường/Xã
                                 </label>
                                 <div className="md:col-span-2">
-                                    <select
+                                    <input
                                         id="ward"
                                         name="ward"
+                                        type="text"
                                         value={formData.ward}
                                         onChange={handleChange}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 appearance-none bg-white"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E")`,
-                                            backgroundRepeat: "no-repeat",
-                                            backgroundPosition: "right 0.5rem center",
-                                            backgroundSize: "1.5em 1.5em",
-                                            paddingRight: "2.5rem",
-                                        }}
-                                    >
-                                        <option value="">-- Chọn --</option>
-                                        {/* Options would be populated based on selected district */}
-                                    </select>
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                        placeholder="Nhập phường/xã"
+                                    />
                                 </div>
                             </div>
 

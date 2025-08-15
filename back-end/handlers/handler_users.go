@@ -83,7 +83,7 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Kiểm tra email đã tồn tại chưa
+	// Kiểm tra email đã tồn tại chưa
 		var existingUser models.User
 		if err := db.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 			c.JSON(http.StatusConflict, gin.H{"error": "Email đã được sử dụng!"})
@@ -93,6 +93,8 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
 		// Mã hóa mật khẩu
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		user.Password = string(hashedPassword)
+
+	// (date_of_birth được bind trực tiếp từ request body theo model)
 
 		// Kiểm tra quyền hợp lệ
 		if user.Role != "Admin" && user.Role != "Customer" {

@@ -1,5 +1,6 @@
 import axios from "axios";
 const API_URL = import.meta.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = API_URL.replace(/\/api\/?$/, "");
 
 export const getUserInfo = async () => {
   const token = sessionStorage.getItem("token");
@@ -22,6 +23,11 @@ export const changePassword = async (data: { oldPassword: string; newPassword: s
   const response = await axios.post(`${API_URL}/user/change-password`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return response.data;
+};
+
+export const registerUser = async (data: any) => {
+  const response = await axios.post(`${API_BASE}/register`, data);
   return response.data;
 };
 
