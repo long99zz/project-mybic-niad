@@ -105,6 +105,7 @@ func main() {
 	apiRouter.GET("/my-invoices", handlers.GetMyInvoices(db))
 	// Đăng ký API lấy giỏ hàng
 	apiRouter.GET("/cart", handlers.GetCart(db))
+	apiRouter.DELETE("/cart/:invoice_id", handlers.DeleteCartInvoice(db)) // Xoá đơn hàng khỏi giỏ
 
 	carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
 	{
@@ -161,6 +162,8 @@ func main() {
 	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(db))
 	adminApi.GET("/product-statistics", handlers.AdminProductStatistics(db))
 	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
+	adminApi.PUT("/invoice/:id/status", handlers.AdminUpdateInvoiceStatus(db)) // Đổi trạng thái đơn hàng
+	adminApi.PUT("/invoice/:id/revert-status", handlers.AdminRevertInvoiceStatus(db)) // Chuyển trạng thái về 'Chưa thanh toán'
 	//apiRouter.POST("/form-fields", handlers.CreateField(db))
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))

@@ -1,56 +1,57 @@
 package handlers
 
 import (
-    "net/http"
-    "gorm.io/gorm"
-    "github.com/gin-gonic/gin"
 	"backend/models"
 	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AdminInvoiceView struct {
-    InvoiceID            uint    `json:"invoice_id"`
-    InvoiceType          string  `json:"invoice_type"` // "Chung", "Du lịch", "Nhà"
-    ProductName          string  `json:"product_name"`
-    CustomerName         string  `json:"customer_name"`
-    // Chung
-    InsuranceStart       *string `json:"insurance_start,omitempty"`
-    InsuranceEnd         *string `json:"insurance_end,omitempty"`
-    InsuranceAmount      *float64 `json:"insurance_amount,omitempty"`
-    InsuranceQuantity    *uint   `json:"insurance_quantity,omitempty"`
-    ContractType         *string `json:"contract_type,omitempty"`
-    Status               *string `json:"status,omitempty"`
-    // Du lịch
-    DepartureLocation    *string `json:"departure_location,omitempty"`
-    Destination          *string `json:"destination,omitempty"`
-    DepartureDate        *string `json:"departure_date,omitempty"`
-    ReturnDate           *string `json:"return_date,omitempty"`
-    GroupSize            *int    `json:"group_size,omitempty"`
-    InsuranceProgram     *string `json:"insurance_program,omitempty"`
-    InsurancePackage     *string `json:"insurance_package,omitempty"`
-    // Nhà
-    HomeUsageStatus      *string `json:"home_usage_status,omitempty"`
-    HomeInsuranceAmount  *float64 `json:"home_insurance_amount,omitempty"`
-    AssetInsuranceAmount *float64 `json:"asset_insurance_amount,omitempty"`
-    InsuredPersonName    *string `json:"insured_person_name,omitempty"`
-    InsuredHomeAddress   *string `json:"insured_home_address,omitempty"`
-    InsuranceDuration    *int    `json:"insurance_duration,omitempty"`
-    UpdatedAt            string  `json:"updated_at"`
+	InvoiceID    uint   `json:"invoice_id"`
+	InvoiceType  string `json:"invoice_type"` // "Chung", "Du lịch", "Nhà"
+	ProductName  string `json:"product_name"`
+	CustomerName string `json:"customer_name"`
+	// Chung
+	InsuranceStart    *string  `json:"insurance_start,omitempty"`
+	InsuranceEnd      *string  `json:"insurance_end,omitempty"`
+	InsuranceAmount   *float64 `json:"insurance_amount,omitempty"`
+	InsuranceQuantity *uint    `json:"insurance_quantity,omitempty"`
+	ContractType      *string  `json:"contract_type,omitempty"`
+	Status            *string  `json:"status,omitempty"`
+	// Du lịch
+	DepartureLocation *string `json:"departure_location,omitempty"`
+	Destination       *string `json:"destination,omitempty"`
+	DepartureDate     *string `json:"departure_date,omitempty"`
+	ReturnDate        *string `json:"return_date,omitempty"`
+	GroupSize         *int    `json:"group_size,omitempty"`
+	InsuranceProgram  *string `json:"insurance_program,omitempty"`
+	InsurancePackage  *string `json:"insurance_package,omitempty"`
+	// Nhà
+	HomeUsageStatus      *string  `json:"home_usage_status,omitempty"`
+	HomeInsuranceAmount  *float64 `json:"home_insurance_amount,omitempty"`
+	AssetInsuranceAmount *float64 `json:"asset_insurance_amount,omitempty"`
+	InsuredPersonName    *string  `json:"insured_person_name,omitempty"`
+	InsuredHomeAddress   *string  `json:"insured_home_address,omitempty"`
+	InsuranceDuration    *int     `json:"insurance_duration,omitempty"`
+	UpdatedAt            string   `json:"updated_at"`
 }
 
 func AdminSelectAllInvoices(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        var result []AdminInvoiceView
-        var temp  []AdminInvoiceView
+	return func(c *gin.Context) {
+		var result []AdminInvoiceView
+		var temp []AdminInvoiceView
 
-        // Hóa đơn chung (tai nạn, sức khỏe, ...)
-        temp = []AdminInvoiceView{}
-        db.Raw(`
+		// Hóa đơn chung (tai nạn, sức khỏe, ...)
+		temp = []AdminInvoiceView{}
+		db.Raw(`
             SELECT 
                 i.invoice_id,
                 'Chung' AS invoice_type,
                 p.name AS product_name,
-                c.full_name AS customer_name,
+                CONCAT(u.last_name, ' ', u.first_name) AS customer_name,
                 DATE_FORMAT(i.insurance_start, '%Y-%m-%d') AS insurance_start,
                 DATE_FORMAT(i.insurance_end, '%Y-%m-%d') AS insurance_end,
                 i.insurance_amount,
@@ -73,18 +74,18 @@ func AdminSelectAllInvoices(db *gorm.DB) gin.HandlerFunc {
                 DATE_FORMAT(i.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
             FROM invoices i
             LEFT JOIN products p ON i.product_id = p.product_id
-            LEFT JOIN customer_registration c ON i.customer_id = c.customer_id
+            LEFT JOIN users u ON i.user_id = u.user_id
         `).Scan(&temp)
-        result = append(result, temp...)
+		result = append(result, temp...)
 
-        // Hóa đơn du lịch
-        temp = []AdminInvoiceView{}
-        db.Raw(`
+		// Hóa đơn du lịch
+		temp = []AdminInvoiceView{}
+		db.Raw(`
             SELECT 
                 t.invoice_id,
                 'Du lịch' AS invoice_type,
                 p.name AS product_name,
-                c.full_name AS customer_name,
+                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
                 NULL AS insurance_start,
                 NULL AS insurance_end,
                 NULL AS insurance_amount,
@@ -107,13 +108,13 @@ func AdminSelectAllInvoices(db *gorm.DB) gin.HandlerFunc {
                 DATE_FORMAT(t.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
             FROM travel_insurance_invoices t
             LEFT JOIN products p ON t.product_id = p.product_id
-            LEFT JOIN customer_registration c ON t.customer_id = c.customer_id
+            LEFT JOIN users u ON t.user_id = u.user_id
         `).Scan(&temp)
-        result = append(result, temp...)
+		result = append(result, temp...)
 
-        // Hóa đơn nhà
-        temp = []AdminInvoiceView{}
-        db.Raw(`
+		// Hóa đơn nhà
+		temp = []AdminInvoiceView{}
+		db.Raw(`
             SELECT 
                 h.invoice_id,
                 'Nhà' AS invoice_type,
@@ -143,128 +144,130 @@ func AdminSelectAllInvoices(db *gorm.DB) gin.HandlerFunc {
             LEFT JOIN products p ON h.product_id = p.product_id
             LEFT JOIN customer_registration c ON h.customer_id = c.customer_id
         `).Scan(&temp)
-        result = append(result, temp...)
+		result = append(result, temp...)
 
-        c.JSON(http.StatusOK, result)
-    }
+		c.JSON(http.StatusOK, result)
+	}
 }
+
 type AdminInvoiceDetail struct {
-    InvoiceID      uint                   `json:"invoice_id"`
-    InvoiceType    string                 `json:"invoice_type"`
-    ProductName    string                 `json:"product_name"`
-    Customer       *models.CustomerRegistration `json:"customer"`
-    Participants   interface{}            `json:"participants"` // slice các participant
-    // ...các trường khác nếu muốn
+	InvoiceID    uint                         `json:"invoice_id"`
+	InvoiceType  string                       `json:"invoice_type"`
+	ProductName  string                       `json:"product_name"`
+	Customer     *models.CustomerRegistration `json:"customer"`
+	Participants interface{}                  `json:"participants"` // slice các participant
+	// ...các trường khác nếu muốn
 }
 
 func AdminGetInvoiceDetail(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        invoiceType := c.Query("type")
-        invoiceID := c.Query("id")
-        fmt.Println("invoiceType:", invoiceType, "invoiceID:", invoiceID)
+	return func(c *gin.Context) {
+		invoiceType := c.Query("type")
+		invoiceID := c.Query("id")
+		fmt.Println("invoiceType:", invoiceType, "invoiceID:", invoiceID)
 
-        var detail AdminInvoiceDetail
+		var detail AdminInvoiceDetail
 
-        switch invoiceType {
-        case "chung":
-            // Lấy hóa đơn
-            var invoice models.Invoice
-            if err := db.First(&invoice, invoiceID).Error; err != nil {
-                c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
-                return
-            }
-            // Lấy customer
-            var customer models.CustomerRegistration
-            db.First(&customer, invoice.CustomerID)
-            // Lấy participants
-            var participants []models.Participant
-            db.Where("invoice_id = ?", invoiceID).Find(&participants)
+		switch invoiceType {
+		case "chung":
+			// Lấy hóa đơn
+			var invoice models.Invoice
+			if err := db.First(&invoice, invoiceID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
+				return
+			}
+			// Lấy customer
+			var customer models.CustomerRegistration
+			db.First(&customer, invoice.CustomerID)
+			// Lấy participants
+			var participants []models.Participant
+			db.Where("invoice_id = ?", invoiceID).Find(&participants)
 
-            // Lấy tên sản phẩm
-            var product models.Product
-            db.First(&product, invoice.ProductID)
+			// Lấy tên sản phẩm
+			var product models.Product
+			db.First(&product, invoice.ProductID)
 
-            detail = AdminInvoiceDetail{
-                InvoiceID:    invoice.InvoiceID,
-                InvoiceType:  "Chung",
-                ProductName:  product.Name,
-                Customer:     &customer,
-                Participants: participants,
-            }
+			detail = AdminInvoiceDetail{
+				InvoiceID:    invoice.InvoiceID,
+				InvoiceType:  "Chung",
+				ProductName:  product.Name,
+				Customer:     &customer,
+				Participants: participants,
+			}
 
-        case "travel":
-            var invoice models.TravelInsuranceInvoice
-            if err := db.First(&invoice, invoiceID).Error; err != nil {
-                c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
-                return
-            }
-            var customer models.CustomerRegistration
-            db.First(&customer, invoice.CustomerID)
-            var participants []models.TravelParticipant
-            db.Where("invoice_id = ?", invoiceID).Find(&participants)
-            var product models.Product
-            if invoice.ProductID != nil {
-                db.First(&product, invoice.ProductID)
-            }
-            detail = AdminInvoiceDetail{
-                InvoiceID:    invoice.InvoiceID,
-                InvoiceType:  "Du lịch",
-                ProductName:  product.Name,
-                Customer:     &customer,
-                Participants: participants,
-            }
+		case "travel":
+			var invoice models.TravelInsuranceInvoice
+			if err := db.First(&invoice, invoiceID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
+				return
+			}
+			var customer models.CustomerRegistration
+			db.First(&customer, invoice.CustomerID)
+			var participants []models.TravelParticipant
+			db.Where("invoice_id = ?", invoiceID).Find(&participants)
+			var product models.Product
+			if invoice.ProductID != nil {
+				db.First(&product, invoice.ProductID)
+			}
+			detail = AdminInvoiceDetail{
+				InvoiceID:    invoice.InvoiceID,
+				InvoiceType:  "Du lịch",
+				ProductName:  product.Name,
+				Customer:     &customer,
+				Participants: participants,
+			}
 
-        case "home":
-            var invoice models.HomeInsuranceInvoice
-            if err := db.First(&invoice, invoiceID).Error; err != nil {
-                c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
-                return
-            }
-            var customer models.CustomerRegistration
-            db.First(&customer, invoice.CustomerID)
-            var product models.Product
-            db.First(&product, invoice.ProductID)
-            detail = AdminInvoiceDetail{
-                InvoiceID:    invoice.InvoiceID,
-                InvoiceType:  "Nhà",
-                ProductName:  product.Name,
-                Customer:     &customer,
-                Participants: nil, // hóa đơn nhà không có participants
-            }
-        default:
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Loại hóa đơn không hợp lệ"})
-            return
-        }
+		case "home":
+			var invoice models.HomeInsuranceInvoice
+			if err := db.First(&invoice, invoiceID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn"})
+				return
+			}
+			var customer models.CustomerRegistration
+			db.First(&customer, invoice.CustomerID)
+			var product models.Product
+			db.First(&product, invoice.ProductID)
+			detail = AdminInvoiceDetail{
+				InvoiceID:    invoice.InvoiceID,
+				InvoiceType:  "Nhà",
+				ProductName:  product.Name,
+				Customer:     &customer,
+				Participants: nil, // hóa đơn nhà không có participants
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Loại hóa đơn không hợp lệ"})
+			return
+		}
 
-        c.JSON(http.StatusOK, detail)
-    }
+		c.JSON(http.StatusOK, detail)
+	}
 }
+
 type ProductStatistic struct {
-    ProductID   uint    `json:"product_id"`
-    ProductName string  `json:"product_name"`
-    TotalSold   int     `json:"total_sold"`
-    TotalRevenue float64 `json:"total_revenue"`
-    DateGroup   string  `json:"date_group"` // ngày/tháng/năm
+	ProductID    uint    `json:"product_id"`
+	ProductName  string  `json:"product_name"`
+	TotalSold    int     `json:"total_sold"`
+	TotalRevenue float64 `json:"total_revenue"`
+	DateGroup    string  `json:"date_group"` // ngày/tháng/năm
 }
 
 // Thống kê theo ngày/tháng/năm (groupType: "day", "month", "year")
 func AdminProductStatistics(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        groupType := c.DefaultQuery("group", "day") // "day", "month", "year"
-        var dateFormat string
-        switch groupType {
-        case "month":
-            dateFormat = "%Y-%m"
-        case "year":
-            dateFormat = "%Y"
-        default:
-            dateFormat = "%Y-%m-%d"
-        }
+	return func(c *gin.Context) {
+		groupType := c.DefaultQuery("group", "day") // "day", "month", "year"
+		var dateFormat string
+		switch groupType {
+		case "month":
+			dateFormat = "%Y-%m"
+		case "year":
+			dateFormat = "%Y"
+		default:
+			dateFormat = "%Y-%m-%d"
+		}
 
-        var stats []ProductStatistic
+		var stats []ProductStatistic
 
-        // Thống kê từ bảng invoices (có trường insurance_quantity, insurance_amount)
-        db.Raw(`
+		// Thống kê từ bảng invoices (có trường insurance_quantity, insurance_amount)
+		db.Raw(`
             SELECT 
                 p.product_id,
                 p.name AS product_name,
@@ -277,9 +280,9 @@ func AdminProductStatistics(db *gorm.DB) gin.HandlerFunc {
             GROUP BY p.product_id, date_group
         `, dateFormat).Scan(&stats)
 
-        // Thống kê từ bảng travel_insurance_invoices (group_size, total_amount)
-        var travelStats []ProductStatistic
-        db.Raw(`
+		// Thống kê từ bảng travel_insurance_invoices (group_size, total_amount)
+		var travelStats []ProductStatistic
+		db.Raw(`
             SELECT 
                 p.product_id,
                 p.name AS product_name,
@@ -291,11 +294,11 @@ func AdminProductStatistics(db *gorm.DB) gin.HandlerFunc {
             WHERE t.status = 'Đã thanh toán'
             GROUP BY p.product_id, date_group
         `, dateFormat).Scan(&travelStats)
-        stats = append(stats, travelStats...)
+		stats = append(stats, travelStats...)
 
-        // Thống kê từ bảng home_insurance_invoices (chỉ tính 1 hóa đơn = 1 lượt mua)
-        var homeStats []ProductStatistic
-        db.Raw(`
+		// Thống kê từ bảng home_insurance_invoices (chỉ tính 1 hóa đơn = 1 lượt mua)
+		var homeStats []ProductStatistic
+		db.Raw(`
             SELECT 
                 p.product_id,
                 p.name AS product_name,
@@ -306,32 +309,33 @@ func AdminProductStatistics(db *gorm.DB) gin.HandlerFunc {
             LEFT JOIN products p ON h.product_id = p.product_id
             GROUP BY p.product_id, date_group
         `, dateFormat).Scan(&homeStats)
-        stats = append(stats, homeStats...)
+		stats = append(stats, homeStats...)
 
-        c.JSON(http.StatusOK, stats)
-    }
+		c.JSON(http.StatusOK, stats)
+	}
 }
+
 type CustomerPurchaseInfo struct {
-    CustomerID   uint   `json:"customer_id"`
-    FullName     string `json:"full_name"`
-    Email        string `json:"email"`
-    PhoneNumber  string `json:"phone_number"`
-    ProductName  string `json:"product_name"`
-    InvoiceType  string `json:"invoice_type"`
-    PurchaseDate string `json:"purchase_date"`
+	CustomerID   uint   `json:"customer_id"`
+	FullName     string `json:"full_name"`
+	Email        string `json:"email"`
+	PhoneNumber  string `json:"phone_number"`
+	ProductName  string `json:"product_name"`
+	InvoiceType  string `json:"invoice_type"`
+	PurchaseDate string `json:"purchase_date"`
 }
 
 func AdminSearchCustomersByDate(db *gorm.DB) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        date := c.Query("date") // "YYYY-MM-DD"
-        productID := c.Query("product_id") // có thể rỗng
-        invoiceType := c.Query("invoice_type") // "chung", "travel", "home" hoặc rỗng
+	return func(c *gin.Context) {
+		date := c.Query("date")                // "YYYY-MM-DD"
+		productID := c.Query("product_id")     // có thể rỗng
+		invoiceType := c.Query("invoice_type") // "chung", "travel", "home" hoặc rỗng
 
-        var result []CustomerPurchaseInfo
+		var result []CustomerPurchaseInfo
 
-        // Hóa đơn thường
-        if invoiceType == "" || invoiceType == "chung" {
-            query := `
+		// Hóa đơn thường
+		if invoiceType == "" || invoiceType == "chung" {
+			query := `
                 SELECT 
                     c.customer_id, c.full_name, c.email, c.phone_number,
                     p.name AS product_name,
@@ -342,17 +346,17 @@ func AdminSearchCustomersByDate(db *gorm.DB) gin.HandlerFunc {
                 LEFT JOIN products p ON i.product_id = p.product_id
                 WHERE DATE(i.created_at) = ? AND i.status = 'Đã thanh toán'
             `
-            params := []interface{}{date}
-            if productID != "" {
-                query += " AND i.product_id = ?"
-                params = append(params, productID)
-            }
-            db.Raw(query, params...).Scan(&result)
-        }
+			params := []interface{}{date}
+			if productID != "" {
+				query += " AND i.product_id = ?"
+				params = append(params, productID)
+			}
+			db.Raw(query, params...).Scan(&result)
+		}
 
-        // Hóa đơn du lịch
-        if invoiceType == "" || invoiceType == "travel" {
-            query := `
+		// Hóa đơn du lịch
+		if invoiceType == "" || invoiceType == "travel" {
+			query := `
                 SELECT 
                     c.customer_id, c.full_name, c.email, c.phone_number,
                     p.name AS product_name,
@@ -363,19 +367,19 @@ func AdminSearchCustomersByDate(db *gorm.DB) gin.HandlerFunc {
                 LEFT JOIN products p ON t.product_id = p.product_id
                 WHERE DATE(t.created_at) = ? AND t.status = 'Đã thanh toán'
             `
-            params := []interface{}{date}
-            if productID != "" {
-                query += " AND t.product_id = ?"
-                params = append(params, productID)
-            }
-            var travelResult []CustomerPurchaseInfo
-            db.Raw(query, params...).Scan(&travelResult)
-            result = append(result, travelResult...)
-        }
+			params := []interface{}{date}
+			if productID != "" {
+				query += " AND t.product_id = ?"
+				params = append(params, productID)
+			}
+			var travelResult []CustomerPurchaseInfo
+			db.Raw(query, params...).Scan(&travelResult)
+			result = append(result, travelResult...)
+		}
 
-        // Hóa đơn nhà
-        if invoiceType == "" || invoiceType == "home" {
-            query := `
+		// Hóa đơn nhà
+		if invoiceType == "" || invoiceType == "home" {
+			query := `
                 SELECT 
                     c.customer_id, c.full_name, c.email, c.phone_number,
                     p.name AS product_name,
@@ -386,16 +390,51 @@ func AdminSearchCustomersByDate(db *gorm.DB) gin.HandlerFunc {
                 LEFT JOIN products p ON h.product_id = p.product_id
                 WHERE DATE(h.created_at) = ?
             `
-            params := []interface{}{date}
-            if productID != "" {
-                query += " AND h.product_id = ?"
-                params = append(params, productID)
-            }
-            var homeResult []CustomerPurchaseInfo
-            db.Raw(query, params...).Scan(&homeResult)
-            result = append(result, homeResult...)
-        }
+			params := []interface{}{date}
+			if productID != "" {
+				query += " AND h.product_id = ?"
+				params = append(params, productID)
+			}
+			var homeResult []CustomerPurchaseInfo
+			db.Raw(query, params...).Scan(&homeResult)
+			result = append(result, homeResult...)
+		}
 
-        c.JSON(http.StatusOK, result)
-    }
+		c.JSON(http.StatusOK, result)
+	}
+}
+
+// Đổi trạng thái đơn hàng sang 'Đã thanh toán'
+func AdminUpdateInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		var req struct {
+			Status string `json:"status"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
+			return
+		}
+		if req.Status == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Trạng thái không được để trống!"})
+			return
+		}
+		if err := db.Model(&models.Invoice{}).Where("invoice_id = ?", invoiceID).Update("status", req.Status).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật trạng thái!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Cập nhật trạng thái thành công!", "invoice_id": invoiceID, "status": req.Status})
+	}
+}
+
+// Đổi trạng thái đơn hàng về 'Chưa thanh toán'
+func AdminRevertInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		if err := db.Model(&models.Invoice{}).Where("invoice_id = ?", invoiceID).Update("status", "Chưa thanh toán").Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể chuyển trạng thái!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Chuyển trạng thái về 'Chưa thanh toán' thành công!", "invoice_id": invoiceID, "status": "Chưa thanh toán"})
+	}
 }
