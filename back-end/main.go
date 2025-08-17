@@ -96,8 +96,15 @@ func main() {
 	apiRouter.POST("/categories", handlers.AddCategory(db))
 	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
 	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
+	// Quản lý bài viết (post)
+	apiRouter.POST("/posts", handlers.AddPost(db))
+	apiRouter.PUT("/posts/:id", handlers.UpdatePost(db))
+	// Nếu có hàm xóa:
+	// apiRouter.DELETE("/posts/:id", handlers.DeletePost(db))
 	// Thêm API lấy danh sách hóa đơn của user hiện tại
 	apiRouter.GET("/my-invoices", handlers.GetMyInvoices(db))
+	// Đăng ký API lấy giỏ hàng
+	apiRouter.GET("/cart", handlers.GetCart(db))
 
 	carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
 	{
