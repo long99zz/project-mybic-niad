@@ -210,7 +210,7 @@ const CyberInsuranceOrderPage: React.FC = () => {
       localStorage.setItem("cartItem", JSON.stringify(cartItem));
       setOrderSuccess(true);
       setTimeout(() => {
-        window.location.href = "/gio-hang.html";
+  window.location.href = "/cart";
       }, 1000);
     } catch (error) {
       const err = error as any;

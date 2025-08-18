@@ -379,7 +379,7 @@ export default function CarCivilLiabilityOrderPage() {
           );
 
           console.log("ConfirmPurchase response:", confirmResponse.data);
-          navigate("/gio-hang.html");
+          navigate("/cart");
         } catch (error) {
           console.error("Error creating order:", error);
           const err = error as any;

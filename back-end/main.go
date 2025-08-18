@@ -164,6 +164,15 @@ func main() {
 	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
 	adminApi.PUT("/invoice/:id/status", handlers.AdminUpdateInvoiceStatus(db)) // Đổi trạng thái đơn hàng
 	adminApi.PUT("/invoice/:id/revert-status", handlers.AdminRevertInvoiceStatus(db)) // Chuyển trạng thái về 'Chưa thanh toán'
+	adminApi.DELETE("/invoice/:id", handlers.AdminDeleteInvoice(db)) // Xóa hóa đơn
+
+	// Route cho hóa đơn du lịch
+	adminApi.DELETE("/travel-invoice/:id", handlers.AdminDeleteTravelInvoice(db)) // Xóa hóa đơn du lịch
+	adminApi.PUT("/travel-invoice/:id/status", handlers.AdminUpdateTravelInvoiceStatus(db)) // Đổi trạng thái hóa đơn du lịch
+
+	// Route cho hóa đơn nhà
+	adminApi.DELETE("/home-invoice/:id", handlers.AdminDeleteHomeInvoice(db)) // Xóa hóa đơn nhà
+	adminApi.PUT("/home-invoice/:id/status", handlers.AdminUpdateHomeInvoiceStatus(db)) // Đổi trạng thái hóa đơn nhà
 	//apiRouter.POST("/form-fields", handlers.CreateField(db))
 	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
 	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))

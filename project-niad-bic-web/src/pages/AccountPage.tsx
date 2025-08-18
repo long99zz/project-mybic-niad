@@ -441,7 +441,7 @@ export default function AccountPage() {
                         return filtered.map((order: any, idx: number) => (
                           <tr key={(order.invoice_id || order.id || "") + "-" + idx} className="border-b">
                             <td className="px-3 py-2 border text-center">{order.invoice_id || order.InvoiceID || order.id || "—"}</td>
-                                 <td className="px-3 py-2 border">{order.product_name || "Không xác định"}</td>
+                            <td className="px-3 py-2 border">{order.product_name || order.product_id || "Không xác định"}</td>
                             <td className="px-3 py-2 border text-center">{order.created_at ? new Date(order.created_at).toLocaleDateString() : (order.CreatedAt ? new Date(order.CreatedAt).toLocaleDateString() : "—")}</td>
                             <td className="px-3 py-2 border text-center">{(() => {
                               // Lấy ngày bắt đầu: ưu tiên insurance_start, nếu không có thì departure_date

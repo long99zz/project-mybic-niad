@@ -136,7 +136,8 @@ const AppRoutes = () => {
         element={<InsuranceOrderRouter />}
       />
       <Route path="/mua-ngay/:productType" element={<InsuranceOrderRouter />} />
-      <Route path="/gio-hang.html" element={<CartPage />} />
+  <Route path="/gio-hang.html" element={<CartPage />} />
+  <Route path="/cart" element={<CartPage />} />
 
       {/* Các route cụ thể cho từng sản phẩm */}
       <Route

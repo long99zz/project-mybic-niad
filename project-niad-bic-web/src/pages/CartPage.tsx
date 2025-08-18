@@ -1,154 +1,95 @@
-import { useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import CustomerSupport from "../components/CustomerSupport";
-import { useNavigate } from "react-router-dom";
+// src/pages/CartPage.tsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-interface CartItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  buyerName: string;
-  buyerPhone: string;
-  buyerEmail: string;
-  isSelected: boolean;
+interface Invoice {
+  id: number;
+  user_id: number;
+  status: string;
+  total_amount?: number;
+  created_at?: string;
+  invoice_type: "chung" | "travel" | "home";
 }
 
-export default function CartPage() {
-  const navigate = useNavigate();
+const CartPage: React.FC = () => {
+  const [cart, setCart] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [cartItem, setCartItem] = useState<CartItem | null>({
-    id: "MVL",
-    name: "Bảo hiểm TNDS Bắt buộc Của Chủ Xe Ô tô",
-    description: "An tâm trên mọi nẻo đường!",
-    price: 530700,
-    image: "/products/banner1.png",
-    buyerName: "Nguyễn Bá Hoàng Long",
-    buyerPhone: "0866107085",
-    buyerEmail: "zzdragon14@gmail.com",
-    isSelected: true,
-  });
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        const res = await axios.get("/api/cart", {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        console.log("API response:", res);
+        setCart(res.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy giỏ hàng:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCart();
+  }, []);
 
-  const handleRemoveItem = () => {
-    setCartItem(null);
-  };
+  console.log('CartPage state:', { loading, cart });
+  if (loading) return <p className="mt-10 text-center">Đang tải giỏ hàng...</p>;
 
-  const handleToggleSelect = () => {
-    if (cartItem) {
-      setCartItem({ ...cartItem, isSelected: !cartItem.isSelected });
-    }
-  };
-
-  const totalAmount = cartItem && cartItem.isSelected ? cartItem.price : 0;
+  if (cart.length === 0)
+    return <p className="mt-10 text-center">Giỏ hàng của bạn đang trống.</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8 text-red-600">
-          Giỏ hàng
-        </h1>
+    <div className="p-6">
+      <h1 className="mb-6 text-2xl font-bold">Giỏ hàng</h1>
 
-        {cartItem === null ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-600">
-              Giỏ hàng của bạn hiện không có sản phẩm nào!
-            </p>
-            <button
-              onClick={() => navigate("/")}
-              className="mt-4 px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              Tiếp tục mua sắm
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-md p-6 mx-auto">
-            <div className="grid grid-cols-[auto,auto,1.5fr,1fr,auto,auto] gap-4 items-center pb-3 border-b border-gray-200 text-gray-600 font-semibold">
-              <div className="w-6 flex justify-center items-center"></div>
-              <div className="w-24">Hình ảnh</div>
-              <div>Tên sản phẩm</div>
-              <div>Người mua</div>
-              <div className="text-right">Thành tiền (gồm VAT)</div>
-              <div className="w-16 text-center"></div>
-            </div>
-
-            <div className="grid grid-cols-[auto,auto,1.5fr,1fr,auto,auto] gap-4 items-start py-4 border-b border-gray-200">
-              <div className="w-6 flex justify-center items-start mt-1">
-                <input
-                  type="checkbox"
-                  checked={cartItem.isSelected}
-                  onChange={handleToggleSelect}
-                  className="form-checkbox text-red-600 rounded cursor-pointer"
-                />
-              </div>
-              <div className="w-24">
-                <img
-                  src={cartItem.image}
-                  alt={cartItem.name}
-                  className="w-full h-auto object-cover rounded"
-                />
-              </div>
-              <div>
-                <h3 className="font-medium text-lg mb-1">{cartItem.name}</h3>
-                <p className="text-gray-600 text-sm">{cartItem.description}</p>
-                {cartItem && (
-                  <button
-                    onClick={() => navigate(`/mua-bao-hiem/${cartItem.id}`)}
-                    className="text-red-600 text-sm mt-1 hover:underline p-0"
-                  >
-                    [Sửa thông tin]
-                  </button>
-                )}
-              </div>
-              <div className="text-gray-700">
-                <p className="font-medium">{cartItem.buyerName}</p>
-                <p className="text-sm">{cartItem.buyerPhone}</p>
-                <p className="text-sm">{cartItem.buyerEmail}</p>
-              </div>
-              <div className="font-bold text-red-600 text-right">
-                {new Intl.NumberFormat("vi-VN").format(cartItem.price)} VNĐ
-              </div>
-              <div className="w-16 flex justify-center items-start mt-1">
-                <button
-                  onClick={handleRemoveItem}
-                  className="text-red-600 hover:text-red-700 text-sm leading-none"
-                >
-                  Xóa đơn hàng
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <div className="text-right">
-                <span className="text-lg font-bold text-gray-700 mr-2">
-                  Tổng phí (gồm VAT):
-                </span>
-                <span className="text-2xl font-bold text-red-600">
-                  {new Intl.NumberFormat("vi-VN").format(totalAmount)} VNĐ
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-center mt-8">
-              <button
-                onClick={() => navigate("/thanh-toan")}
-                className={`px-12 py-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors uppercase font-bold text-lg ${
-                  !cartItem || !cartItem.isSelected
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
+      <div className="grid gap-4">
+        {cart.map((item) => (
+          <div
+            key={`${item.invoice_type}-${item.id}`}
+            className="p-4 transition border rounded-lg shadow-md hover:shadow-lg"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold">
+                Hóa đơn #{item.id} -{" "}
+                <span className="capitalize">{item.invoice_type}</span>
+              </h2>
+              <span
+                className={`px-2 py-1 rounded text-sm ${
+                  item.status === "Chưa thanh toán"
+                    ? "bg-yellow-200 text-yellow-800"
+                    : "bg-green-200 text-green-800"
                 }`}
-                disabled={!cartItem || !cartItem.isSelected}
               >
+                {item.status}
+              </span>
+            </div>
+
+            <p>Người dùng: {item.user_id}</p>
+            {item.total_amount && (
+              <p>
+                Tổng tiền:{" "}
+                <span className="font-bold text-red-600">
+                  {item.total_amount.toLocaleString()} VND
+                </span>
+              </p>
+            )}
+            <p>Ngày tạo: {item.created_at || "Không rõ"}</p>
+
+            <div className="flex gap-3 mt-3">
+              <button className="px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600">
                 Thanh toán
+              </button>
+              <button className="px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600">
+                Xóa
               </button>
             </div>
           </div>
-        )}
+        ))}
       </div>
-      <CustomerSupport />
-      <Footer />
     </div>
   );
-}
+};
+
+export default CartPage;

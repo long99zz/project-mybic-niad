@@ -74,76 +74,76 @@ func AdminSelectAllInvoices(db *gorm.DB) gin.HandlerFunc {
                 DATE_FORMAT(i.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
             FROM invoices i
             LEFT JOIN products p ON i.product_id = p.product_id
-            LEFT JOIN users u ON i.user_id = u.user_id
+			LEFT JOIN users u ON i.user_id = u.id
         `).Scan(&temp)
 		result = append(result, temp...)
 
 		// Hóa đơn du lịch
 		temp = []AdminInvoiceView{}
 		db.Raw(`
-            SELECT 
-                t.invoice_id,
-                'Du lịch' AS invoice_type,
-                p.name AS product_name,
-                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
-                NULL AS insurance_start,
-                NULL AS insurance_end,
-                NULL AS insurance_amount,
-                NULL AS insurance_quantity,
-                NULL AS contract_type,
-                t.status,
-                t.departure_location,
-                t.destination,
-                DATE_FORMAT(t.departure_date, '%Y-%m-%d') AS departure_date,
-                DATE_FORMAT(t.return_date, '%Y-%m-%d') AS return_date,
-                t.group_size,
-                t.insurance_program,
-                t.insurance_package,
-                NULL AS home_usage_status,
-                NULL AS home_insurance_amount,
-                NULL AS asset_insurance_amount,
-                NULL AS insured_person_name,
-                NULL AS insured_home_address,
-                NULL AS insurance_duration,
-                DATE_FORMAT(t.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
-            FROM travel_insurance_invoices t
-            LEFT JOIN products p ON t.product_id = p.product_id
-            LEFT JOIN users u ON t.user_id = u.user_id
-        `).Scan(&temp)
+			SELECT 
+				t.invoice_id,
+				'Du lịch' AS invoice_type,
+				p.name AS product_name,
+				CONCAT(u.last_name, ' ', u.first_name) AS customer_name,
+				NULL AS insurance_start,
+				NULL AS insurance_end,
+				NULL AS insurance_amount,
+				NULL AS insurance_quantity,
+				NULL AS contract_type,
+				t.status,
+				t.departure_location,
+				t.destination,
+				DATE_FORMAT(t.departure_date, '%Y-%m-%d') AS departure_date,
+				DATE_FORMAT(t.return_date, '%Y-%m-%d') AS return_date,
+				t.group_size,
+				t.insurance_program,
+				t.insurance_package,
+				NULL AS home_usage_status,
+				NULL AS home_insurance_amount,
+				NULL AS asset_insurance_amount,
+				NULL AS insured_person_name,
+				NULL AS insured_home_address,
+				NULL AS insurance_duration,
+				DATE_FORMAT(t.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+			FROM travel_insurance_invoices t
+			LEFT JOIN products p ON t.product_id = p.product_id
+			LEFT JOIN users u ON t.user_id = u.id
+		`).Scan(&temp)
 		result = append(result, temp...)
 
 		// Hóa đơn nhà
 		temp = []AdminInvoiceView{}
 		db.Raw(`
-            SELECT 
-                h.invoice_id,
-                'Nhà' AS invoice_type,
-                p.name AS product_name,
-                c.full_name AS customer_name,
-                NULL AS insurance_start,
-                NULL AS insurance_end,
-                NULL AS insurance_amount,
-                NULL AS insurance_quantity,
-                NULL AS contract_type,
-                NULL AS status,
-                NULL AS departure_location,
-                NULL AS destination,
-                NULL AS departure_date,
-                NULL AS return_date,
-                NULL AS group_size,
-                NULL AS insurance_program,
-                NULL AS insurance_package,
-                h.home_usage_status,
-                h.home_insurance_amount,
-                h.asset_insurance_amount,
-                h.insured_person_name,
-                h.insured_home_address,
-                h.insurance_duration,
-                DATE_FORMAT(h.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
-            FROM home_insurance_invoices h
-            LEFT JOIN products p ON h.product_id = p.product_id
-            LEFT JOIN customer_registration c ON h.customer_id = c.customer_id
-        `).Scan(&temp)
+			SELECT 
+				h.invoice_id,
+				'Nhà' AS invoice_type,
+				p.name AS product_name,
+				CONCAT(u.last_name, ' ', u.first_name) AS customer_name,
+				NULL AS insurance_start,
+				NULL AS insurance_end,
+				NULL AS insurance_amount,
+				NULL AS insurance_quantity,
+				NULL AS contract_type,
+				NULL AS status,
+				NULL AS departure_location,
+				NULL AS destination,
+				NULL AS departure_date,
+				NULL AS return_date,
+				NULL AS group_size,
+				NULL AS insurance_program,
+				NULL AS insurance_package,
+				h.home_usage_status,
+				h.home_insurance_amount,
+				h.asset_insurance_amount,
+				h.insured_person_name,
+				h.insured_home_address,
+				h.insurance_duration,
+				DATE_FORMAT(h.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+			FROM home_insurance_invoices h
+			LEFT JOIN products p ON h.product_id = p.product_id
+			LEFT JOIN users u ON h.user_id = u.id
+		`).Scan(&temp)
 		result = append(result, temp...)
 
 		c.JSON(http.StatusOK, result)
@@ -415,15 +415,23 @@ func AdminUpdateInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
 			return
 		}
-		if req.Status == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Trạng thái không được để trống!"})
+		// Truy vấn trạng thái hiện tại
+		var invoice models.Invoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn!"})
 			return
 		}
-		if err := db.Model(&models.Invoice{}).Where("invoice_id = ?", invoiceID).Update("status", req.Status).Error; err != nil {
+		var newStatus string
+		if invoice.Status == "Chưa thanh toán" {
+			newStatus = "Đã thanh toán"
+		} else {
+			newStatus = "Chưa thanh toán"
+		}
+		if err := db.Model(&models.Invoice{}).Where("invoice_id = ?", invoiceID).Update("status", newStatus).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật trạng thái!"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Cập nhật trạng thái thành công!", "invoice_id": invoiceID, "status": req.Status})
+		c.JSON(http.StatusOK, gin.H{"message": "Cập nhật trạng thái thành công!", "invoice_id": invoiceID, "status": newStatus})
 	}
 }
 
@@ -436,5 +444,118 @@ func AdminRevertInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Chuyển trạng thái về 'Chưa thanh toán' thành công!", "invoice_id": invoiceID, "status": "Chưa thanh toán"})
+	}
+}
+
+// Xóa hóa đơn theo ID (Admin)
+func AdminDeleteInvoice(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		// Kiểm tra tồn tại
+		var invoice models.Invoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn!"})
+			return
+		}
+		// Xóa hóa đơn
+		if err := db.Delete(&models.Invoice{}, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Xóa hóa đơn thất bại!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Xóa hóa đơn thành công!", "invoice_id": invoiceID})
+	}
+}
+
+// Xóa hóa đơn du lịch
+func AdminDeleteTravelInvoice(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		var invoice models.TravelInsuranceInvoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn du lịch!"})
+			return
+		}
+		if err := db.Delete(&models.TravelInsuranceInvoice{}, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Xóa hóa đơn du lịch thất bại!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Xóa hóa đơn du lịch thành công!", "invoice_id": invoiceID})
+	}
+}
+
+// Xóa hóa đơn nhà
+func AdminDeleteHomeInvoice(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		var invoice models.HomeInsuranceInvoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn nhà!"})
+			return
+		}
+		if err := db.Delete(&models.HomeInsuranceInvoice{}, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Xóa hóa đơn nhà thất bại!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Xóa hóa đơn nhà thành công!", "invoice_id": invoiceID})
+	}
+}
+
+// Đổi trạng thái hóa đơn du lịch
+func AdminUpdateTravelInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		var req struct {
+			Status string `json:"status"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
+			return
+		}
+		var invoice models.TravelInsuranceInvoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn du lịch!"})
+			return
+		}
+		var newStatus string
+		if invoice.Status == "Chưa thanh toán" {
+			newStatus = "Đã thanh toán"
+		} else {
+			newStatus = "Chưa thanh toán"
+		}
+		if err := db.Model(&models.TravelInsuranceInvoice{}).Where("invoice_id = ?", invoiceID).Update("status", newStatus).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật trạng thái!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Cập nhật trạng thái thành công!", "invoice_id": invoiceID, "status": newStatus})
+	}
+}
+
+// Đổi trạng thái hóa đơn nhà
+func AdminUpdateHomeInvoiceStatus(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		invoiceID := c.Param("id")
+		var req struct {
+			Status string `json:"status"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ!"})
+			return
+		}
+		var invoice models.HomeInsuranceInvoice
+		if err := db.First(&invoice, "invoice_id = ?", invoiceID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy hóa đơn nhà!"})
+			return
+		}
+		var newStatus string
+		if invoice.HomeUsageStatus == "Chưa thanh toán" {
+			newStatus = "Đã thanh toán"
+		} else {
+			newStatus = "Chưa thanh toán"
+		}
+		if err := db.Model(&models.HomeInsuranceInvoice{}).Where("invoice_id = ?", invoiceID).Update("home_usage_status", newStatus).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật trạng thái!"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Cập nhật trạng thái thành công!", "invoice_id": invoiceID, "status": newStatus})
 	}
 }

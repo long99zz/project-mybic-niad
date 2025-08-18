@@ -427,12 +427,12 @@ function MobileMenu() {
             </a>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <Link to="/cart" className="relative" aria-label="Giỏ hàng">
               <ShoppingCart className="w-6 h-6" />
               <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 0
               </span>
-            </div>
+            </Link>
             <button
               onClick={() => setIsOpen(false)}
               className="p-2 text-gray-700"
@@ -561,15 +561,16 @@ function MobileMenu() {
 
 export default function Navbar() {
   const location = useLocation();
+  console.log('Navbar pathname:', location.pathname);
   const { user, isAuthenticated, logout } = useAuth();
   const [currentPath, setCurrentPath] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // ...existing code...
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   console.log("Navbar user data:", user);
 
   // Hàm kiểm tra đường dẫn active
-  const isActive = (pathname: string) => location.pathname === pathname;
+  // ...existing code...
 
   // Xác định đường dẫn hiện tại khi component được tải
   useEffect(() => {
