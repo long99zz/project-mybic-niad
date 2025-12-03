@@ -558,13 +558,15 @@ Danh sách khách hàng đã mua hàng theo điều kiện lọc.
 - `group`: `"day"` (mặc định), `"month"`, `"year"`
 
 **Trả về:**  
-Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo từng mốc thời gian.
+Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo từng mốc thời gian, kèm theo thông tin danh mục.
 
 ```json
 [
   {
     "product_id": 1,
     "product_name": "Bảo hiểm tai nạn con người 24/24",
+    "category_id": 1,
+    "category_name": "Bảo hiểm Chung",
     "total_sold": 10,
     "total_revenue": 10000000,
     "date_group": "2025-05-22"
@@ -572,6 +574,8 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
   {
     "product_id": 2,
     "product_name": "Bảo hiểm vật chất ô tô",
+    "category_id": 2,
+    "category_name": "Bảo hiểm Xe",
     "total_sold": 5,
     "total_revenue": 5000000,
     "date_group": "2025-05-22"
@@ -579,6 +583,11 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
   ...
 ]
 ```
+
+**Lưu ý:**
+- API lấy TẤT CẢ hóa đơn (không lọc theo status)
+- Bao gồm 3 loại: invoices (Chung), travel_insurance_invoices (Du lịch), home_insurance_invoices (Nhà)
+- Trường `category_id` và `category_name` được bổ sung để phục vụ frontend thống kê theo danh mục
 
 ---
 
@@ -629,8 +638,8 @@ Danh sách thống kê số lượng bán và doanh thu từng sản phẩm theo
 
 ## 4. Lưu ý
 
-- **Chỉ những hóa đơn có status = 'Đã thanh toán' mới được tính vào thống kê và tìm kiếm.**
-- **Khi tạo hóa đơn mới, cần cập nhật status sang 'Đã thanh toán' để thống kê chính xác.**
+- **Thống kê sản phẩm:** API `/api/admin/product-statistics` lấy TẤT CẢ hóa đơn từ 3 loại (không lọc theo status).
+- **Các API khác:** Khi cần lọc theo status, sẽ chỉ rõ trong endpoint description.
 - **Các API đều hỗ trợ lọc động theo ngày, sản phẩm, loại hóa đơn.**
 - **Có thể mở rộng thêm các API thống kê khác nếu cần.**
 

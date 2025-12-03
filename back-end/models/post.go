@@ -1,17 +1,20 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Post struct {
-    PostID     uint      `gorm:"primaryKey" json:"post_id"`
-    CategoryID uint      `json:"category_id"`
-    Title      string    `json:"title"`
-    Image      string    `json:"image"`
-    Author     string    `json:"author"`
-    Content    string    `json:"content"`
-    Views      uint      `json:"views"`
-    Status     string    `json:"status"`
-    CreatedAt  time.Time `json:"created_at"`
-    UpdatedAt  time.Time `json:"updated_at"`
+	ID         primitive.ObjectID  `bson:"_id,omitempty" json:"post_id"`
+	CategoryID *primitive.ObjectID `bson:"category_id,omitempty" json:"category_id"`
+	Title      string              `bson:"title" json:"title"`
+	Image      string              `bson:"image" json:"image"`
+	Author     string              `bson:"author" json:"author"`
+	Content    string              `bson:"content" json:"content"`
+	Views      uint                `bson:"views" json:"views"`
+	Status     string              `bson:"status" json:"status"`
+	CreatedAt  time.Time           `bson:"created_at" json:"created_at"`
+	UpdatedAt  time.Time           `bson:"updated_at" json:"updated_at"`
 }
-

@@ -1,24 +1,25 @@
-
 package models
 
 import (
-    "time"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PersonalInsuranceForm struct { // bảo hiểm sức khỏe cá nhân
-    PersonalFormID      uint      `gorm:"primaryKey;autoIncrement" json:"personal_form_id"`
-    FormID              *uint     `gorm:"index" json:"form_id"`  // Cho phép NULL
-    FullName            string    `gorm:"size:255;not null" json:"full_name"`
-    CmndImg             string    `gorm:"size:255;not null" json:"cmnd_img"`
-    IdentityNumber      string    `gorm:"size:50;not null" json:"identity_number"`
-    BirthDate           time.Time `gorm:"type:date;not null" json:"birth_date"`
-    Gender              string    `gorm:"type:enum('Nam','Nữ','Khác');not null" json:"gender"`
-    InsuranceProgram    string    `gorm:"size:255;not null" json:"insurance_program"`
-    DentalExtension     bool      `gorm:"default:false" json:"dental_extension"`
-    MaternityExtension  bool      `gorm:"default:false" json:"maternity_extension"`
-    InsuranceStart      time.Time `gorm:"type:date;not null" json:"insurance_start"`
-    InsuranceDuration   uint      `gorm:"not null" json:"insurance_duration"`
-    InsuranceFee        float64   `gorm:"not null" json:"insurance_fee"`
-    CreatedAt           time.Time `gorm:"autoCreateTime" json:"created_at"`
-    UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                 primitive.ObjectID  `bson:"_id,omitempty" json:"personal_form_id"`
+	FormID             *primitive.ObjectID `bson:"form_id,omitempty" json:"form_id"`
+	FullName           string              `bson:"full_name" json:"full_name"`
+	CmndImg            string              `bson:"cmnd_img" json:"cmnd_img"`
+	IdentityNumber     string              `bson:"identity_number" json:"identity_number"`
+	BirthDate          time.Time           `bson:"birth_date" json:"birth_date"`
+	Gender             string              `bson:"gender" json:"gender"`
+	InsuranceProgram   string              `bson:"insurance_program" json:"insurance_program"`
+	DentalExtension    bool                `bson:"dental_extension" json:"dental_extension"`
+	MaternityExtension bool                `bson:"maternity_extension" json:"maternity_extension"`
+	InsuranceStart     time.Time           `bson:"insurance_start" json:"insurance_start"`
+	InsuranceDuration  uint                `bson:"insurance_duration" json:"insurance_duration"`
+	InsuranceFee       float64             `bson:"insurance_fee" json:"insurance_fee"`
+	CreatedAt          time.Time           `bson:"created_at" json:"created_at"`
+	UpdatedAt          time.Time           `bson:"updated_at" json:"updated_at"`
 }

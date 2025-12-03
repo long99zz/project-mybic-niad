@@ -128,14 +128,14 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showError, setShowError] = useState(false);
   const totalSteps = 4;
-  
+
   // Kiểm tra xem người dùng đã đăng nhập chưa khi vào bước cuối
   useEffect(() => {
     if (currentStep === totalSteps && !isAuthenticated) {
       // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
-      sessionStorage.setItem('redirectPath', window.location.pathname);
+      sessionStorage.setItem("redirectPath", window.location.pathname);
       alert("Vui lòng đăng nhập để hoàn tất đơn hàng");
-      navigate('/login');
+      navigate("/login");
     }
   }, [currentStep, isAuthenticated, navigate, totalSteps]);
 
@@ -209,12 +209,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
   ) => {
     const newInsuredPersons = [...insuredPersons];
     (newInsuredPersons[index] as any)[field] = value;
-    
+
     // Nếu gender được đặt thành male, tự động đặt maternityExtension thành false
-    if (field === 'gender' && value === 'male') {
-      (newInsuredPersons[index] as any)['maternityExtension'] = false;
+    if (field === "gender" && value === "male") {
+      (newInsuredPersons[index] as any)["maternityExtension"] = false;
     }
-    
+
     setInsuredPersons(newInsuredPersons);
   };
 
@@ -447,54 +447,51 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
   const handleSubmit = async () => {
     try {
       // Lấy token từ session storage
-      const token = sessionStorage.getItem('token');
-      console.log("[DEBUG] Token when submitting:", token);
+      const token = sessionStorage.getItem("token");
 
       // Kiểm tra xem có token không
       if (!token) {
-        console.log("[DEBUG] No token found when submitting, redirecting to login");
         // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
-        sessionStorage.setItem('redirectPath', window.location.pathname);
+        sessionStorage.setItem("redirectPath", window.location.pathname);
         alert("Vui lòng đăng nhập để tiếp tục");
-        navigate('/login');
+        navigate("/login");
         return;
       }
 
       // 1. Chuẩn bị payload tạo hóa đơn (invoice)
-      const insuranceStart = dayjs(
-        customerInfo.insuranceStartDate
-      ).format('YYYY-MM-DD');
+      const insuranceStart = dayjs(customerInfo.insuranceStartDate).format(
+        "YYYY-MM-DD"
+      );
       const insuranceEnd = dayjs(customerInfo.insuranceStartDate)
         .add(1, "year")
-        .format('YYYY-MM-DD');
+        .format("YYYY-MM-DD");
       const invoicePayload = {
-        insurance_package: "Bảo hiểm tai nạn con người 24/24",
-        insurance_start: insuranceStart,
-        insurance_end: insuranceEnd,
-        insurance_amount: getTotalPremium(),
-        contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
-        status: "Chưa thanh toán",
-        product_id: 10,
+        invoice: {
+          ProductID: 10,
+          InsurancePackage: "Bảo hiểm tai nạn con người 24/24",
+          InsuranceStart: insuranceStart + "T00:00:00Z",
+          InsuranceEnd: insuranceEnd + "T00:00:00Z",
+          InsuranceAmount: getTotalPremium(), // Tổng phí thực thu
+          InsuranceQuantity: insuredPersons.length,
+          ContractType: insuranceType === "new" ? "Mới" : "Tái tục",
+          Status: "Chưa thanh toán",
+        },
         participants: insuredPersons.map((p) => ({
-          full_name: p.fullName,
-          gender:
+          FullName: p.fullName,
+          Gender:
             p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
-          birth_date: dayjs(p.dateOfBirth).format('YYYY-MM-DD') + "T00:00:00Z",
-          identity_number: p.identityCard,
+          BirthDate: dayjs(p.dateOfBirth).format("YYYY-MM-DD") + "T00:00:00Z",
+          IdentityNumber: p.identityCard,
+          InsurancePackage: p.insuredPackage, // Package ID like "gold", "silver", etc.
         })),
       };
-      console.log(
-        "Payload gửi backend:",
-        JSON.stringify(invoicePayload, null, 2)
-      );
       let invoiceRes;
       try {
         invoiceRes = await axios.post(
-          `${API_URL}/api/insurance_accident/create_accident`,
+          `${API_URL}/insurance_accident/create_accident`,
           invoicePayload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("[DEBUG] Response create_accident:", invoiceRes.data);
       } catch (err) {
         console.error("[ERROR] create_accident:", err);
         if ((err as any).response) {
@@ -505,16 +502,19 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
         }
         throw err;
       }
-      const invoiceId = invoiceRes.data.invoice_id;
 
-      // 2. Tạo form bảo hiểm cá nhân (PersonalInsuranceForm)
+      // Backend returns both invoice_id (child) and master_invoice_id (parent)
+      const invoiceId = invoiceRes.data.master_invoice_id || invoiceRes.data.invoice_id;
+
       let formId = null;
       try {
         const personalFormPayload = {
           full_name: insuredPersons[0].fullName,
           cmnd_img: "default.jpg", // Provide a default value for required field
           identity_number: insuredPersons[0].identityCard,
-          birth_date: dayjs(insuredPersons[0].dateOfBirth).format('YYYY-MM-DD') + "T00:00:00Z",
+          birth_date:
+            dayjs(insuredPersons[0].dateOfBirth).format("YYYY-MM-DD") +
+            "T00:00:00Z",
           gender:
             insuredPersons[0].gender === "male"
               ? "Nam"
@@ -522,19 +522,18 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
               ? "Nữ"
               : "Khác",
           insurance_program: "Bảo hiểm tai nạn con người 24/24",
-          dental_extension: insuredPersons[0].dentalExtension, // Lấy giá trị từ form 
+          dental_extension: insuredPersons[0].dentalExtension, // Lấy giá trị từ form
           maternity_extension: insuredPersons[0].maternityExtension, // Lấy giá trị từ form
           insurance_start: insuranceStart + "T00:00:00Z", // Add the time component
           insurance_duration: 12, // 1 năm = 12 tháng
           insurance_fee: getTotalPremium(),
         };
         const formRes = await axios.post(
-          `${API_URL}/api/insurance_accident/create_personal_form`,
+          `${API_URL}/insurance_accident/create_personal_form`,
           personalFormPayload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         formId = formRes.data.form_id;
-        console.log("[DEBUG] Response create_personal_form:", formRes.data);
       } catch (err) {
         console.error("[ERROR] create_personal_form:", err);
         if ((err as any).response) {
@@ -558,20 +557,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
         invoice_request: customerInfo.invoice,
         notes: customerInfo.note || "",
       };
-      console.log(
-        "[DEBUG] Payload gửi lên create_customer_registration:",
-        customerPayload
-      );
       let customerRes;
       try {
         customerRes = await axios.post(
-          `${API_URL}/api/insurance_accident/create_customer_registration`,
+          `${API_URL}/insurance_accident/create_customer_registration`,
           customerPayload,
           { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log(
-          "[DEBUG] Response create_customer_registration:",
-          customerRes.data
         );
       } catch (err) {
         console.error("[ERROR] create_customer_registration:", err);
@@ -585,34 +576,36 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
       }
       const customerId = customerRes.data.customer_id;
 
-      // 4. Xác nhận mua hàng (gán customer cho invoice)
-      const confirmPayload = {
-        invoice_id: invoiceId,
-        customer_id: customerId,
-        form_id: formId,
-        product_id: 10,
-      };
-      console.log("[DEBUG] Payload gửi lên confirm_purchase:", confirmPayload);
-      try {
-        const confirmRes = await axios.post(
-          `${API_URL}/api/insurance_accident/confirm_purchase`,
-          confirmPayload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log("[DEBUG] Response confirm_purchase:", confirmRes.data);
-      } catch (err) {
-        console.error("[ERROR] confirm_purchase:", err);
-        if ((err as any).response) {
-          console.error(
-            "[ERROR] confirm_purchase response:",
-            (err as any).response.data
-          );
-        }
-        throw err;
-      }
+      // NOTE: Không gọi confirm_purchase ở đây!
+      // Invoice sẽ được confirm tự động khi thanh toán thành công qua Stripe webhook
+      // Status ban đầu: "Chưa thanh toán"
 
-      // 5. Chuyển hướng sang trang xác nhận/thanh toán
-      navigate("/gio-hang.html");
+      // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: invoiceId,
+        product_name: "Bảo hiểm tai nạn sức khỏe cá nhân",
+        insurance_amount: getTotalPremium(),
+        customer_name: customerInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: new Date().toISOString(),
+        insurance_end: new Date(
+          new Date().setFullYear(new Date().getFullYear() + 1)
+        ).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        participants: insuredPersons.map((p: any) => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          date_of_birth: p.dateOfBirth,
+          insurance_package: p.insuredPackage,
+        })),
+      };
+      sessionStorage.setItem("temp_order_info", JSON.stringify(orderInfo));
+
+      // 5. Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+      navigate(
+        `/dat-hang-thanh-cong?invoice_id=${invoiceId}&amount=${getTotalPremium()}`
+      );
     } catch (error) {
       setShowError(true);
       alert(
@@ -811,29 +804,53 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
             Thông tin người tham gia bảo hiểm
           </h3>
           {/* Table */}
-          <div className="overflow-x-auto w-full" style={{ minWidth: "1000px" }}>
+          <div
+            className="overflow-x-auto w-full"
+            style={{ minWidth: "1000px" }}
+          >
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-red-600 text-white text-sm whitespace-nowrap">
-                  <th className="p-3 border-r border-white text-center" style={{ width: "5%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "5%" }}
+                  >
                     STT
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "15%" }}
+                  >
                     Số CMND/Hộ chiếu
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "13%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "13%" }}
+                  >
                     Ngày sinh
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "8%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "8%" }}
+                  >
                     Giới tính
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "15%" }}
+                  >
                     Chương trình
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "12%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "12%" }}
+                  >
                     Mở rộng nha khoa
                   </th>
-                  <th className="p-3 border-r border-white text-center" style={{ width: "16%" }}>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "16%" }}
+                  >
                     Mở rộng thai sản
                   </th>
                   <th className="p-3 text-center" style={{ width: "16%" }}>
@@ -847,9 +864,7 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                     key={index}
                     className="border-b last:border-b-0 whitespace-nowrap"
                   >
-                    <td className="p-2 border-r text-center">
-                      {index + 1}
-                    </td>
+                    <td className="p-2 border-r text-center">{index + 1}</td>
                     <td className="p-2 border-r">
                       <input
                         type="text"
@@ -971,7 +986,11 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                     <td className="p-2 border-r">
                       <select
                         className="w-full px-2 py-1 border border-gray-300 rounded-md"
-                        value={person.gender === "male" ? "false" : String(person.maternityExtension)}
+                        value={
+                          person.gender === "male"
+                            ? "false"
+                            : String(person.maternityExtension)
+                        }
                         onChange={(e) =>
                           handleInsuredPersonChange(
                             index,
@@ -985,7 +1004,9 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                         <option value="true">Có</option>
                       </select>
                       {person.gender === "male" && (
-                        <div className="text-xs text-gray-500 mt-1">Không áp dụng cho nam giới</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Không áp dụng cho nam giới
+                        </div>
                       )}
                     </td>
                     <td className="p-2 text-center font-semibold text-red-600">
@@ -1047,7 +1068,7 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
   // Kiểm tra xem có câu trả lời "Có" nào trong khai báo sức khỏe không
   const hasAnyHealthYes = useMemo(() => {
     if (!healthAnswers || !Array.isArray(healthAnswers)) return false;
-    
+
     for (let i = 0; i < healthAnswers.length; i++) {
       const personAnswers = healthAnswers[i];
       if (personAnswers && Array.isArray(personAnswers)) {
@@ -1058,7 +1079,7 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
         }
       }
     }
-    
+
     return false;
   }, [healthAnswers]);
 
@@ -1095,413 +1116,597 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
           </h3>
           <div className="overflow-x-auto mb-8">
             <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="bg-red-600 text-white font-semibold text-sm p-3 rounded-t-md">
-                <th className="p-3 border-r border-white text-center" style={{ width: "8%" }}>
-                  STT
-                </th>
-                <th className="p-3 border-r border-white text-center" style={{ width: "25%" }}>
-                  Họ tên
-                </th>
-                <th className="p-3 border-r border-white text-center" style={{ width: "12%" }}>
-                  Giới tính
-                </th>
-                <th className="p-3 border-r border-white text-center" style={{ width: "15%" }}>
-                  Ngày sinh
-                </th>
-                <th className="p-3 border-r border-white text-center" style={{ width: "18%" }}>
-                  Phí BH (miễn VAT)
-                </th>
-                <th className="p-3 text-center" style={{ width: "22%" }}>
-                  Khai báo tiền sử bệnh
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white rounded-b-md">
-              {insuredPersons.map((person, idx) => (
-                <>
-                <tr
-                  key={"row-" + idx}
-                  className="border-b last:border-b-0"
-                >
-                  <td className="p-2 text-center border-r">
-                    {idx + 1}
-                  </td>
-                  <td className="p-2 text-center border-r">
-                    <input
-                      type="text"
-                      className="w-full px-2 py-1 border border-gray-300 rounded-md"
-                      value={person.fullName}
-                      placeholder="Họ tên"
-                      onChange={(e) =>
-                        handleInsuredPersonChange(
-                          idx,
-                          "fullName",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </td>
-                  <td className="p-2 text-center border-r">
-                    {person.gender === "male"
-                      ? "Nam"
-                      : person.gender === "female"
-                      ? "Nữ"
-                      : ""}
-                  </td>
-                  <td className="p-2 text-center border-r">
-                    {person.dateOfBirth
-                      ? dayjs(person.dateOfBirth).format("DD/MM/YYYY")
-                      : ""}
-                  </td>
-                  <td className="p-2 text-center border-r">
-                    {person.premium.toLocaleString("vi-VN")}VNĐ
-                  </td>
-                  <td className="p-2 text-center">
-                    <button
-                      type="button"
-                      className="text-red-600 underline hover:text-red-800"
-                      onClick={() => handleShowHealthDeclaration(idx)}
-                    >
-                      Khai báo
-                    </button>
-                    {!showHealthDeclaration[idx] && !healthAnswers[idx] && (
-                      <div className="text-xs text-red-500 mt-1">
-                        (Vui lòng khai báo thông tin)
-                      </div>
-                    )}
-                  </td>
+              <thead>
+                <tr className="bg-red-600 text-white font-semibold text-sm p-3 rounded-t-md">
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "8%" }}
+                  >
+                    STT
+                  </th>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "25%" }}
+                  >
+                    Họ tên
+                  </th>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "12%" }}
+                  >
+                    Giới tính
+                  </th>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "15%" }}
+                  >
+                    Ngày sinh
+                  </th>
+                  <th
+                    className="p-3 border-r border-white text-center"
+                    style={{ width: "18%" }}
+                  >
+                    Phí BH (miễn VAT)
+                  </th>
+                  <th className="p-3 text-center" style={{ width: "22%" }}>
+                    Khai báo tiền sử bệnh
+                  </th>
                 </tr>
-                {showHealthDeclaration[idx] && (
-                  <tr key={"health-" + idx} className="bg-gray-50">
-                    <td colSpan={6} className="p-0">
-                      <table className="w-full border-t border-gray-200">
-                        <tbody>
-                          {[
-                            "Bạn hoặc bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc bệnh bẩm sinh, khuyết tật hay thương tật nào không",
-                            "Trong 5 năm qua, bạn hay bất kỳ người được bảo hiểm nào phải điều trị, nằm viện, hay phẫu thuật trong một bệnh viện, viện điều dưỡng, phòng khám hoặc các tổ chức y tế khác? Hoặc ở trong tình trạng cần phải điều trị trong bệnh viện trong vòng 12 tháng tới?",
-                            "Trong 5 năm qua, bạn hay bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc hoặc điều trị một hay nhiều trong các chứng bệnh sau: bệnh lao, tiểu đường, thấp khớp, viêm gan, rối loạn nội hấp, phổi bệnh tim, giãn tĩnh mạch, rối loạn đường ruột, bệnh gout, mắt, thần kinh sinh dục tiết niệu hoặc các bệnh lây qua đường tình dục, ung thư hoặc u bướu, chấn thương, thần kinh, tâm thần, xương khớp, dạ dày, da, chứng thoát vị hoặc bệnh phụ khoa?",
-                            "Người được bảo hiểm có tham gia hợp đồng bảo hiểm sức khỏe tại BIC hoặc tại Công ty bảo hiểm khác trong vòng 5 năm gần đây không?",
-                            "Người được bảo hiểm đã từng yêu cầu bồi thường bảo hiểm y tế, tai nạn con người tại BIC chưa?",
-                            "Người được bảo hiểm đã bao giờ bị một công ty bảo hiểm từ chối nhận bảo hiểm hoặc từ chối tái tục hợp đồng bảo hiểm sức khỏe hoặc được chấp nhận nhưng có các điều khoản bổ sung đặc biệt đi kèm chưa?",
-                          ].map((q, qIdx) => (
-                            <tr key={qIdx}>
-                              <td className="w-8 p-3 text-center align-top font-bold border-b border-gray-200">
-                                {qIdx + 1}.
-                              </td>
-                              <td className="p-3 align-top text-left border-b border-gray-200">
-                                {q}
-                              </td>
-                              <td className="w-40 p-3 text-center border-b border-gray-200">
-                                <label className="mr-2">
-                                  <input
-                                    type="radio"
-                                    name={`health-q${qIdx}-person${idx}`}
-                                    checked={healthAnswers[idx]?.[qIdx] === true}
-                                    onChange={() =>
-                                      handleHealthAnswer(idx, qIdx, true)
+              </thead>
+              <tbody className="bg-white rounded-b-md">
+                {insuredPersons.map((person, idx) => (
+                  <>
+                    <tr key={"row-" + idx} className="border-b last:border-b-0">
+                      <td className="p-2 text-center border-r">{idx + 1}</td>
+                      <td className="p-2 text-center border-r">
+                        <input
+                          type="text"
+                          className="w-full px-2 py-1 border border-gray-300 rounded-md"
+                          value={person.fullName}
+                          placeholder="Họ tên"
+                          onChange={(e) =>
+                            handleInsuredPersonChange(
+                              idx,
+                              "fullName",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="p-2 text-center border-r">
+                        {person.gender === "male"
+                          ? "Nam"
+                          : person.gender === "female"
+                          ? "Nữ"
+                          : ""}
+                      </td>
+                      <td className="p-2 text-center border-r">
+                        {person.dateOfBirth
+                          ? dayjs(person.dateOfBirth).format("DD/MM/YYYY")
+                          : ""}
+                      </td>
+                      <td className="p-2 text-center border-r">
+                        {person.premium.toLocaleString("vi-VN")}VNĐ
+                      </td>
+                      <td className="p-2 text-center">
+                        <button
+                          type="button"
+                          className="text-red-600 underline hover:text-red-800"
+                          onClick={() => handleShowHealthDeclaration(idx)}
+                        >
+                          Khai báo
+                        </button>
+                        {!showHealthDeclaration[idx] && !healthAnswers[idx] && (
+                          <div className="text-xs text-red-500 mt-1">
+                            (Vui lòng khai báo thông tin)
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                    {showHealthDeclaration[idx] && (
+                      <tr key={"health-" + idx} className="bg-gray-50">
+                        <td colSpan={6} className="p-0">
+                          <table className="w-full border-t border-gray-200">
+                            <tbody>
+                              {[
+                                "Bạn hoặc bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc bệnh bẩm sinh, khuyết tật hay thương tật nào không",
+                                "Trong 5 năm qua, bạn hay bất kỳ người được bảo hiểm nào phải điều trị, nằm viện, hay phẫu thuật trong một bệnh viện, viện điều dưỡng, phòng khám hoặc các tổ chức y tế khác? Hoặc ở trong tình trạng cần phải điều trị trong bệnh viện trong vòng 12 tháng tới?",
+                                "Trong 5 năm qua, bạn hay bất kỳ thành viên nào trong gia đình hoặc người được bảo hiểm nào mắc hoặc điều trị một hay nhiều trong các chứng bệnh sau: bệnh lao, tiểu đường, thấp khớp, viêm gan, rối loạn nội hấp, phổi bệnh tim, giãn tĩnh mạch, rối loạn đường ruột, bệnh gout, mắt, thần kinh sinh dục tiết niệu hoặc các bệnh lây qua đường tình dục, ung thư hoặc u bướu, chấn thương, thần kinh, tâm thần, xương khớp, dạ dày, da, chứng thoát vị hoặc bệnh phụ khoa?",
+                                "Người được bảo hiểm có tham gia hợp đồng bảo hiểm sức khỏe tại BIC hoặc tại Công ty bảo hiểm khác trong vòng 5 năm gần đây không?",
+                                "Người được bảo hiểm đã từng yêu cầu bồi thường bảo hiểm y tế, tai nạn con người tại BIC chưa?",
+                                "Người được bảo hiểm đã bao giờ bị một công ty bảo hiểm từ chối nhận bảo hiểm hoặc từ chối tái tục hợp đồng bảo hiểm sức khỏe hoặc được chấp nhận nhưng có các điều khoản bổ sung đặc biệt đi kèm chưa?",
+                              ].map((q, qIdx) => (
+                                <tr key={qIdx}>
+                                  <td className="w-8 p-3 text-center align-top font-bold border-b border-gray-200">
+                                    {qIdx + 1}.
+                                  </td>
+                                  <td className="p-3 align-top text-left border-b border-gray-200">
+                                    {q}
+                                  </td>
+                                  <td className="w-40 p-3 text-center border-b border-gray-200">
+                                    <label className="mr-2">
+                                      <input
+                                        type="radio"
+                                        name={`health-q${qIdx}-person${idx}`}
+                                        checked={
+                                          healthAnswers[idx]?.[qIdx] === true
+                                        }
+                                        onChange={() =>
+                                          handleHealthAnswer(idx, qIdx, true)
+                                        }
+                                      />{" "}
+                                      Có
+                                    </label>
+                                    <label>
+                                      <input
+                                        type="radio"
+                                        name={`health-q${qIdx}-person${idx}`}
+                                        checked={
+                                          healthAnswers[idx]?.[qIdx] === false
+                                        }
+                                        onChange={() =>
+                                          handleHealthAnswer(idx, qIdx, false)
+                                        }
+                                      />{" "}
+                                      Không
+                                    </label>
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr>
+                                <td colSpan={3} className="p-3">
+                                  Nếu câu hỏi nào ở trên trả lời là Có, xin hãy
+                                  nêu chi tiết:
+                                  <br />
+                                  <textarea
+                                    className="w-full border border-gray-300 rounded mt-1 p-2"
+                                    rows={2}
+                                    value={healthDetail[idx] || ""}
+                                    onChange={(e) =>
+                                      handleHealthDetail(idx, e.target.value)
                                     }
-                                  />{" "}
-                                  Có
-                                </label>
-                                <label>
-                                  <input
-                                    type="radio"
-                                    name={`health-q${qIdx}-person${idx}`}
-                                    checked={healthAnswers[idx]?.[qIdx] === false}
-                                    onChange={() =>
-                                      handleHealthAnswer(idx, qIdx, false)
-                                    }
-                                  />{" "}
-                                  Không
-                                </label>
-                              </td>
-                            </tr>
-                          ))}
-                          <tr>
-                            <td colSpan={3} className="p-3">
-                              Nếu câu hỏi nào ở trên trả lời là Có, xin hãy nêu
-                              chi tiết:
-                              <br />
-                              <textarea
-                                className="w-full border border-gray-300 rounded mt-1 p-2"
-                                rows={2}
-                                value={healthDetail[idx] || ""}
-                                onChange={(e) =>
-                                  handleHealthDetail(idx, e.target.value)
-                                }
-                                disabled={!hasAnyHealthYes}
-                              />
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                )}
-              </>
-              ))}
-            </tbody>
-          </table>
+                                    disabled={!hasAnyHealthYes}
+                                  />
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-[#F4F6F8] p-6 rounded-lg">
+            <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
+              Thông tin Bên mua bảo hiểm
+            </h3>
+            <div className="space-y-6">
+              {/* Loại người mua */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Người mua <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <select
+                    value={customerInfo.type}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        type: e.target.value as "individual" | "organization",
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white text-base"
+                  >
+                    <option value="individual">Cá nhân</option>
+                    <option value="organization">Tổ chức</option>
+                  </select>
+                </div>
+              </div>
+              {/* CMND/CCCD */}
+              {customerInfo.type === "organization" ? (
+                <>
+                  <div className="flex items-center gap-8">
+                    <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                      Mã số thuế <span className="text-red-600">*</span>
+                    </label>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={customerInfo.taxCode || ""}
+                        onChange={(e) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            taxCode: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                        placeholder="Nhập mã số thuế"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                      Tên công ty/ Tổ chức{" "}
+                      <span className="text-red-600">*</span>
+                    </label>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={customerInfo.companyName || ""}
+                        onChange={(e) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            companyName: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                        placeholder="Nhập tên công ty/ tổ chức"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-8">
+                    <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                      CMND/CCCD <span className="text-red-600">*</span>
+                    </label>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={customerInfo.identityCard || ""}
+                        onChange={(e) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            identityCard: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                        placeholder="Nhập CMND/CCCD"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                      Họ và tên <span className="text-red-600">*</span>
+                    </label>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={customerInfo.fullName}
+                        onChange={(e) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            fullName: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                        placeholder="Nhập họ và tên"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              {/* Địa chỉ */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Địa chỉ <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={customerInfo.address}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        address: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                    placeholder="Nhập địa chỉ"
+                  />
+                </div>
+              </div>
+              {/* Email */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Email nhận thông báo <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <input
+                    type="email"
+                    value={customerInfo.email}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                    placeholder="Nhập email"
+                  />
+                </div>
+              </div>
+              {/* Số điện thoại */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Số điện thoại di động <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <input
+                    type="tel"
+                    value={customerInfo.phone}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                    placeholder="Nhập số điện thoại"
+                  />
+                </div>
+              </div>
+              {/* Thời hạn bảo hiểm */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Thời hạn bảo hiểm <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <select
+                    value={customerInfo.insuranceTerm || 1}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        insuranceTerm: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white text-base"
+                  >
+                    <option value={1}>1 năm</option>
+                    <option value={2}>2 năm</option>
+                    <option value={3}>3 năm</option>
+                  </select>
+                </div>
+              </div>
+              {/* Ngày bắt đầu bảo hiểm */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Ngày bắt đầu bảo hiểm <span className="text-red-600">*</span>
+                </label>
+                <div className="flex-1">
+                  <input
+                    type="date"
+                    value={customerInfo.insuranceStartDate || ""}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        insuranceStartDate: e.target.value,
+                      }))
+                    }
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
+                  />
+                </div>
+              </div>
+              {/* Xuất hóa đơn */}
+              <div className="flex items-center gap-8">
+                <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                  Xuất hóa đơn
+                </label>
+                <div className="flex-1 flex gap-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="invoice"
+                      value="no"
+                      checked={!customerInfo.invoice}
+                      onChange={() =>
+                        setCustomerInfo((prev) => ({ ...prev, invoice: false }))
+                      }
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Không nhận hóa đơn</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="invoice"
+                      value="yes"
+                      checked={customerInfo.invoice}
+                      onChange={() =>
+                        setCustomerInfo((prev) => ({ ...prev, invoice: true }))
+                      }
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span className="ml-2">Có nhận hóa đơn</span>
+                  </label>
+                </div>
+              </div>
+              {customerInfo.invoice && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Theo quy định của Nhà nước tại Nghị định số 123/2020/NĐ-CP và
+                  thông tư số 78/2021/TT-BTC, BIC sẽ cung cấp hóa đơn GTGT dưới
+                  dạng hóa đơn điện tử và gửi đến quý khách qua email đã đăng ký
+                  khi mua hàng.
+                </p>
+              )}
+            </div>
+          </div>
+          {/* Navigation buttons */}
+          <div className="mt-8 flex justify-between">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="px-8 py-3 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+            >
+              Quay lại
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="px-8 py-3 bg-red-600 rounded-md text-white hover:bg-red-700 transition-colors font-medium"
+              disabled={hasAnyHealthYes}
+            >
+              Xác nhận & Thanh toán
+            </button>
+          </div>
         </div>
+      </div>
+    );
+  };
+
+  const renderStep4Content = () => {
+    return (
+      <div style={{ maxWidth: "1000px" }} className="mx-auto">
         <div className="bg-[#F4F6F8] p-6 rounded-lg">
           <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
-            Thông tin Bên mua bảo hiểm
+            Thông tin tài khoản
           </h3>
           <div className="space-y-6">
-            {/* Loại người mua */}
-            <div className="flex items-center gap-8">
+            {/* Sao chép từ thông tin bên mua bảo hiểm */}
+            <div className="flex items-start gap-8">
               <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                Người mua <span className="text-red-600">*</span>
+                Sao chép từ thông tin bên mua bảo hiểm
               </label>
               <div className="flex-1">
-                <select
-                  value={customerInfo.type}
-                  onChange={(e) =>
-                    setCustomerInfo((prev) => ({
-                      ...prev,
-                      type: e.target.value as "individual" | "organization",
-                    }))
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAccountInfo({
+                      type:
+                        customerInfo.type === "organization"
+                          ? "organization"
+                          : "individual",
+                      fullName: customerInfo.fullName,
+                      address: customerInfo.address,
+                      identityCard: customerInfo.identityCard,
+                      email: customerInfo.email,
+                      phone: customerInfo.phone,
+                      dateOfBirth: customerInfo.dateOfBirth,
+                      invoice: customerInfo.invoice,
+                      companyName: customerInfo.companyName,
+                      taxCode: customerInfo.taxCode,
+                      companyAddress: customerInfo.companyAddress,
+                      receiveMethod:
+                        customerInfo.receiveMethod === "paper"
+                          ? "paper"
+                          : "email",
+                      receiveAddress: customerInfo.receiveAddress,
+                      note: customerInfo.note,
+                      insuranceTerm: customerInfo.insuranceTerm,
+                      insuranceStartDate: customerInfo.insuranceStartDate,
+                    })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white text-base"
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <option value="individual">Cá nhân</option>
-                  <option value="organization">Tổ chức</option>
-                </select>
+                  Sao chép từ thông tin bên mua bảo hiểm
+                </button>
               </div>
             </div>
-            {/* CMND/CCCD */}
-            {customerInfo.type === "organization" ? (
-              <>
-                <div className="flex items-center gap-8">
-                  <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                    Mã số thuế <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={customerInfo.taxCode || ""}
-                      onChange={(e) =>
-                        setCustomerInfo((prev) => ({
-                          ...prev,
-                          taxCode: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                      placeholder="Nhập mã số thuế"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-8">
-                  <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                    Tên công ty/ Tổ chức <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={customerInfo.companyName || ""}
-                      onChange={(e) =>
-                        setCustomerInfo((prev) => ({
-                          ...prev,
-                          companyName: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                      placeholder="Nhập tên công ty/ tổ chức"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-8">
-                  <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                    CMND/CCCD <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={customerInfo.identityCard || ""}
-                      onChange={(e) =>
-                        setCustomerInfo((prev) => ({
-                          ...prev,
-                          identityCard: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                      placeholder="Nhập CMND/CCCD"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-8">
-                  <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                    Họ và tên <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={customerInfo.fullName}
-                      onChange={(e) =>
-                        setCustomerInfo((prev) => ({
-                          ...prev,
-                          fullName: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                      placeholder="Nhập họ và tên"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Họ và tên */}
+            <div className="flex items-start gap-8">
+              <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                Họ và tên <span className="text-red-600">*</span>
+              </label>
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={accountInfo.fullName}
+                  onChange={(e) =>
+                    setAccountInfo((prev) => ({
+                      ...prev,
+                      fullName: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+            </div>
             {/* Địa chỉ */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-start gap-8">
               <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
                 Địa chỉ <span className="text-red-600">*</span>
               </label>
               <div className="flex-1">
                 <input
                   type="text"
-                  value={customerInfo.address}
+                  value={accountInfo.address}
                   onChange={(e) =>
-                    setCustomerInfo((prev) => ({
+                    setAccountInfo((prev) => ({
                       ...prev,
                       address: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                  placeholder="Nhập địa chỉ"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
             </div>
-            {/* Email */}
-            <div className="flex items-center gap-8">
+            {/* Email nhận thông báo */}
+            <div className="flex items-start gap-8">
               <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
                 Email nhận thông báo <span className="text-red-600">*</span>
               </label>
               <div className="flex-1">
                 <input
                   type="email"
-                  value={customerInfo.email}
+                  value={accountInfo.email}
                   onChange={(e) =>
-                    setCustomerInfo((prev) => ({
+                    setAccountInfo((prev) => ({
                       ...prev,
                       email: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                  placeholder="Nhập email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
             </div>
-            {/* Số điện thoại */}
-            <div className="flex items-center gap-8">
+            {/* Số điện thoại di động */}
+            <div className="flex items-start gap-8">
               <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
                 Số điện thoại di động <span className="text-red-600">*</span>
               </label>
               <div className="flex-1">
                 <input
                   type="tel"
-                  value={customerInfo.phone}
+                  value={accountInfo.phone}
                   onChange={(e) =>
-                    setCustomerInfo((prev) => ({
+                    setAccountInfo((prev) => ({
                       ...prev,
                       phone: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                  placeholder="Nhập số điện thoại"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
             </div>
-            {/* Thời hạn bảo hiểm */}
-            <div className="flex items-center gap-8">
-              <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                Thời hạn bảo hiểm <span className="text-red-600">*</span>
-              </label>
-              <div className="flex-1">
-                <select
-                  value={customerInfo.insuranceTerm || 1}
-                  onChange={(e) =>
-                    setCustomerInfo((prev) => ({
-                      ...prev,
-                      insuranceTerm: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white text-base"
-                >
-                  <option value={1}>1 năm</option>
-                  <option value={2}>2 năm</option>
-                  <option value={3}>3 năm</option>
-                </select>
+            {/* Hình thức giao nhận */}
+            <div className="border-t pt-6 mt-8">
+              <h4 className="text-lg font-medium mb-4">Hình thức giao nhận</h4>
+              <div className="bg-white p-4 rounded-md">
+                <p className="text-gray-600">
+                  Giấy chứng nhận bảo hiểm điện tử (có giá trị như bản giấy) sẽ
+                  được gửi đến email Quý khách đăng ký ở trên sau khi chúng tôi
+                  nhận được phí thanh toán
+                </p>
               </div>
             </div>
-            {/* Ngày bắt đầu bảo hiểm */}
-            <div className="flex items-center gap-8">
-              <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                Ngày bắt đầu bảo hiểm <span className="text-red-600">*</span>
-              </label>
-              <div className="flex-1">
-                <input
-                  type="date"
-                  value={customerInfo.insuranceStartDate || ""}
-                  onChange={(e) =>
-                    setCustomerInfo((prev) => ({
-                      ...prev,
-                      insuranceStartDate: e.target.value,
-                    }))
-                  }
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 text-base"
-                />
+            {/* Thời điểm giao nhận */}
+            <div className="border-t pt-6 mt-8">
+              <h4 className="text-lg font-medium mb-4">Thời điểm giao nhận</h4>
+              <div className="bg-white p-4 rounded-md">
+                <p className="text-gray-600">
+                  Trong vòng 24 giờ kể từ thời điểm thanh toán phí
+                </p>
               </div>
             </div>
-            {/* Xuất hóa đơn */}
-            <div className="flex items-center gap-8">
-              <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                Xuất hóa đơn
-              </label>
-              <div className="flex-1 flex gap-4">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="invoice"
-                    value="no"
-                    checked={!customerInfo.invoice}
-                    onChange={() =>
-                      setCustomerInfo((prev) => ({ ...prev, invoice: false }))
-                    }
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Không nhận hóa đơn</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="invoice"
-                    value="yes"
-                    checked={customerInfo.invoice}
-                    onChange={() =>
-                      setCustomerInfo((prev) => ({ ...prev, invoice: true }))
-                    }
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2">Có nhận hóa đơn</span>
-                </label>
-              </div>
-            </div>
-            {customerInfo.invoice && (
-              <p className="text-sm text-gray-600 mt-2">
-                Theo quy định của Nhà nước tại Nghị định số 123/2020/NĐ-CP và
-                thông tư số 78/2021/TT-BTC, BIC sẽ cung cấp hóa đơn GTGT dưới
-                dạng hóa đơn điện tử và gửi đến quý khách qua email đã đăng ký
-                khi mua hàng.
-              </p>
-            )}
           </div>
         </div>
-        {/* Navigation buttons */}
-        <div className="mt-8 flex justify-between">
+        {/* Nút điều hướng */}
+        <div className="flex justify-between mt-8">
           <button
             type="button"
             onClick={handlePrevStep}
@@ -1513,175 +1718,12 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
             type="button"
             onClick={handleNext}
             className="px-8 py-3 bg-red-600 rounded-md text-white hover:bg-red-700 transition-colors font-medium"
-            disabled={hasAnyHealthYes}
           >
-            Xác nhận & Thanh toán
+            Tiếp tục
           </button>
         </div>
       </div>
-    </div>
-  );
-  };
-
-  const renderStep4Content = () => {
-    return (
-      <div style={{ maxWidth: "1000px" }} className="mx-auto">
-        <div className="bg-[#F4F6F8] p-6 rounded-lg">
-        <h3 className="text-3xl font-semibold text-left mb-6 text-red-600">
-          Thông tin tài khoản
-        </h3>
-        <div className="space-y-6">
-          {/* Sao chép từ thông tin bên mua bảo hiểm */}
-          <div className="flex items-start gap-8">
-            <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-              Sao chép từ thông tin bên mua bảo hiểm
-            </label>
-            <div className="flex-1">
-              <button
-                type="button"
-                onClick={() =>
-                  setAccountInfo({
-                    type:
-                      customerInfo.type === "organization"
-                        ? "organization"
-                        : "individual",
-                    fullName: customerInfo.fullName,
-                    address: customerInfo.address,
-                    identityCard: customerInfo.identityCard,
-                    email: customerInfo.email,
-                    phone: customerInfo.phone,
-                    dateOfBirth: customerInfo.dateOfBirth,
-                    invoice: customerInfo.invoice,
-                    companyName: customerInfo.companyName,
-                    taxCode: customerInfo.taxCode,
-                    companyAddress: customerInfo.companyAddress,
-                    receiveMethod:
-                      customerInfo.receiveMethod === "paper"
-                        ? "paper"
-                        : "email",
-                    receiveAddress: customerInfo.receiveAddress,
-                    note: customerInfo.note,
-                    insuranceTerm: customerInfo.insuranceTerm,
-                    insuranceStartDate: customerInfo.insuranceStartDate,
-                  })
-                }
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Sao chép từ thông tin bên mua bảo hiểm
-              </button>
-            </div>
-          </div>
-          {/* Họ và tên */}
-          <div className="flex items-start gap-8">
-            <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-              Họ và tên <span className="text-red-600">*</span>
-            </label>
-            <div className="flex-1">
-              <input
-                type="text"
-                value={accountInfo.fullName}
-                onChange={(e) =>
-                  setAccountInfo((prev) => ({
-                    ...prev,
-                    fullName: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
-            </div>
-          </div>
-          {/* Địa chỉ */}
-          <div className="flex items-start gap-8">
-            <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-              Địa chỉ <span className="text-red-600">*</span>
-            </label>
-            <div className="flex-1">
-              <input
-                type="text"
-                value={accountInfo.address}
-                onChange={(e) =>
-                  setAccountInfo((prev) => ({
-                    ...prev,
-                    address: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
-            </div>
-          </div>
-          {/* Email nhận thông báo */}
-          <div className="flex items-start gap-8">
-            <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-              Email nhận thông báo <span className="text-red-600">*</span>
-            </label>
-            <div className="flex-1">
-              <input
-                type="email"
-                value={accountInfo.email}
-                onChange={(e) =>
-                  setAccountInfo((prev) => ({ ...prev, email: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
-            </div>
-          </div>
-          {/* Số điện thoại di động */}
-          <div className="flex items-start gap-8">
-            <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-              Số điện thoại di động <span className="text-red-600">*</span>
-            </label>
-            <div className="flex-1">
-              <input
-                type="tel"
-                value={accountInfo.phone}
-                onChange={(e) =>
-                  setAccountInfo((prev) => ({ ...prev, phone: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
-            </div>
-          </div>
-          {/* Hình thức giao nhận */}
-          <div className="border-t pt-6 mt-8">
-            <h4 className="text-lg font-medium mb-4">Hình thức giao nhận</h4>
-            <div className="bg-white p-4 rounded-md">
-              <p className="text-gray-600">
-                Giấy chứng nhận bảo hiểm điện tử (có giá trị như bản giấy) sẽ
-                được gửi đến email Quý khách đăng ký ở trên sau khi chúng tôi
-                nhận được phí thanh toán
-              </p>
-            </div>
-          </div>
-          {/* Thời điểm giao nhận */}
-          <div className="border-t pt-6 mt-8">
-            <h4 className="text-lg font-medium mb-4">Thời điểm giao nhận</h4>
-            <div className="bg-white p-4 rounded-md">
-              <p className="text-gray-600">
-                Trong vòng 24 giờ kể từ thời điểm thanh toán phí
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Nút điều hướng */}
-      <div className="flex justify-between mt-8">
-        <button
-          type="button"
-          onClick={handlePrevStep}
-          className="px-8 py-3 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-        >
-          Quay lại
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="px-8 py-3 bg-red-600 rounded-md text-white hover:bg-red-700 transition-colors font-medium"
-        >
-          Tiếp tục
-        </button>
-      </div>
-    </div>
-  );
+    );
   };
 
   return (

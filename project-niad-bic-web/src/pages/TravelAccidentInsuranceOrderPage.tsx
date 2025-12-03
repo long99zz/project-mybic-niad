@@ -111,12 +111,12 @@ const travelCareFeeTable = {
       family: [289200, 422400, 508000, 688000, 178000],
     },
     toandien: {
-      individual: [144600, 211200, 254000, 344000, 89000],
-      family: [289200, 422400, 508000, 688000, 178000],
+      individual: [180000, 240000, 290000, 390000, 100000],
+      family: [360000, 480000, 580000, 780000, 200000],
     },
     nangcao: {
-      individual: [170000, 240000, 290000, 390000, 100000],
-      family: [340000, 480000, 580000, 780000, 200000],
+      individual: [220000, 300000, 360000, 480000, 120000],
+      family: [440000, 600000, 720000, 960000, 240000],
     },
   },
 };
@@ -128,15 +128,22 @@ function getTravelCareFee(
   packageType: "individual" | "family",
   days: number
 ): number {
+  // Nếu số ngày không hợp lệ, trả về 0
+  if (days <= 0) return 0;
+  
   let idx = 0;
   if (days <= 3) idx = 0;
   else if (days <= 6) idx = 1;
   else if (days <= 10) idx = 2;
   else if (days <= 14) idx = 3;
   else idx = 4; // mỗi tuần hoặc phần tuần kéo dài thêm
+  
   const table = travelCareFeeTable[region]?.[program]?.[packageType];
   if (!table) return 0;
+  
   if (idx < 4) return table[idx] || 0;
+  
+  // Tính phí cho ngày vượt quá 14 ngày
   let base = table[3] || 0;
   let extra = table[4] || 0;
   let extraWeeks = Math.ceil((days - 14) / 7);
@@ -228,6 +235,8 @@ function TravelAccidentInsuranceOrderPage() {
     // Tính phí bảo hiểm dựa trên bảng phí mới
     const region =
       (form.destination as keyof typeof travelCareFeeTable) || "vietnam";
+    
+    // Map insuranceProgram (A-E) thành program thực tế từ bảng phí
     let program: "basic" | "toandien" | "nangcao" = "basic";
     switch (insuranceProgram) {
       case "A":
@@ -248,22 +257,35 @@ function TravelAccidentInsuranceOrderPage() {
       default:
         program = "basic";
     }
+    
     const packageType: "individual" | "family" =
       form.insurancePackage === "family" ? "family" : "individual";
     const days = form.numberOfDays;
     const numPeople = Number(form.numberOfPeople) || 1;
-    let feePerPackage = getTravelCareFee(region, program, packageType, days);
-    let total =
-      packageType === "individual" ? feePerPackage * numPeople : feePerPackage;
+    
+    // Kiểm tra xem region có dữ liệu không, nếu không thì dùng "vietnam"
+    const effectiveRegion = (travelCareFeeTable[region] ? region : "vietnam") as keyof typeof travelCareFeeTable;
+    
+    let feePerPackage = getTravelCareFee(effectiveRegion, program, packageType, days);
+    
+    // Tính tổng phí:
+    // - Nếu chọn gia đình (family): phí bảo hiểm đã bao gồm cả nhóm, không nhân với số người
+    // - Nếu chọn cá nhân (individual): phí cho 1 người, phải nhân với số người tham gia
+    let total = 0;
+    if (packageType === "family") {
+      // Gói gia đình: phí đã bao gồm cả nhóm
+      total = feePerPackage;
+    } else {
+      // Gói cá nhân: phí cho 1 người, nhân với số người
+      total = feePerPackage * numPeople;
+    }
+    
     setTotalFee(total);
   }, [
     insuranceProgram,
     form.numberOfDays,
-    participants,
     form.numberOfPeople,
     form.destination,
-    form.returnDate,
-    form.departureDate,
     form.insurancePackage,
   ]);
 
@@ -315,11 +337,9 @@ function TravelAccidentInsuranceOrderPage() {
       try {
         // Lấy token từ session storage
         const token = sessionStorage.getItem('token');
-        console.log("[DEBUG] Token when submitting:", token);
 
         // Kiểm tra xem có token không
         if (!token) {
-          console.log("[DEBUG] No token found when submitting, redirecting to login");
           // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
           sessionStorage.setItem('redirectPath', window.location.pathname);
           alert("Vui lòng đăng nhập để tiếp tục");
@@ -352,28 +372,18 @@ function TravelAccidentInsuranceOrderPage() {
           })),
         };
         
-        console.log("[DEBUG] Payload gửi lên create_travel_invoice:", travelInvoicePayload);
-        
         let invoiceRes;
         try {
           invoiceRes = await axios.post(
-            `${API_URL}/api/insurance_travel/create_travel_invoice`,
+            `${API_URL}/insurance_travel/create_travel_invoice`,
             travelInvoicePayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          console.log("[DEBUG] Response create_travel_invoice:", invoiceRes.data);
         } catch (err) {
-          console.error("[ERROR] create_travel_invoice:", err);
-          if ((err as any).response) {
-            console.error(
-              "[ERROR] create_travel_invoice response:",
-              (err as any).response.data
-            );
-          }
           throw err;
         }
-        const invoice_id = invoiceRes.data.invoice_id;
-
+    const invoice_id = invoiceRes.data.invoice_id;
+    const master_invoice_id = invoiceRes.data.master_invoice_id;
         // 2. Đăng ký khách hàng
         const customerPayload = {
           customer_type:
@@ -386,24 +396,14 @@ function TravelAccidentInsuranceOrderPage() {
           invoice_request: buyerInfo.invoice,
         };
         
-        console.log("[DEBUG] Payload gửi lên create_customer_registration:", customerPayload);
-        
         let customerRes;
         try {
           customerRes = await axios.post(
-            `${API_URL}/api/insurance_travel/create_customer_registration`,
+            `${API_URL}/insurance_travel/create_customer_registration`,
             customerPayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          console.log("[DEBUG] Response create_customer_registration:", customerRes.data);
         } catch (err) {
-          console.error("[ERROR] create_customer_registration:", err);
-          if ((err as any).response) {
-            console.error(
-              "[ERROR] create_customer_registration response:",
-              (err as any).response.data
-            );
-          }
           throw err;
         }
         const customer_id = customerRes.data.customer_id;
@@ -414,50 +414,43 @@ function TravelAccidentInsuranceOrderPage() {
           customer_id,
         };
         
-        console.log("[DEBUG] Payload gửi lên update_invoice_customer:", updatePayload);
-        
         try {
-          const updateRes = await axios.post(
-            `${API_URL}/api/insurance_travel/update_invoice_customer`,
+          await axios.post(
+            `${API_URL}/insurance_travel/update_invoice_customer`,
             updatePayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          console.log("[DEBUG] Response update_invoice_customer:", updateRes.data);
         } catch (err) {
-          console.error("[ERROR] update_invoice_customer:", err);
-          if ((err as any).response) {
-            console.error(
-              "[ERROR] update_invoice_customer response:",
-              (err as any).response.data
-            );
-          }
           throw err;
         }
-        alert("Đặt mua bảo hiểm thành công!");
-        // Lưu đơn hàng vào localStorage
-        const cartItem = {
-          id: "TRAVEL_ACCIDENT",
-          name: "Bảo hiểm tai nạn khách du lịch",
-          description: `Chương trình ${insuranceProgram}, ${form.numberOfPeople} người, ${form.numberOfDays} ngày, điểm đến: ${form.destination}`,
-          price: totalFee,
-          image: "/products/bic-travel-care.png",
-          buyerName: buyerInfo.fullName,
-          buyerPhone: buyerInfo.phone,
-          buyerEmail: buyerInfo.email,
-          isSelected: true,
+
+        // 4. Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+        
+        // Lưu thông tin đơn hàng vào sessionStorage
+        const orderInfo = {
+          invoice_id: invoice_id,
+          master_invoice_id: master_invoice_id,
+          product_name: "Bảo hiểm tai nạn khách du lịch",
+          insurance_amount: totalFee,
+          customer_name: buyerInfo.fullName,
+          created_at: new Date().toISOString(),
+          insurance_start: form.departureDate,
+          insurance_end: form.returnDate,
+          status: "Chưa thanh toán",
+          // Thông tin bổ sung
+          departure_location: "Việt Nam",
+          destination: form.destination,
+          total_duration: form.numberOfDays,
+          group_size: participants.length || form.numberOfPeople,
+          insurance_program: insuranceProgram,
+          insurance_package: form.insurancePackage,
+          participants: participants
         };
-        localStorage.setItem("cartItem", JSON.stringify(cartItem));
-        // Chuyển hướng sang giỏ hàng
-        window.location.href = "/gio-hang.html";
+        sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+        
+        navigate(`/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${totalFee}`);
       } catch (error) {
-        console.error("[ERROR] Thực hiện đặt bảo hiểm:", error);
-        
         const err = error as any;
-        if (err.response) {
-          console.error("[ERROR] Response status:", err.response.status);
-          console.error("[ERROR] Response data:", err.response.data);
-        }
-        
         alert(
           "Có lỗi xảy ra khi đặt mua bảo hiểm: " +
             (err?.response?.data?.error || err?.message || "Lỗi không xác định")
@@ -806,9 +799,11 @@ function TravelAccidentInsuranceOrderPage() {
                                     <option value="">
                                       -- Chọn chương trình --
                                     </option>
-                                    <option value="basic">Cơ bản</option>
-                                    <option value="standard">Toàn diện</option>
-                                    <option value="advanced">Nâng cao</option>
+                                    <option value="A">Cơ bản (Gói A)</option>
+                                    <option value="B">Cơ bản Plus (Gói B)</option>
+                                    <option value="C">Toàn diện (Gói C)</option>
+                                    <option value="D">Toàn diện Plus (Gói D)</option>
+                                    <option value="E">Nâng cao (Gói E)</option>
                                   </select>
                                 </td>
                               </tr>
@@ -1018,36 +1013,38 @@ function TravelAccidentInsuranceOrderPage() {
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-start gap-8">
-                        <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">
-                          CMND/CCCD<span className="text-red-600">*</span>
-                        </label>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            name="identityCard"
-                            value={buyerInfo.identityCard}
-                            onChange={handleBuyerInfoChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                          />
+                      <>
+                        <div className="flex items-start gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">
+                            Họ và tên<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="fullName"
+                              value={buyerInfo.fullName || ""}
+                              onChange={handleBuyerInfoChange}
+                              placeholder="Nhập họ và tên"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-start gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">
+                            CMND/CCCD<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="identityCard"
+                              value={buyerInfo.identityCard}
+                              onChange={handleBuyerInfoChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-start gap-8">
-                      <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">
-                        Họ và tên<span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={buyerInfo.fullName}
-                          onChange={handleBuyerInfoChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-start gap-8">
                       <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">

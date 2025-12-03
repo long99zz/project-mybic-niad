@@ -1,26 +1,29 @@
 package models
 
 import (
-    "time"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TravelInsuranceInvoice struct {
-    InvoiceID         uint      `gorm:"primaryKey;autoIncrement" json:"invoice_id"`
-    UserID            *uint     `gorm:"index" json:"user_id"`     
-    FormID            *uint     `gorm:"index" json:"form_id"` // Cho phép NULL
-    Status            string    `gorm:"type:enum('Chưa thanh toán','Đã thanh toán','Đã hủy');not null" json:"status"`
-    DepartureLocation string    `gorm:"size:255;not null" json:"departure_location"`
-    Destination       string    `gorm:"size:255;not null" json:"destination"`
-    DepartureDate     time.Time `gorm:"type:date;not null" json:"departure_date"`
-    ReturnDate        time.Time `gorm:"type:date;not null" json:"return_date"`
-    TotalDuration     int       `gorm:"-" json:"total_duration"` // vẫn để gorm:"-" nếu là GENERATED
-    GroupSize         int       `gorm:"not null" json:"group_size"`
-    InsuranceProgram  string    `gorm:"size:255;not null" json:"insurance_program"`
-    TotalAmount       float64   `gorm:"not null" json:"total_amount"` // Đã cho phép nhập số
-    InsurancePackage  string    `gorm:"size:255" json:"insurance_package"`
-    Note              string    `gorm:"size:255" json:"note"` // Trường mới, ví dụ ghi chú
-    CustomerID        *uint     `gorm:"index" json:"customer_id"` // cho phép NULL
-    ProductID         *uint     `gorm:"index"  json:"product_id"`
-    CreatedAt         time.Time `gorm:"autoCreateTime" json:"created_at"`
-    UpdatedAt         time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                primitive.ObjectID `bson:"_id,omitempty" json:"invoice_id"`
+	MasterInvoiceID   interface{}        `bson:"master_invoice_id,omitempty" json:"master_invoice_id"` // Can be int, string, or ObjectID
+	UserID            interface{}        `bson:"user_id,omitempty" json:"user_id"`                     // Can be int, string, or ObjectID
+	FormID            interface{}        `bson:"form_id,omitempty" json:"form_id"`                     // Can be int, string, or ObjectID
+	Status            string             `bson:"status" json:"status"`
+	DepartureLocation string             `bson:"departure_location" json:"departure_location"`
+	Destination       string             `bson:"destination" json:"destination"`
+	DepartureDate     time.Time          `bson:"departure_date" json:"departure_date"`
+	ReturnDate        time.Time          `bson:"return_date" json:"return_date"`
+	TotalDuration     int                `bson:"-" json:"total_duration"` // Calculated field
+	GroupSize         int                `bson:"group_size" json:"group_size"`
+	InsuranceProgram  string             `bson:"insurance_program" json:"insurance_program"`
+	TotalAmount       float64            `bson:"total_amount" json:"total_amount"`
+	InsurancePackage  string             `bson:"insurance_package" json:"insurance_package"`
+	Note              string             `bson:"note" json:"note"`
+	CustomerID        interface{}        `bson:"customer_id,omitempty" json:"customer_id"` // Can be int, string, or ObjectID
+	ProductID         interface{}        `bson:"product_id,omitempty" json:"product_id"`   // Can be int, string, or ObjectID
+	CreatedAt         time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt         time.Time          `bson:"updated_at" json:"updated_at"`
 }

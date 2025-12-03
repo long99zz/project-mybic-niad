@@ -55,7 +55,6 @@ export default function MotorcycleCivilLiabilityOrderPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log('[DEBUG] User not authenticated, redirecting to login');
       const currentPath = window.location.pathname;
       sessionStorage.setItem('redirectAfterLogin', currentPath);
       navigate('/dang-nhap?from=insurance-form');
@@ -163,20 +162,14 @@ export default function MotorcycleCivilLiabilityOrderPage() {
   };
 
   const handleNextStep = async () => {
-    console.log("handleNextStep called");
-    console.log("Current step:", currentStep);
-    console.log("Vehicle info:", vehicleInfo);
-    console.log("Customer info:", customerInfo);
     setShowError(false);
     let currentStepErrors: { [key: string]: string } = {};
 
     // Chỉ kiểm tra token ở bước cuối
     if (currentStep === totalSteps) {
       const token = sessionStorage.getItem('token');
-      console.log("[DEBUG] Token when submitting:", token);
       
       if (!token) {
-        console.log("[DEBUG] No token found when submitting, saving path");
         const currentPath = window.location.pathname;
         sessionStorage.setItem('redirectAfterLogin', currentPath);
         navigate('/dang-nhap?from=insurance-form');
@@ -287,7 +280,6 @@ export default function MotorcycleCivilLiabilityOrderPage() {
         window.scrollTo(0, 0);
       }
     } catch (error) {
-      console.error("Error validating form:", error);
       setShowError(true);
       setErrors({
         submit: "Có lỗi xảy ra khi xử lý form. Vui lòng thử lại sau.",
@@ -312,7 +304,6 @@ export default function MotorcycleCivilLiabilityOrderPage() {
 
       // Check authentication before submit
       if (!isAuthenticated) {
-        console.log("[DEBUG] User not authenticated, redirecting to login");
         const currentPath = window.location.pathname;
         sessionStorage.setItem('redirectAfterLogin', currentPath);
         navigate('/dang-nhap?from=insurance-form');
@@ -321,29 +312,11 @@ export default function MotorcycleCivilLiabilityOrderPage() {
 
       const token = sessionStorage.getItem('token');
 
-      const invoiceResponse = await axios.post(
-        `${API_URL}/api/insurance_motorbike_owner/create_invoice`,
-        {
-          // Remove insurance_quantity and contract_type from here
-          // They will be sent in confirm_purchase
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token || ''}`
-          }
-        }
-      );
-
-      if (!invoiceResponse.data) {
-        throw new Error('Không thể tạo hóa đơn. Vui lòng kiểm tra lại đăng nhập.');
-      }
-      const invoiceId = invoiceResponse.data.invoice_id;
-
-      // 2. Tạo form bảo hiểm xe máy (MotorbikeInsuranceForm)
+      // 1. Tạo form bảo hiểm xe máy (MotorbikeInsuranceForm)
       const motorbikeFormPayload = {
         engine_capacity:
           vehicleInfo.engineCapacity === "under_50" ? 49.0 : 125.0,
-        accident_coverage: parseFloat(accidentCoverage.toFixed(2)),
+        accident_coverage: Math.round(accidentCoverage),
         insurance_duration: vehicleInfo.insuranceTerm,
         owner_name: vehicleInfo.ownerName,
         registration_address: vehicleInfo.registrationAddress,
@@ -354,20 +327,11 @@ export default function MotorcycleCivilLiabilityOrderPage() {
         chassis_number: vehicleInfo.chassisNumber,
         engine_number: vehicleInfo.engineNumber,
         insurance_start: dayjs(vehicleInfo.insuranceStartDate).toISOString(),
-        insurance_fee: tndsFeeDisplay,
+        insurance_fee: Math.round(tndsFeeDisplay),
       };
 
-      console.log(
-        "Debug: Raw insuranceStartDate from state:",
-        vehicleInfo.insuranceStartDate
-      );
-      console.log(
-        "Payload for create_motorbike_insurance_form:",
-        motorbikeFormPayload
-      );
-
       const formResponse = await axios.post(
-        `${API_URL}/api/insurance_motorbike_owner/create_motorbike_insurance_form`,
+        `${API_URL}/insurance_motorbike_owner/create_motorbike_insurance_form`,
         motorbikeFormPayload,
         {
           headers: {
@@ -377,9 +341,9 @@ export default function MotorcycleCivilLiabilityOrderPage() {
       );
       const formId = formResponse.data.form_id;
 
-      // 3. Tạo thông tin khách hàng (CustomerRegistration)
+      // 2. Tạo thông tin khách hàng (CustomerRegistration)
       const customerResponse = await axios.post(
-        `${API_URL}/api/insurance_motorbike_owner/create_customer_registration`,
+        `${API_URL}/insurance_motorbike_owner/create_customer_registration`,
         {
           customer_type:
             customerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
@@ -400,43 +364,63 @@ export default function MotorcycleCivilLiabilityOrderPage() {
       const customerId = customerResponse.data.customer_id;
 
       // Calculate insurance_end based on insuranceStartDate and insuranceTerm
-      console.log(
-        "Debug: Raw insuranceStartDate from state (for end date calc):",
-        vehicleInfo.insuranceStartDate
-      );
       const insuranceEndDate = dayjs(vehicleInfo.insuranceStartDate)
         .add(vehicleInfo.insuranceTerm, "year")
-        .toISOString();
+        .format('YYYY-MM-DD');
 
-      // 4. Xác nhận mua hàng (ConfirmPurchase)
-      console.log(
-        "Debug: Raw insuranceStartDate from state (for confirm purchase):",
-        vehicleInfo.insuranceStartDate
-      );
-      await axios.post(
-        `${API_URL}/api/insurance_motorbike_owner/confirm_purchase`,
-        {
-          invoice_id: invoiceId,
-          customer_id: customerId,
-          form_id: formId,
-          product_id: 8,
-          insurance_start: dayjs(vehicleInfo.insuranceStartDate).toISOString(),
-          insurance_end: insuranceEndDate,
-          insurance_amount: tndsFeeDisplay * vehicleCount,
-          insurance_quantity: vehicleCount,
-          contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
-        },
+      // 3. Tạo invoice (CUỐI CÙNG với đầy đủ thông tin)
+      const invoicePayload = {
+        product_id: 8, // Bảo hiểm TNDS xe máy
+        contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
+        insurance_amount: Math.round(tndsFeeDisplay * vehicleCount),
+        insurance_start: vehicleInfo.insuranceStartDate,
+        insurance_end: insuranceEndDate,
+        insurance_quantity: vehicleCount,
+        customer_id: customerId,
+        form_id: formId,
+      };
+
+      const invoiceResponse = await axios.post(
+        `${API_URL}/insurance_motorbike_owner/create_invoice`,
+        invoicePayload,
         {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token || ''}`
           }
         }
       );
 
-      // Chuyển hướng đến trang giỏ hàng sau khi hoàn tất
-      navigate("/gio-hang.html");
+      if (!invoiceResponse.data) {
+        throw new Error('Không thể tạo hóa đơn. Vui lòng kiểm tra lại đăng nhập.');
+      }
+      const invoiceId = invoiceResponse.data.invoice_id; // Child invoice ID
+      const masterInvoiceId = invoiceResponse.data.master_invoice_id; // Master invoice ID for payment
+
+      // NOTE: Không gọi confirm_purchase ở đây!
+      // Invoice sẽ được confirm tự động khi thanh toán thành công qua Stripe webhook
+      // Status ban đầu: "Chưa thanh toán"
+
+      // Lưu thông tin đơn hàng vào sessionStorage (use master_invoice_id)
+      const orderInfo = {
+        invoice_id: masterInvoiceId, // Use master_invoice_id for payment
+        product_name: "Bảo hiểm TNDS xe máy",
+        insurance_amount: Math.round(tndsFeeDisplay * vehicleCount),
+        customer_name: customerInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: vehicleInfo.insuranceStartDate,
+        insurance_end: new Date(new Date(vehicleInfo.insuranceStartDate).setFullYear(
+          new Date(vehicleInfo.insuranceStartDate).getFullYear() + vehicleInfo.insuranceTerm
+        )).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        vehicle_count: vehicleCount,
+        insurance_term: vehicleInfo.insuranceTerm
+      };
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+
+      // Chuyển hướng đến trang đặt hàng thành công (use master_invoice_id for payment)
+      navigate(`/dat-hang-thanh-cong?invoice_id=${masterInvoiceId}&amount=${Math.round(tndsFeeDisplay * vehicleCount)}`);
     } catch (error: any) {
-      console.error("Error submitting form:", error);
       setShowError(true);
 
       // Xử lý lỗi chi tiết
@@ -593,9 +577,7 @@ export default function MotorcycleCivilLiabilityOrderPage() {
           <button
             type="button"
             onClick={() => {
-              console.log("Current step before:", currentStep);
               handleNextStep();
-              console.log("Current step after:", currentStep);
             }}
             className="px-8 py-3 bg-red-600 rounded-md text-white hover:bg-red-700 transition-colors font-medium"
           >

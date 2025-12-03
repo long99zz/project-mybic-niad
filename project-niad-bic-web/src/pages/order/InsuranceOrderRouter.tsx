@@ -16,11 +16,6 @@ import CyberInsuranceOrderPage from "../CyberInsuranceOrderPage";
 
 export default function InsuranceOrderRouter() {
   const { productId, productType, category } = useParams();
-  console.log("InsuranceOrderRouter params:", {
-    productId,
-    productType,
-    category,
-  });
 
   // Check if car insurance (ô tô)
   const isCarInsurance = () => {

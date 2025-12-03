@@ -1,70 +1,43 @@
 package main
 
 import (
+	"backend/config"
 	"backend/handlers"
 	"backend/middlewares"
-	"backend/models"
+	"context"
 	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+// Global MongoDB client and database
+var (
+	mongoClient *mongo.Client
+	mongoDB     *mongo.Database
 )
 
 func main() {
-	// 🔹 Kết nối MySQL
-	dsn := "root:long0910@tcp(localhost:3308)/bic_insurance?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// 🔹 Load config
+	cfg := config.LoadConfig()
+
+	// 🔹 Kết nối MongoDB
+	client, err := config.ConnectMongoDB(cfg)
 	if err != nil {
-		log.Fatal("Không thể kết nối MySQL:", err)
+		log.Fatal("Không thể kết nối MongoDB:", err)
 	}
+	defer func() {
+		if err := client.Disconnect(context.Background()); err != nil {
+			log.Printf("Lỗi khi ngắt kết nối MongoDB: %v", err)
+		}
+	}()
 
-	sqlDB, _ := db.DB()
-	if err := sqlDB.Ping(); err != nil {
-		log.Fatal("Không thể kết nối MySQL - Ping thất bại:", err)
-	} else {
-		log.Println("✅ Đã kết nối thành công với MySQL!")
-	}
+	// Set global MongoDB client and database
+	mongoClient = client
+	mongoDB = client.Database(cfg.DBName)
 
-	// 🔹 Tự động migrate và thiết lập lại khóa ngoại
-	// 1. Tắt kiểm tra khóa ngoại
-	db.Exec("SET FOREIGN_KEY_CHECKS=0")
-
-	// 2. Xóa khóa ngoại cũ nếu có
-	db.Exec("ALTER TABLE products DROP FOREIGN KEY IF EXISTS products_ibfk_1")
-
-	// 3. Migrate các bảng theo thứ tự
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		log.Printf("Lỗi migrate User: %v", err)
-	}
-
-	// Migrate và tạo index cho Category
-	if err := db.AutoMigrate(&models.Category{}); err != nil {
-		log.Printf("Lỗi migrate Category: %v", err)
-	}
-	// Đảm bảo có index cho category_id
-	db.Exec("ALTER TABLE categories ADD INDEX idx_category_id (category_id)")
-
-	// Migrate Product sau khi đã có index category_id
-	if err := db.AutoMigrate(&models.Product{}); err != nil {
-		log.Printf("Lỗi migrate Product: %v", err)
-	}
-
-	if err := db.AutoMigrate(&models.HomeInsuranceInvoice{}); err != nil {
-		log.Printf("Lỗi migrate HomeInsuranceInvoice: %v", err)
-	}
-
-	// 4. Tạo lại khóa ngoại với tên mới
-	db.Exec(`ALTER TABLE products 
-		ADD CONSTRAINT fk_products_category 
-		FOREIGN KEY (category_id) 
-		REFERENCES categories(category_id) 
-		ON DELETE RESTRICT 
-		ON UPDATE CASCADE`)
-
-	// 5. Bật lại kiểm tra khóa ngoại
-	db.Exec("SET FOREIGN_KEY_CHECKS=1")
+	log.Printf("✅ Sử dụng database: %s", cfg.DBName)
 
 	router := gin.Default()
 
@@ -77,105 +50,203 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// 🔹 Định nghĩa API đăng ký & đăng nhập
-	router.POST("/register", handlers.RegisterUser(db))
-	router.POST("/login", handlers.LoginUser(db))
+	// 🔹 Định nghĩa API đăng ký & đăng nhập (MongoDB)
+	router.POST("/register", handlers.RegisterUserMongo(mongoDB))
+	router.POST("/login", handlers.LoginUserMongo(mongoDB))
+
+	// 🔹 Nhóm API không yêu cầu xác thực
+	publicRouter := router.Group("/api")
+	publicRouter.POST("/register", handlers.RegisterUserMongo(mongoDB))
+	publicRouter.POST("/login", handlers.LoginUserMongo(mongoDB))
 
 	// 🔹 Nhóm API yêu cầu xác thực bằng JWT
 	apiRouter := router.Group("/api")
 	apiRouter.Use(middlewares.AuthMiddleware())
 
-	apiRouter.GET("/user", handlers.GetUserInfo(db))                        // Lấy thông tin user
-	apiRouter.POST("/user/change-password", handlers.ChangePassword(db))    // Đổi mật khẩu
-	apiRouter.GET("/invoice-detail/:id", handlers.GetInvoiceDetailUser(db)) // Lấy chi tiết đơn hàng cho user
-	apiRouter.GET("/products", handlers.GetProducts(db))
-	apiRouter.POST("/products", handlers.AddProduct(db))
-	apiRouter.PUT("/products/:id", handlers.UpdateProduct(db))
-	apiRouter.DELETE("/products/:id", handlers.DeleteProduct(db))
-	apiRouter.GET("/categories", handlers.GetCategories(db))
-	apiRouter.POST("/categories", handlers.AddCategory(db))
-	apiRouter.PUT("/categories/:id", handlers.UpdateCategory(db))
-	apiRouter.DELETE("/categories/:id", handlers.DeleteCategory(db))
-	// Quản lý bài viết (post)
-	apiRouter.POST("/posts", handlers.AddPost(db))
-	apiRouter.PUT("/posts/:id", handlers.UpdatePost(db))
+	apiRouter.GET("/user", handlers.GetUserInfoMongo(mongoDB))                        // Lấy thông tin user (MongoDB)
+	apiRouter.PUT("/user", handlers.UpdateUserInfoMongo(mongoDB))                     // Cập nhật thông tin user (MongoDB)
+	apiRouter.POST("/user/change-password", handlers.ChangePasswordMongo(mongoDB))    // Đổi mật khẩu (MongoDB)
+	apiRouter.GET("/invoice-detail/:id", handlers.GetInvoiceDetailUserMongo(mongoDB)) // Lấy chi tiết đơn hàng cho user (MongoDB)
+	apiRouter.GET("/products", handlers.GetProductsMongo(mongoDB))                    // Lấy danh sách sản phẩm (MongoDB)
+	apiRouter.GET("/products/:id", handlers.GetProductMongo(mongoDB))                 // Lấy chi tiết sản phẩm (MongoDB)
+	apiRouter.POST("/products", handlers.AddProductMongo(mongoDB))                    // Thêm sản phẩm (MongoDB)
+	apiRouter.PUT("/products/:id", handlers.UpdateProductMongo(mongoDB))              // Cập nhật sản phẩm (MongoDB)
+	apiRouter.DELETE("/products/:id", handlers.DeleteProductMongo(mongoDB))           // Xóa sản phẩm (MongoDB)
+	apiRouter.GET("/categories", handlers.GetCategoriesMongo(mongoDB))                // Lấy danh sách danh mục (MongoDB)
+	apiRouter.GET("/categories/:id", handlers.GetCategoryMongo(mongoDB))              // Lấy chi tiết danh mục (MongoDB)
+	apiRouter.POST("/categories", handlers.AddCategoryMongo(mongoDB))                 // Thêm danh mục (MongoDB)
+	apiRouter.PUT("/categories/:id", handlers.UpdateCategoryMongo(mongoDB))           // Cập nhật danh mục (MongoDB)
+	apiRouter.DELETE("/categories/:id", handlers.DeleteCategoryMongo(mongoDB))        // Xóa danh mục (MongoDB)
+	// Quản lý bài viết (post) - MongoDB
+	apiRouter.POST("/posts", handlers.AddPostMongo(mongoDB))       // Thêm bài viết (MongoDB)
+	apiRouter.PUT("/posts/:id", handlers.UpdatePostMongo(mongoDB)) // Cập nhật bài viết (MongoDB)
 	// Nếu có hàm xóa:
-	// apiRouter.DELETE("/posts/:id", handlers.DeletePost(db))
+	// apiRouter.DELETE("/posts/:id", handlers.DeletePost(mongoDB))
 	// Thêm API lấy danh sách hóa đơn của user hiện tại
-	apiRouter.GET("/my-invoices", handlers.GetMyInvoices(db))
+	apiRouter.GET("/my-invoices", handlers.GetMyInvoicesMongo(mongoDB)) // Lấy danh sách hóa đơn của user (MongoDB)
 	// Đăng ký API lấy giỏ hàng
-	apiRouter.GET("/cart", handlers.GetCart(db))
-	apiRouter.DELETE("/cart/:invoice_id", handlers.DeleteCartInvoice(db)) // Xoá đơn hàng khỏi giỏ
+	apiRouter.GET("/cart", handlers.GetCartMongo(mongoDB))                           // Lấy giỏ hàng (MongoDB)
+	apiRouter.DELETE("/cart/:invoice_id", handlers.DeleteCartByMasterMongo(mongoDB)) // Xoá đơn hàng khỏi giỏ (MongoDB) - master-based
 
-	carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware()) // thông tin bảo hiểm trách nhiệm dân sự xe ô tô
+	// Payment APIs - Stripe (MongoDB)
+	apiRouter.POST("/payment/create", handlers.CreateStripeCheckoutMongo(mongoDB))  // Tạo Stripe Checkout Session
+	apiRouter.POST("/payment/stripe/webhook", handlers.StripeWebhookMongo(mongoDB)) // Stripe Webhook
+	// Stripe callback không cần auth
+	router.GET("/api/payment/stripe/return", handlers.StripeReturnMongo(mongoDB))
+
+	// Insurance APIs - Now with MongoDB implementation
+	carapi := router.Group("/api/insurance_car_owner", middlewares.AuthMiddleware())
 	{
-		carapi.POST("/create_invoice", handlers.CreateInvoice(db))                             // Lưu hóa đơn
-		carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(db))         // Lưu bảo hiểm xe
-		carapi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))  // Lưu khách hàng
-		carapi.POST("/confirm_purchase", handlers.ConfirmPurchase(db))                         // Xác nhận mua hàng
-		carapi.POST("/create_vehicle_insurance_form", handlers.CreateVehicleInsuranceForm(db)) // Lưu bảo hiểm vật chất xe ô tô
+		carapi.POST("/create_invoice", handlers.CreateInvoice(mongoDB))
+		carapi.POST("/create_car_insurance_form", handlers.CreateCarInsuranceForm(mongoDB))
+		carapi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		carapi.POST("/confirm_purchase", handlers.ConfirmPurchase(mongoDB))
+		carapi.POST("/create_vehicle_insurance_form", handlers.CreateVehicleInsuranceForm(mongoDB))
 	}
 	motorbikeApi := router.Group("/api/insurance_motorbike_owner", middlewares.AuthMiddleware())
 	{
-		motorbikeApi.POST("/create_invoice", handlers.CreateInvoice(db))                                 // Lưu hóa đơn
-		motorbikeApi.POST("/create_motorbike_insurance_form", handlers.CreateMotorbikeInsuranceForm(db)) // Lưu bảo hiểm xe máy
-		motorbikeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))      // Lưu khách hàng
-		motorbikeApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db))                             // Xác nhận mua hàng
+		motorbikeApi.POST("/create_invoice", handlers.CreateInvoice(mongoDB))
+		motorbikeApi.POST("/create_motorbike_insurance_form", handlers.CreateMotorbikeInsuranceForm(mongoDB))
+		motorbikeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		motorbikeApi.POST("/confirm_purchase", handlers.ConfirmPurchase(mongoDB))
 	}
 	cancerApi := router.Group("/api/insurance_cancer", middlewares.AuthMiddleware())
 	{
-		cancerApi.POST("/create_invoice", handlers.CreateInvoice(db))                                     // Lưu hóa đơn
-		cancerApi.POST("/create_insurance_participant_info", handlers.CreateInsuranceParticipantInfo(db)) // Lưu thông tin người tham gia bảo hiểm ung thư
-		cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))          // Lưu khách hàng
-		cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db))                                 // Xác nhận mua hàng
+		cancerApi.POST("/create_invoice", handlers.CreateInvoice(mongoDB))
+		cancerApi.POST("/create_insurance_participant_info", handlers.CreateInsuranceParticipantInfo(mongoDB))
+		cancerApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		cancerApi.POST("/confirm_purchase", handlers.ConfirmPurchase(mongoDB))
 	}
 	personalApi := router.Group("/api/insurance_personal", middlewares.AuthMiddleware())
 	{
-		personalApi.POST("/create_invoice", handlers.CreateInvoice(db))                               // Lưu hóa đơn
-		personalApi.POST("/create_personal_insurance_form", handlers.CreatePersonalInsuranceForm(db)) // Lưu bảo hiểm sức khỏe cá nhân
-		personalApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))    // Lưu khách hàng
-		personalApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db))                           // Xác nhận mua hàng
+		personalApi.POST("/create_invoice", handlers.CreateInvoice(mongoDB))
+		personalApi.POST("/create_personal_insurance_form", handlers.CreatePersonalInsuranceForm(mongoDB))
+		personalApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		personalApi.POST("/confirm_purchase", handlers.ConfirmPurchase(mongoDB))
 	}
 	travelApi := router.Group("/api/insurance_travel", middlewares.AuthMiddleware())
 	{
-		travelApi.POST("/create_travel_invoice", handlers.CreateTravelInsuranceInvoice(db))      // Nhập hóa đơn du lịch
-		travelApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Đăng ký khách hàng
-		travelApi.POST("/update_invoice_customer", handlers.UpdateTravelInvoiceCustomer(db))     //  Gán customer_id vào hóa đơn
+		travelApi.POST("/create_travel_invoice", handlers.CreateTravelInsuranceInvoice(mongoDB))
+		travelApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		travelApi.POST("/update_invoice_customer", handlers.UpdateTravelInvoiceCustomer(mongoDB))
 	}
 	accidentApi := router.Group("/api/insurance_accident", middlewares.AuthMiddleware())
 	{
-		accidentApi.POST("/create_accident", handlers.CreateAccidentInsuranceInvoice(db))
-		accidentApi.POST("/create_personal_form", handlers.CreatePersonalInsuranceForm(db))
-		accidentApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db))
-		accidentApi.POST("/update_invoice_customer", handlers.UpdateInvoiceCustomer(db))
-		accidentApi.POST("/confirm_purchase", handlers.ConfirmPurchase(db)) // Xác nhận mua hàng
+		accidentApi.POST("/create_accident", handlers.CreateAccidentInsuranceInvoice(mongoDB))
+		accidentApi.POST("/create_personal_form", handlers.CreatePersonalInsuranceForm(mongoDB))
+		accidentApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		accidentApi.POST("/update_invoice_customer", handlers.UpdateInvoiceCustomer(mongoDB))
+		accidentApi.POST("/confirm_purchase", handlers.ConfirmPurchase(mongoDB))
 	}
 	homeApi := router.Group("/api/insurance_home", middlewares.AuthMiddleware())
 	{
-		homeApi.POST("/create_home_invoice", handlers.CreateHomeInsuranceInvoice(db))          // Nhập thông tin chung hóa đơn nhà
-		homeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(db)) // Đăng ký khách hàng
-		homeApi.POST("/update_invoice_customer", handlers.UpdateHomeInvoiceCustomer(db))       // Gán customer_id vào hóa đơn nhà
+		homeApi.POST("/create_home_invoice", handlers.CreateHomeInsuranceInvoice(mongoDB))
+		homeApi.POST("/create_customer_registration", handlers.CreateCustomerRegistration(mongoDB))
+		homeApi.POST("/update_invoice_customer", handlers.UpdateHomeInvoiceCustomer(mongoDB))
 	}
 	// filepath: d:\project\back-end\main.go
+	// Admin API routes - Now with MongoDB implementation
 	adminApi := router.Group("/api/admin", middlewares.AuthMiddleware())
-	adminApi.GET("/all-invoices", handlers.AdminSelectAllInvoices(db))
-	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(db))
-	adminApi.GET("/product-statistics", handlers.AdminProductStatistics(db))
-	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(db))
-	adminApi.PUT("/invoice/:id/status", handlers.AdminUpdateInvoiceStatus(db)) // Đổi trạng thái đơn hàng
-	adminApi.PUT("/invoice/:id/revert-status", handlers.AdminRevertInvoiceStatus(db)) // Chuyển trạng thái về 'Chưa thanh toán'
-	adminApi.DELETE("/invoice/:id", handlers.AdminDeleteInvoice(db)) // Xóa hóa đơn
 
-	// Route cho hóa đơn du lịch
-	adminApi.DELETE("/travel-invoice/:id", handlers.AdminDeleteTravelInvoice(db)) // Xóa hóa đơn du lịch
-	adminApi.PUT("/travel-invoice/:id/status", handlers.AdminUpdateTravelInvoiceStatus(db)) // Đổi trạng thái hóa đơn du lịch
+	// ===== DASHBOARD & STATISTICS =====
+	adminApi.GET("/dashboard/stats", handlers.AdminGetDashboardStats(mongoDB))
+	adminApi.GET("/dashboard/revenue-by-month", handlers.AdminGetRevenueByMonth(mongoDB))
+	adminApi.GET("/dashboard/orders-by-product", handlers.AdminGetOrdersByProduct(mongoDB))
+	adminApi.GET("/statistics/monthly", handlers.AdminGetMonthlyStatistics(mongoDB))
+	adminApi.GET("/statistics/products", handlers.AdminGetProductStatistics(mongoDB))
+	adminApi.GET("/product-statistics", handlers.AdminGetProductStatistics(mongoDB))
 
-	// Route cho hóa đơn nhà
-	adminApi.DELETE("/home-invoice/:id", handlers.AdminDeleteHomeInvoice(db)) // Xóa hóa đơn nhà
-	adminApi.PUT("/home-invoice/:id/status", handlers.AdminUpdateHomeInvoiceStatus(db)) // Đổi trạng thái hóa đơn nhà
-	//apiRouter.POST("/form-fields", handlers.CreateField(db))
-	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(db))
-	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(db))
+	// ===== ORDER MANAGEMENT =====
+	adminApi.GET("/all-invoices", handlers.AdminSelectAllInvoices(mongoDB))
+	adminApi.GET("/invoice-detail", handlers.AdminGetInvoiceDetail(mongoDB))
+	adminApi.GET("/orders/:id", handlers.AdminGetOrderDetail(mongoDB))
+	adminApi.PUT("/orders/:id/status", handlers.AdminUpdateOrderStatus(mongoDB))
+	adminApi.DELETE("/orders/:id", handlers.AdminDeleteOrder(mongoDB))
+
+	// Old routes (keep for backward compatibility)
+	adminApi.PUT("/invoice/:id/status", handlers.AdminUpdateInvoiceStatus(mongoDB))
+	adminApi.PUT("/invoice/:id/revert-status", handlers.AdminRevertInvoiceStatus(mongoDB))
+	adminApi.DELETE("/invoice/:id", handlers.AdminDeleteInvoice(mongoDB))
+	adminApi.DELETE("/travel-invoice/:id", handlers.AdminDeleteTravelInvoice(mongoDB))
+	adminApi.PUT("/travel-invoice/:id/status", handlers.AdminUpdateTravelInvoiceStatus(mongoDB))
+	adminApi.DELETE("/home-invoice/:id", handlers.AdminDeleteHomeInvoice(mongoDB))
+	adminApi.PUT("/home-invoice/:id/status", handlers.AdminUpdateHomeInvoiceStatus(mongoDB))
+	adminApi.DELETE("/accident-invoice/:id", handlers.AdminDeleteAccidentInvoice(mongoDB))
+	adminApi.PUT("/accident-invoice/:id/status", handlers.AdminUpdateAccidentInvoiceStatus(mongoDB))
+
+	// ===== USER MANAGEMENT =====
+	adminApi.GET("/users", handlers.AdminGetAllUsers(mongoDB))
+	adminApi.GET("/users/:id", handlers.AdminGetUserDetail(mongoDB))
+	adminApi.PUT("/users/:id", handlers.AdminUpdateUser(mongoDB))
+	adminApi.DELETE("/users/:id", handlers.AdminDeleteUser(mongoDB))
+
+	// ===== PRODUCT MANAGEMENT =====
+	adminApi.GET("/products", handlers.AdminGetAllProducts(mongoDB))
+	adminApi.GET("/products/:id", handlers.AdminGetProductDetail(mongoDB))
+	adminApi.POST("/products", handlers.AdminCreateProduct(mongoDB))
+	adminApi.PUT("/products/:id", handlers.AdminUpdateProduct(mongoDB))
+	adminApi.DELETE("/products/:id", handlers.AdminDeleteProduct(mongoDB))
+
+	adminApi.GET("/search-customers-by-date", handlers.AdminSearchCustomersByDate(mongoDB))
+
+	// Debug endpoint to check users collection
+	router.GET("/debug-users", func(c *gin.Context) {
+		usersCollection := mongoDB.Collection("users")
+		cursor, err := usersCollection.Find(context.Background(), map[string]interface{}{})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		defer cursor.Close(context.Background())
+
+		var users []interface{}
+		if err := cursor.All(context.Background(), &users); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, gin.H{"users": users, "count": len(users)})
+	})
+
+	router.GET("/debug-products", func(c *gin.Context) {
+		productsCollection := mongoDB.Collection("products")
+		cursor, err := productsCollection.Find(context.Background(), map[string]interface{}{})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		defer cursor.Close(context.Background())
+
+		var products []interface{}
+		if err := cursor.All(context.Background(), &products); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, gin.H{"products": products, "count": len(products)})
+	})
+
+	router.GET("/debug-invoices", func(c *gin.Context) {
+		invoicesCollection := mongoDB.Collection("invoices")
+		cursor, err := invoicesCollection.Find(context.Background(), map[string]interface{}{})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		defer cursor.Close(context.Background())
+
+		var invoices []interface{}
+		if err := cursor.All(context.Background(), &invoices); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, gin.H{"invoices": invoices, "count": len(invoices)})
+	})
+
+	//apiRouter.POST("/form-fields", handlers.CreateField(mongoDB))
+	//apiRouter.PUT("/form-fields/:id", handlers.UpdateField(mongoDB))
+	//apiRouter.DELETE("/form-fields/:id", handlers.DeleteField(mongoDB))
 	// 🔹 Khởi chạy server
 	router.Run(":5000")
 }

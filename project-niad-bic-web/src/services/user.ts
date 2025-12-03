@@ -38,3 +38,18 @@ export const getUserOrders = async () => {
   });
   return response.data;
 };
+
+export const getCartData = async () => {
+  const token = sessionStorage.getItem("token");
+  const response = await axios.get(`${API_URL}/my-invoices`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  
+  // Filter for unpaid invoices only (status = "Chưa thanh toán")
+  const allInvoices = Array.isArray(response.data) ? response.data : [];
+  const unpaidInvoices = allInvoices.filter(
+    (invoice: any) => invoice.status === "Chưa thanh toán" || invoice.status === "Pending"
+  );
+  
+  return unpaidInvoices;
+};

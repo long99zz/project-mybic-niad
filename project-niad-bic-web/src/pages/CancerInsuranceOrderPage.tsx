@@ -160,29 +160,19 @@ export default function CancerInsuranceOrderPage() {
   };
 
   const handleNext = async () => {
-    console.log("=== handleNext called ===");
-    console.log("Current step:", currentStep);
-    console.log("Total steps:", totalSteps);
     setShowError(false);
     let currentStepErrors: { [key: string]: string } = {};
 
     try {
       if (currentStep === 1) {
-        console.log("Validating step 1...");
-        console.log("Participant count:", participantCount);
         // Validate step 1
         if (participantCount < 1) {
           currentStepErrors.participantCount =
             "Vui lòng chọn số người tham gia từ 1 trở lên";
         }
       } else if (currentStep === 2) {
-        console.log("Validating step 2...");
-        console.log("Participants:", participants);
-        console.log("Customer info:", customerInfo);
-
         // Validate participant info
         participants.forEach((participant, index) => {
-          console.log(`Validating participant ${index}:`, participant);
 
           // Chỉ validate các trường bắt buộc
           if (!participant.fullName) {
@@ -220,7 +210,6 @@ export default function CancerInsuranceOrderPage() {
         });
 
         // Validate main customer info
-        console.log("Validating customer info...");
         if (!customerInfo.fullName) {
           currentStepErrors.customerName = "Vui lòng nhập họ và tên";
         }
@@ -254,23 +243,18 @@ export default function CancerInsuranceOrderPage() {
         }
       }
 
-      console.log("Validation errors:", currentStepErrors);
       if (Object.keys(currentStepErrors).length > 0) {
-        console.log("Found validation errors, setting errors state");
         setErrors(currentStepErrors);
         setShowError(true);
         return;
       }
 
-      console.log("No validation errors, proceeding to next step");
       setErrors({});
       window.scrollTo(0, 0);
 
       if (currentStep < totalSteps) {
-        console.log("Moving to next step:", currentStep + 1);
         setCurrentStep(currentStep + 1);
       } else if (currentStep === totalSteps) {
-        console.log("Reached final step, calling handleSubmit");
         await handleSubmit();
       }
     } catch (error) {
@@ -280,16 +264,11 @@ export default function CancerInsuranceOrderPage() {
   };
 
   const handlePrevStep = () => {
-    console.log("=== handlePrevStep called ===");
-    console.log("Current step before:", currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       setShowError(false);
       setErrors({});
       window.scrollTo(0, 0);
-      console.log("Moving to previous step:", currentStep - 1);
-    } else {
-      console.log("Already at first step, cannot go back");
     }
   };
 
@@ -322,11 +301,6 @@ export default function CancerInsuranceOrderPage() {
     field: keyof ParticipantInfo,
     value: string | number
   ) => {
-    console.log(
-      `=== handleParticipantChange called for participant ${index} ===`
-    );
-    console.log("Field:", field);
-    console.log("Value:", value);
     const newParticipants = [...participants];
 
     // Format input values
@@ -350,7 +324,6 @@ export default function CancerInsuranceOrderPage() {
       field === "dateOfBirth" ||
       field === "additionalBenefitOption"
     ) {
-      console.log("Recalculating premium for participant", index);
       const participant = newParticipants[index];
       if (
         participant.dateOfBirth &&
@@ -364,19 +337,14 @@ export default function CancerInsuranceOrderPage() {
           participant.gender,
           participant.additionalBenefitOption
         );
-        console.log("New premium calculated:", premium);
         newParticipants[index].premium = premium;
       }
     }
 
-    console.log("Updated participant:", newParticipants[index]);
     setParticipants(newParticipants);
   };
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: any) => {
-    console.log("=== handleCustomerInfoChange called ===");
-    console.log("Field:", field);
-    console.log("Value:", value);
     let formattedValue = value;
 
     // Format input values
@@ -388,13 +356,11 @@ export default function CancerInsuranceOrderPage() {
       formattedValue = value.replace(/\D/g, "").slice(0, 13);
     }
 
-    console.log("Formatted value:", formattedValue);
     setCustomerInfo((prev) => {
       const newInfo = {
         ...prev,
         [field]: formattedValue,
       };
-      console.log("Updated customer info:", newInfo);
       return newInfo;
     });
   };
@@ -404,19 +370,7 @@ export default function CancerInsuranceOrderPage() {
       // Get token from session storage
       const token = sessionStorage.getItem("token");
       
-      // 1. Tạo invoice
-      const invoiceResponse = await axios.post(
-        `${API_URL}/api/insurance_cancer/create_invoice`,
-        {
-          insurance_quantity: participantCount,
-          contract_type: "Mới",
-          product_id: 9,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const invoiceId = invoiceResponse.data.invoice_id;
-
-      // 2. Tạo participant (người tham gia)
+      // 1. Tạo participant (người tham gia)
       let formId = null;
       for (const participant of participants) {
         const payload = {
@@ -438,7 +392,7 @@ export default function CancerInsuranceOrderPage() {
           premium_fee: Number(participant.premium),
         };
         const participantRes = await axios.post(
-          `${API_URL}/api/insurance_cancer/create_insurance_participant_info`,
+          `${API_URL}/insurance_cancer/create_insurance_participant_info`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -446,9 +400,9 @@ export default function CancerInsuranceOrderPage() {
           formId = participantRes.data.form_id;
       }
 
-      // 3. Tạo customer
+      // 2. Tạo customer
       const customerRes = await axios.post(
-        `${API_URL}/api/insurance_cancer/create_customer_registration`,
+        `${API_URL}/insurance_cancer/create_customer_registration`,
         {
           customer_type:
             customerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
@@ -464,19 +418,59 @@ export default function CancerInsuranceOrderPage() {
       );
       const customerId = customerRes.data.customer_id;
 
-      // 4. Xác nhận mua hàng
-      await axios.post(`${API_URL}/api/insurance_cancer/confirm_purchase`, {
-        invoice_id: invoiceId,
-        customer_id: customerId,
-        form_id: formId,
-        product_id: 9,
-      },
-      { headers: { Authorization: `Bearer ${token}` } });
+      // 3. Tạo invoice (CUỐI CÙNG với đầy đủ thông tin)
+      const insuranceStartDate = participants[0]?.insuranceStartDate || new Date().toISOString().slice(0, 10);
+      const insuranceTerm = Number(participants[0]?.insuranceTerm || 1);
+      const insuranceEndDate = new Date(
+        new Date(insuranceStartDate).setFullYear(
+          new Date(insuranceStartDate).getFullYear() + insuranceTerm
+        )
+      ).toISOString().slice(0, 10);
 
-      navigate("/gio-hang.html");
+      const invoiceResponse = await axios.post(
+        `${API_URL}/insurance_cancer/create_invoice`,
+        {
+          product_id: 9,
+          contract_type: "Mới",
+          insurance_amount: Math.round(getTotalPremium()),
+          insurance_start: insuranceStartDate,
+          insurance_end: insuranceEndDate,
+          insurance_quantity: participantCount,
+          customer_id: customerId,
+          form_id: formId,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const invoiceId = invoiceResponse.data.master_invoice_id;
+
+      // NOTE: Không gọi confirm_purchase ở đây!
+      // Invoice sẽ được confirm tự động khi thanh toán thành công qua Stripe webhook
+      // Status ban đầu: "Chưa thanh toán"
+
+      // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: invoiceId,
+        product_name: "Bảo hiểm bệnh ung thư BIC Phúc Tâm An",
+        insurance_amount: getTotalPremium(),
+        customer_name: customerInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: new Date().toISOString(),
+        insurance_end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        participants: participants.map(p => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          date_of_birth: p.dateOfBirth,
+          insurance_package: p.package
+        }))
+      };
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+
+      // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+      navigate(`/dat-hang-thanh-cong?invoice_id=${invoiceId}&amount=${getTotalPremium()}`);
     } catch (error) {
       setShowError(true);
-      console.error("Error submitting form:", error);
       let axiosError: AxiosError | null = null;
       if (error instanceof AxiosError) {
         axiosError = error;
@@ -489,7 +483,6 @@ export default function CancerInsuranceOrderPage() {
       }
       if (axiosError && axiosError.response && axiosError.response.data) {
         alert("Lỗi backend: " + JSON.stringify(axiosError.response.data));
-        console.log("Lỗi backend chi tiết:", axiosError.response.data);
       }
       setErrors({
         submit:

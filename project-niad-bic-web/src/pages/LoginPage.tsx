@@ -4,7 +4,6 @@ import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const LoginPage: React.FC = () => {
@@ -20,10 +19,9 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await login(username, password);
-    if (ok) {
-      // Lấy lại user từ sessionStorage
-      const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+    const user = await login(username, password);
+    if (user) {
+      // Kiểm tra role từ user object trả về
       if (user.role === "admin") {
         navigate("/admin");
       } else {

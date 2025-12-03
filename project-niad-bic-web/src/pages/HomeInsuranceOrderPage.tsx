@@ -6,6 +6,8 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { getProductName } from "../constants/productMapping";
+import { verifyPayment } from "../services/payment";
 
 const HomeInsuranceOrderPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -259,6 +261,14 @@ const HomeInsuranceOrderPage: React.FC = () => {
     try {
       // Chuẩn hóa ngày tháng
       const duration = 12;
+      // Tính ngày kết thúc dựa trên ngày bắt đầu + thời hạn
+      let insuranceEnd = new Date();
+      if (insuredDate) {
+        insuranceEnd = new Date(insuredDate);
+        insuranceEnd.setFullYear(insuranceEnd.getFullYear() + Math.floor(duration / 12));
+        insuranceEnd.setMonth(insuranceEnd.getMonth() + (duration % 12));
+      }
+      
       // Chuẩn bị dữ liệu gửi lên
       const invoice = {
         coverage_scope: scope.join(","),
@@ -272,21 +282,43 @@ const HomeInsuranceOrderPage: React.FC = () => {
         insurance_start: insuredDate
           ? new Date(insuredDate).toISOString()
           : new Date().toISOString(),
+        insurance_end: insuranceEnd.toISOString(),
+        total_amount: totalFee, // Tổng phí thực thu (đã trừ chiết khấu)
         product_id: 17,
         // Có thể bổ sung thêm các trường khác nếu backend yêu cầu
       };
       const token = sessionStorage.getItem("token");
       // Gửi API
       const res = await axios.post(
-        `${API_URL}/api/insurance_home/create_home_invoice`,
+        `${API_URL}/insurance_home/create_home_invoice`,
         invoice,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Xử lý kết quả
-      if (res.data && res.data.invoice_id) {
-        // Hiển thị thông báo thành công, chuyển hướng hoặc lưu vào localStorage nếu cần
-        alert("Đặt mua thành công!");
-        window.location.href = "/gio-hang.html";
+      if (res.data && res.data.master_invoice_id) {
+        const master_invoice_id = res.data.master_invoice_id;
+        
+        // Lưu thông tin đơn hàng vào sessionStorage
+        const orderInfo = {
+          invoice_id: master_invoice_id, // Dùng master_invoice_id
+          product_name: getProductName(17),
+          insurance_amount: totalFee,
+          customer_name: accountInfo.fullName,
+          created_at: new Date().toISOString(),
+          insurance_start: insuredDate,
+          insurance_end: new Date(new Date(insuredDate).setFullYear(
+            new Date(insuredDate).getFullYear() + 1
+          )).toISOString(),
+          status: "Chưa thanh toán",
+          // Thông tin bổ sung
+          house_address: insuredAddress,
+          house_value: houseValue,
+          asset_value: assetValue
+        };
+        sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+        
+        // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+        navigate(`/dat-hang-thanh-cong?invoice_id=${master_invoice_id}&amount=${totalFee}`);
       } else {
         alert("Có lỗi khi đặt mua bảo hiểm!");
       }
@@ -667,41 +699,48 @@ const HomeInsuranceOrderPage: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center gap-8">
-                        <label className="text-lg font-medium min-w-[380px] text-left">
-                          CMND/CCCD <span className="text-red-600">*</span>
-                        </label>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            name="identityCard"
-                            value={accountInfo.identityCard || ""}
-                            onChange={(e) =>
-                              setAccountInfo((prev) => ({
-                                ...prev,
-                                identityCard: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                          />
+                      <>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium min-w-[380px] text-left">
+                            Họ và tên <span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="fullName"
+                              value={accountInfo.fullName || ""}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  fullName: e.target.value,
+                                }))
+                              }
+                              placeholder="Nhập họ và tên"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium min-w-[380px] text-left">
+                            CMND/CCCD <span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="identityCard"
+                              value={accountInfo.identityCard || ""}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  identityCard: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-center gap-8">
-                      <label className="text-lg font-medium min-w-[380px] text-left">
-                        Họ và tên<span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={accountInfo.fullName}
-                          onChange={handleAccountInfoChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-center gap-8">
                       <label className="text-lg font-medium min-w-[380px] text-left">

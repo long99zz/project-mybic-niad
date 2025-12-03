@@ -69,9 +69,6 @@ export default function RegisterPage() {
                 payload.date_of_birth = `${y}-${mm}-${dd}`
             }
 
-            // Debug: log payload to inspect what will be sent
-            console.debug("Register payload:", payload)
-
             // Ensure date_of_birth is present (backend expects non-nullable DATE)
             if (!payload.date_of_birth) {
                 alert("Vui lòng chọn ngày, tháng và năm sinh.")
@@ -80,14 +77,12 @@ export default function RegisterPage() {
 
             const { registerUser } = await import("../services/user")
             const res = await registerUser(payload)
-            console.log("Register response:", res)
             if (res && res.token) {
                 sessionStorage.setItem("token", res.token)
             }
             // Redirect to home or login
             navigate("/")
         } catch (err: any) {
-            console.error("Register error:", err)
             alert(err?.response?.data?.error || err?.message || "Đăng ký thất bại")
         }
     }
@@ -459,7 +454,6 @@ export default function RegisterPage() {
                                         <button
                                             type="button"
                                             className="text-red-600 text-xs mt-1 flex items-center"
-                                            onClick={() => console.log("Change CAPTCHA")}
                                         >
                                             <RefreshCw className="w-3 h-3 mr-1" />
                                             Đổi mã khác

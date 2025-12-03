@@ -4,13 +4,19 @@ const API_URL = "/api/admin/all-invoices"; // đúng route backend
 
 export interface Invoice {
   invoice_id: number;
+  master_invoice_id?: string; // ObjectID hex string for master invoice
   product_name: string;
-  status: string;
+  status?: string;
   created_at: string;
   updated_at: string;
-  insurance_start: string;
-  insurance_end: string;
+  insurance_start?: string | null;
+  insurance_end?: string | null;
+  departure_date?: string | null;
+  return_date?: string | null;
   invoice_type: string;
+  customer_name?: string;
+  insurance_amount?: number | null;
+  home_usage_status?: string | null;
 }
 
 export const getInvoices = async (): Promise<Invoice[]> => {
@@ -21,8 +27,12 @@ export const getInvoices = async (): Promise<Invoice[]> => {
   return res.data;
 };
 
-export const getInvoiceDetail = async (id: number): Promise<Invoice> => {
-  const res = await axios.get(`${API_URL}/${id}`);
+export const getInvoiceDetail = async (master_invoice_id: string): Promise<any> => {
+  const token = sessionStorage.getItem("token");
+  // REQUIRED: Frontend MUST send master_invoice_id, not child invoice_id
+  const res = await axios.get(`/api/invoice-detail/${master_invoice_id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   return res.data;
 };
 
@@ -61,8 +71,6 @@ export const updateInvoiceStatus = async (id: number, status: string, type: stri
   } else {
     url = `/api/admin/invoice/${id}/status`; // fallback
   }
-  
-  console.log('FORCE UPDATE - type:', type, 'id:', id, 'url:', url);
   
   const res = await axios.put(url, { status }, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},

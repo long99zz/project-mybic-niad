@@ -9,49 +9,6 @@ import { useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const insuranceOptions = [
-  {
-    value: 180_000_000,
-    label: "180 triệu đồng",
-    benefit: {
-      soTien: "180.000.000 VNĐ",
-      thuongTatVV: "Theo Bảng tỉ lệ trả tiền thương tật",
-      thuongTatTT:
-        "Nếu STBH <= 20 triệu: Theo Bảng tỉ lệ trả tiền thương tật\nNếu STBH > 20 triệu: Theo chi phí thực tế, không quá vết thương theo Bảng tỉ lệ trả tiền thương tật",
-    },
-  },
-  {
-    value: 75_000_000,
-    label: "75 triệu đồng",
-    benefit: {
-      soTien: "75.000.000 VNĐ",
-      thuongTatVV: "Theo Bảng tỉ lệ trả tiền thương tật",
-      thuongTatTT:
-        "Nếu STBH <= 20 triệu: Theo Bảng tỉ lệ trả tiền thương tật\nNếu STBH > 20 triệu: Theo chi phí thực tế, không quá vết thương theo Bảng tỉ lệ trả tiền thương tật",
-    },
-  },
-  {
-    value: 55_000_000,
-    label: "55 triệu đồng",
-    benefit: {
-      soTien: "55.000.000 VNĐ",
-      thuongTatVV: "Theo Bảng tỉ lệ trả tiền thương tật",
-      thuongTatTT:
-        "Nếu STBH <= 20 triệu: Theo Bảng tỉ lệ trả tiền thương tật\nNếu STBH > 20 triệu: Theo chi phí thực tế, không quá vết thương theo Bảng tỉ lệ trả tiền thương tật",
-    },
-  },
-  {
-    value: 40_000_000,
-    label: "40 triệu đồng",
-    benefit: {
-      soTien: "40.000.000 VNĐ",
-      thuongTatVV: "Theo Bảng tỉ lệ trả tiền thương tật",
-      thuongTatTT:
-        "Nếu STBH <= 20 triệu: Theo Bảng tỉ lệ trả tiền thương tật\nNếu STBH > 20 triệu: Theo chi phí thực tế, không quá vết thương theo Bảng tỉ lệ trả tiền thương tật",
-    },
-  },
-];
-
 const CyberInsuranceOrderPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -150,9 +107,6 @@ const CyberInsuranceOrderPage: React.FC = () => {
     }
   };
 
-  // Hàm chuyển ngày về dạng YYYY-MM-DD
-  const toYMD = (date: Date) => date.toISOString().slice(0, 10);
-
   const handleOrder = async () => {
     try {
       const startDate = insuranceStart ? new Date(insuranceStart) : new Date();
@@ -160,58 +114,67 @@ const CyberInsuranceOrderPage: React.FC = () => {
       endDate.setMonth(endDate.getMonth() + 12); // Default to 12 months
 
       const payload = {
-        product_id: 18,
-        insurance_package: "Bảo hiểm an ninh mạng",
-        insurance_start: toYMD(startDate), // YYYY-MM-DD
-        insurance_end: toYMD(endDate), // YYYY-MM-DD
-        insurance_amount: total, // tổng phí = số người * 184000
-        contract_type: "Mới",
-        status: "Chưa thanh toán",
+        invoice: {
+          ProductID: 18,
+          InsurancePackage: "Bảo hiểm an ninh mạng",
+          InsuranceStart: startDate.toISOString(), // RFC3339 format
+          InsuranceEnd: endDate.toISOString(), // RFC3339 format
+          InsuranceAmount: total, // Tổng phí thực thu
+          InsuranceQuantity: Number(numPeople),
+          ContractType: "Mới",
+          Status: "Chưa thanh toán",
+        },
         participants: participants.map((p) => ({
-          full_name: p.fullName,
-          gender:
+          FullName: p.fullName,
+          Gender:
             p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
-          birth_date: p.dob ? new Date(p.dob).toISOString() : null, // ISO string
-          identity_number: p.idNumber,
+          BirthDate: p.dob ? new Date(p.dob).toISOString() : null, // RFC3339 format
+          IdentityNumber: p.idNumber,
         })),
       };
 
-      console.log("Payload gửi lên:", payload);
-
       const token = sessionStorage.getItem("token");
-      console.log("[DEBUG] Token when submitting:", token);
 
       // Kiểm tra xem có token không
       if (!token) {
-        console.log("[DEBUG] No token found when submitting, redirecting to login");
         alert("Vui lòng đăng nhập để tiếp tục");
         window.location.href = "/dang-nhap";
         return;
       }
 
-      const res = await axios.post(
-        `${API_URL}/api/insurance_accident/create_accident`,
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log("[DEBUG] Response create_accident:", res.data);
-      const invoice_id = res.data.invoice_id;
-      const cartItem = {
-        id: "CYBER",
-        name: "Bảo hiểm an ninh mạng",
-        description: `${numPeople} người, Số tiền BH: 184.000 VNĐ/người`,
-        price: total,
-        image: "/products/bic-cyber-risk.png",
-        buyerName: accountInfo.fullName,
-        buyerPhone: accountInfo.phone,
-        buyerEmail: accountInfo.email,
-        isSelected: true,
+    const res = await axios.post(
+      `${API_URL}/insurance_accident/create_accident`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const invoice_id = res.data.master_invoice_id;      // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: invoice_id,
+        product_name: "Bảo hiểm an ninh mạng",
+        insurance_amount: total,
+        customer_name: accountInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: insuranceStart,
+        insurance_end: new Date(new Date(insuranceStart).setFullYear(
+          new Date(insuranceStart).getFullYear() + 1
+        )).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        insurance_package: "Bảo hiểm mạng xã hội",
+        participants: participants.map(p => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          dob: p.dob,
+          id_number: p.idNumber
+        }))
       };
-      localStorage.setItem("cartItem", JSON.stringify(cartItem));
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+      
+      // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
       setOrderSuccess(true);
       setTimeout(() => {
-  window.location.href = "/cart";
-      }, 1000);
+        window.location.href = `/dat-hang-thanh-cong?master_invoice_id=${invoice_id}&amount=${total}`;
+      }, 500);
     } catch (error) {
       const err = error as any;
       alert(
@@ -229,7 +192,7 @@ const CyberInsuranceOrderPage: React.FC = () => {
           <div className="max-w-5xl mx-auto mb-8">
             {/* Progress Bar */}
             <div className="flex items-center justify-center mb-8">
-              {[1, 2, 3].map((s, idx) => (
+              {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center">
                     <div
@@ -541,41 +504,47 @@ const CyberInsuranceOrderPage: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center gap-8">
-                        <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                          CMND/CCCD <span className="text-red-600">*</span>
-                        </label>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            name="identityCard"
-                            value={accountInfo.identityCard || ""}
-                            onChange={(e) =>
-                              setAccountInfo((prev) => ({
-                                ...prev,
-                                identityCard: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                          />
+                      <>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            CMND/CCCD<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="identityCard"
+                              value={accountInfo.identityCard || ""}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  identityCard: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            Họ và tên<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="fullName"
+                              value={accountInfo.fullName}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  fullName: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-center gap-8">
-                      <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                        Họ và tên<span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={accountInfo.fullName}
-                          onChange={handleAccountInfoChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-center gap-8">
                       <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">

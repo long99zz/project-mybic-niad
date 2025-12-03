@@ -1,15 +1,19 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Participant struct {
-    ParticipantID   uint      `gorm:"primaryKey;autoIncrement" json:"participant_id"`
-    InvoiceID       uint      `gorm:"index;not null" json:"invoice_id"`
-    CmndImg         string    `gorm:"size:255" json:"cmnd_img"`
-    FullName        string    `gorm:"size:255;not null" json:"full_name"`
-    Gender          string    `gorm:"type:enum('Nam','Nữ','Khác');not null" json:"gender"`
-    BirthDate       time.Time `gorm:"type:date;not null" json:"birth_date"`
-    IdentityNumber  string    `gorm:"size:50;not null" json:"identity_number"`
-    CreatedAt       time.Time `gorm:"autoCreateTime" json:"created_at"`
-    UpdatedAt       time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID             primitive.ObjectID  `bson:"_id,omitempty" json:"ParticipantID"`
+	InvoiceID      *primitive.ObjectID `bson:"invoice_id,omitempty" json:"InvoiceID"`
+	CmndImg        string              `bson:"cmnd_img" json:"CmndImg"`
+	FullName       string              `bson:"full_name" json:"FullName"`
+	Gender         string              `bson:"gender" json:"Gender"`
+	BirthDate      time.Time           `bson:"birth_date" json:"BirthDate"`
+	IdentityNumber string              `bson:"identity_number" json:"IdentityNumber"`
+	CreatedAt      time.Time           `bson:"created_at" json:"CreatedAt"`
+	UpdatedAt      time.Time           `bson:"updated_at" json:"UpdatedAt"`
 }

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getInvoices,
   deleteInvoice,
   updateInvoiceStatus,
   Invoice,
 } from "@/services/invoice";
+import axios from "axios";
 
 const InvoiceAdmin: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -26,33 +29,92 @@ const InvoiceAdmin: React.FC = () => {
     fetchInvoices();
   }, []);
 
-
-  const handleDelete = async (id: number, type: string) => {
-    if (confirm("Bạn có chắc muốn xóa đơn hàng này?")) {
-      if (type === "Chung") {
-        await deleteInvoice(id);
-      } else if (type === "Du lịch") {
-        await deleteInvoice(id, "Du lịch");
-      } else if (type === "Nhà") {
-        await deleteInvoice(id, "Nhà");
+  const handleViewDetail = (invoice: Invoice) => {
+    // Sử dụng master_invoice_id để xem chi tiết
+    if (invoice.master_invoice_id) {
+      // Handle both string and ObjectID format
+      const idStr = typeof invoice.master_invoice_id === 'object' 
+        ? (invoice.master_invoice_id as any).$oid 
+        : invoice.master_invoice_id;
+      
+      if (idStr) {
+        navigate(`/admin/orders/${idStr}`);
+      } else {
+        alert("Không thể lấy master invoice ID");
       }
-      fetchInvoices();
+    } else {
+      alert("Không có master invoice ID");
     }
   };
 
-  const handleStatusChange = async (id: number, currentStatus: string, type: string) => {
+  const handleDelete = async (invoiceId: any, type: string) => {
+    if (!confirm("Bạn có chắc muốn xóa đơn hàng này?")) return;
+    
+    try {
+      const token = sessionStorage.getItem("token");
+      let url = "";
+      
+      // Convert invoiceId to string if it's an ObjectID
+      const idStr = typeof invoiceId === 'object' && invoiceId.$oid 
+        ? invoiceId.$oid 
+        : String(invoiceId);
+      
+      if (type === "Chung") {
+        url = `/api/admin/invoice/${idStr}`;
+      } else if (type === "Du lịch") {
+        url = `/api/admin/travel-invoice/${idStr}`;
+      } else if (type === "Nhà") {
+        url = `/api/admin/home-invoice/${idStr}`;
+      } else if (type === "Tai nạn") {
+        url = `/api/admin/accident-invoice/${idStr}`;
+      }
+      
+      await axios.delete(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      
+      alert("Xóa đơn hàng thành công!");
+      fetchInvoices();
+    } catch (error: any) {
+      console.error("Lỗi xóa đơn hàng:", error);
+      alert(error.response?.data?.error || "Không thể xóa đơn hàng");
+    }
+  };
+
+  const handleStatusChange = async (invoiceId: any, currentStatus: string, type: string) => {
     let nextStatus = "Chưa thanh toán";
     if (currentStatus === "Chưa thanh toán") nextStatus = "Đã thanh toán";
     else if (currentStatus === "Đã thanh toán") nextStatus = "Chưa thanh toán";
 
-    if (type === "Chung") {
-      await updateInvoiceStatus(id, nextStatus);
-    } else if (type === "Du lịch") {
-      await updateInvoiceStatus(id, nextStatus, "Du lịch");
-    } else if (type === "Nhà") {
-      await updateInvoiceStatus(id, nextStatus, "Nhà");
+    try {
+      const token = sessionStorage.getItem("token");
+      let url = "";
+      
+      // Convert invoiceId to string if it's an ObjectID
+      const idStr = typeof invoiceId === 'object' && invoiceId.$oid 
+        ? invoiceId.$oid 
+        : String(invoiceId);
+      
+      if (type === "Chung") {
+        url = `/api/admin/invoice/${idStr}/status`;
+      } else if (type === "Du lịch") {
+        url = `/api/admin/travel-invoice/${idStr}/status`;
+      } else if (type === "Nhà") {
+        url = `/api/admin/home-invoice/${idStr}/status`;
+      } else if (type === "Tai nạn") {
+        url = `/api/admin/accident-invoice/${idStr}/status`;
+      }
+      
+      await axios.put(url, { status: nextStatus }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      
+      alert("Cập nhật trạng thái thành công!");
+      fetchInvoices();
+    } catch (error: any) {
+      console.error("Lỗi cập nhật trạng thái:", error);
+      alert(error.response?.data?.error || "Không thể cập nhật trạng thái");
     }
-    fetchInvoices();
   };
 
   if (loading) return <p>Đang tải...</p>;
@@ -73,7 +135,6 @@ const InvoiceAdmin: React.FC = () => {
         </thead>
         <tbody>
           {invoices.map((invoice) => {
-            console.log('invoice_type:', invoice.invoice_type, 'id:', invoice.invoice_id);
             return (
               <tr key={invoice.invoice_type + '-' + invoice.invoice_id}>
                 <td className="p-2 border">{invoice.invoice_id}</td>
@@ -95,16 +156,25 @@ const InvoiceAdmin: React.FC = () => {
                 </td>
                 <td className="flex gap-2 p-2 border">
                   <button
+                    onClick={() => handleViewDetail(invoice)}
+                    className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
+                    title="Xem chi tiết đơn hàng"
+                  >
+                    Chi tiết
+                  </button>
+                  <button
                     onClick={() =>
-                      handleStatusChange(invoice.invoice_id, invoice.status, invoice.invoice_type)
+                      handleStatusChange(invoice.invoice_id, invoice.status || "Chưa thanh toán", invoice.invoice_type)
                     }
-                    className="px-3 py-1 text-white bg-blue-500 rounded"
+                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                    title="Chuyển đổi trạng thái thanh toán"
                   >
                     Đổi trạng thái
                   </button>
                   <button
                     onClick={() => handleDelete(invoice.invoice_id, invoice.invoice_type)}
-                    className="px-3 py-1 text-white bg-red-500 rounded"
+                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
+                    title="Xóa đơn hàng này"
                   >
                     Xóa
                   </button>

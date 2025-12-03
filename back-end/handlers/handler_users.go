@@ -1,27 +1,16 @@
 package handlers
 
-import (
-	"backend/models"
-	"net/http"
-	"os"
-	"time"
+// DEPRECATED: This file contains old GORM-based authentication functions.
+// Please use handler_users_mongodb.go instead for MongoDB integration.
+//
+// Deprecated functions:
+// - RegisterUser() → RegisterUserMongo()
+// - LoginUser() → LoginUserMongo()
+// - ChangePassword() → ChangePasswordMongo()
+// - GetUserInfo() → GetUserInfoMongo()
+// - GenerateToken() - Now accepts primitive.ObjectID instead of uint
 
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
-)
-
-// ChangePassword godoc
-// @Summary Đổi mật khẩu
-// @Tags User
-// @Accept json
-// @Produce json
-// @Param body body struct{OldPassword string `json:"oldPassword"`; NewPassword string `json:"newPassword"`} true "Mật khẩu cũ và mới"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 401 {object} map[string]interface{}
-// @Router /api/user/change-password [post]
+/*
 func ChangePassword(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
@@ -83,7 +72,7 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-	// Kiểm tra email đã tồn tại chưa
+		// Kiểm tra email đã tồn tại chưa
 		var existingUser models.User
 		if err := db.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 			c.JSON(http.StatusConflict, gin.H{"error": "Email đã được sử dụng!"})
@@ -94,7 +83,7 @@ func RegisterUser(db *gorm.DB) gin.HandlerFunc {
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		user.Password = string(hashedPassword)
 
-	// (date_of_birth được bind trực tiếp từ request body theo model)
+		// (date_of_birth được bind trực tiếp từ request body theo model)
 
 		// Kiểm tra quyền hợp lệ
 		if user.Role != "Admin" && user.Role != "Customer" {
@@ -181,3 +170,5 @@ func GetUserInfo(db *gorm.DB) gin.HandlerFunc {
 		})
 	}
 }
+
+*/

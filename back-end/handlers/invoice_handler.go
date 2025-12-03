@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"database/sql"
+	"backend/models"
 	"fmt"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -24,62 +25,100 @@ func GetMyInvoices(db *gorm.DB) gin.HandlerFunc {
 		}
 		uid := userID.(uint)
 		fmt.Printf("[DEBUG] uid: %v\n", uid)
-		// Sử dụng service nếu có, hoặc truy vấn trực tiếp
-		// Trả về cả các trường ngày bảo hiểm cho từng loại hóa đơn
-		var invoices = make([]map[string]interface{}, 0)
-		rows, err := db.Table("invoices").
-			Select("invoices.invoice_id, invoices.product_id, products.name as product_name, invoices.status, invoices.created_at, invoices.insurance_start, invoices.insurance_end").
-			Joins("left join products on invoices.product_id = products.product_id").
-			Where("invoices.user_id = ?", uid).
-			Rows()
-		if err != nil {
-			// Nếu lỗi truy vấn, trả về mảng rỗng thay vì null
-			c.JSON(200, invoices)
-			return
+
+		type MyInvoiceView struct {
+			InvoiceID       uint     `json:"invoice_id"`
+			InvoiceType     string   `json:"invoice_type"`
+			ProductID       *uint    `json:"product_id"`
+			ProductName     *string  `json:"product_name"`
+			Status          string   `json:"status"`
+			CreatedAt       string   `json:"created_at"`
+			InsuranceStart  *string  `json:"insurance_start,omitempty"`
+			InsuranceEnd    *string  `json:"insurance_end,omitempty"`
+			InsuranceAmount *float64 `json:"insurance_amount,omitempty"`
+			DepartureDate   *string  `json:"departure_date,omitempty"`
+			ReturnDate      *string  `json:"return_date,omitempty"`
+			UpdatedAt       string   `json:"updated_at"`
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var invoiceID uint
-			var productID sql.NullInt64
-			var productName sql.NullString
-			var status string
-			var createdAt, insuranceStart, insuranceEnd interface{}
-			errScan := rows.Scan(&invoiceID, &productID, &productName, &status, &createdAt, &insuranceStart, &insuranceEnd)
-			if errScan != nil {
-				continue
-			}
-			// Tìm thêm ngày du lịch nếu có
-			var departureDate, returnDate interface{}
-			db.Table("travel_insurance_invoices").
-				Select("departure_date, return_date").
-				Where("invoice_id = ?", invoiceID).
-				Row().Scan(&departureDate, &returnDate)
-			invoices = append(invoices, map[string]interface{}{
-				"invoice_id": invoiceID,
-				"product_id": func() interface{} {
-					if productID.Valid {
-						return productID.Int64
-					} else {
-						return nil
-					}
-				}(),
-				"product_name": func() interface{} {
-					if productName.Valid {
-						return productName.String
-					} else {
-						return nil
-					}
-				}(),
-				"status":          status,
-				"created_at":      createdAt,
-				"insurance_start": insuranceStart,
-				"insurance_end":   insuranceEnd,
-				"departure_date":  departureDate,
-				"return_date":     returnDate,
-			})
-		}
-		fmt.Printf("[DEBUG] invoices: %#v\n", invoices)
-		c.JSON(200, invoices)
+
+		var result []MyInvoiceView
+
+		// 1. Lấy hóa đơn chung (invoices)
+		var commonInvoices []MyInvoiceView
+		db.Raw(`
+			SELECT 
+				i.invoice_id,
+				'Chung' AS invoice_type,
+				i.product_id,
+				p.name AS product_name,
+				i.status,
+				DATE_FORMAT(i.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+				DATE_FORMAT(i.insurance_start, '%Y-%m-%d') AS insurance_start,
+				DATE_FORMAT(i.insurance_end, '%Y-%m-%d') AS insurance_end,
+				i.insurance_amount,
+				NULL as departure_date,
+				NULL as return_date,
+				DATE_FORMAT(i.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+			FROM invoices i
+			LEFT JOIN products p ON i.product_id = p.product_id
+			WHERE i.user_id = ?
+			ORDER BY i.created_at DESC
+		`, uid).Scan(&commonInvoices)
+		result = append(result, commonInvoices...)
+
+		// 2. Lấy hóa đơn du lịch (travel_insurance_invoices)
+		var travelInvoices []MyInvoiceView
+		db.Raw(`
+			SELECT 
+				t.invoice_id,
+				'Du lịch' AS invoice_type,
+				t.product_id,
+				p.name AS product_name,
+				t.status,
+				DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+				DATE_FORMAT(t.departure_date, '%Y-%m-%d') AS insurance_start,
+				DATE_FORMAT(t.return_date, '%Y-%m-%d') AS insurance_end,
+				t.total_amount AS insurance_amount,
+				DATE_FORMAT(t.departure_date, '%Y-%m-%d') AS departure_date,
+				DATE_FORMAT(t.return_date, '%Y-%m-%d') AS return_date,
+				DATE_FORMAT(t.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+			FROM travel_insurance_invoices t
+			LEFT JOIN products p ON t.product_id = p.product_id
+			WHERE t.user_id = ?
+			ORDER BY t.created_at DESC
+		`, uid).Scan(&travelInvoices)
+		result = append(result, travelInvoices...)
+
+		// 3. Lấy hóa đơn nhà (home_insurance_invoices)
+		var homeInvoices []MyInvoiceView
+		db.Raw(`
+			SELECT 
+				h.invoice_id,
+				'Nhà' AS invoice_type,
+				h.product_id,
+				p.name AS product_name,
+				h.status,
+				DATE_FORMAT(h.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+				DATE_FORMAT(h.insurance_start, '%Y-%m-%d') AS insurance_start,
+				DATE_FORMAT(h.insurance_end, '%Y-%m-%d') AS insurance_end,
+				COALESCE(h.total_amount, (h.home_insurance_amount + h.asset_insurance_amount)) AS insurance_amount,
+				NULL as departure_date,
+				NULL as return_date,
+				DATE_FORMAT(h.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+			FROM home_insurance_invoices h
+			LEFT JOIN products p ON h.product_id = p.product_id
+			WHERE h.user_id = ?
+			ORDER BY h.created_at DESC
+		`, uid).Scan(&homeInvoices)
+		result = append(result, homeInvoices...)
+
+		// Sắp xếp tất cả hóa đơn theo created_at giảm dần (mới nhất trước)
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].CreatedAt > result[j].CreatedAt
+		})
+
+		fmt.Printf("[DEBUG] Total invoices: %d\n", len(result))
+		c.JSON(200, result)
 	}
 }
 
@@ -94,30 +133,102 @@ func GetMyInvoices(db *gorm.DB) gin.HandlerFunc {
 func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		invoiceID := c.Param("id")
-		// Log invoiceID nhận được
 		println("[DEBUG] Nhận được invoiceID:", invoiceID)
-		var invoice struct {
-			InvoiceID      uint   `json:"invoice_id"`
-			ProductID      uint   `json:"product_id"`
-			ProductName    string `json:"product_name"`
-			Status         string `json:"status"`
-			CreatedAt      string `json:"created_at"`
-			InsuranceStart string `json:"insurance_start"`
-			InsuranceEnd   string `json:"insurance_end"`
-			CustomerID     *uint  `json:"customer_id"`
+
+		// 1. Kiểm tra xem có phải master_invoice_id không
+		var masterInvoice models.InvoiceMaster
+		err := db.Where("_id = ?", invoiceID).First(&masterInvoice).Error
+
+		var invoiceType string
+		var actualInvoiceID string
+
+		if err == nil {
+			// Đây là master_invoice_id
+			invoiceType = masterInvoice.InvoiceType
+			actualInvoiceID = masterInvoice.ID.Hex()
+			println("[DEBUG] Tìm thấy master invoice, type:", invoiceType)
+		} else {
+			// Không tìm thấy trong master, thử tìm trong các bảng con
+			println("[DEBUG] Không tìm thấy master invoice, tìm trong bảng con")
+			actualInvoiceID = ""
 		}
-		err := db.Table("invoices").
-			Select("invoices.invoice_id, invoices.product_id, products.name as product_name, invoices.status, invoices.created_at, invoices.insurance_start, invoices.insurance_end, invoices.customer_id").
-			Joins("left join products on invoices.product_id = products.product_id").
-			Where("invoices.invoice_id = ?", invoiceID).
-			Scan(&invoice).Error
-		// Log kết quả truy vấn
-		println("[DEBUG] Kết quả truy vấn invoice.InvoiceID:", invoice.InvoiceID)
-		if err != nil || invoice.InvoiceID == 0 {
-			println("[DEBUG] Không tìm thấy hóa đơn hoặc lỗi truy vấn!")
+
+		var invoice struct {
+			InvoiceID       uint     `json:"invoice_id"`
+			InvoiceType     string   `json:"invoice_type"`
+			ProductID       *uint    `json:"product_id"`
+			ProductName     string   `json:"product_name"`
+			Status          string   `json:"status"`
+			CreatedAt       string   `json:"created_at"`
+			InsuranceStart  *string  `json:"insurance_start,omitempty"`
+			InsuranceEnd    *string  `json:"insurance_end,omitempty"`
+			CustomerID      *uint    `json:"customer_id"`
+			InsuranceAmount *float64 `json:"insurance_amount"`
+		}
+
+		var found bool
+
+		// 2. Query dựa trên invoice_type từ master
+		if invoiceType == "Chung" || actualInvoiceID == "" {
+			err := db.Table("invoices i").
+				Select("i.invoice_id, 'Chung' as invoice_type, i.product_id, p.name as product_name, i.status, DATE_FORMAT(i.created_at, '%Y-%m-%d %H:%i:%s') as created_at, DATE_FORMAT(i.insurance_start, '%Y-%m-%d') as insurance_start, DATE_FORMAT(i.insurance_end, '%Y-%m-%d') as insurance_end, i.customer_id, i.insurance_amount").
+				Joins("LEFT JOIN products p ON i.product_id = p.product_id").
+				Where("i.invoice_id = ? OR i.master_invoice_id = ?", invoiceID, actualInvoiceID).
+				Scan(&invoice).Error
+
+			if err == nil && invoice.InvoiceID > 0 {
+				found = true
+				println("[DEBUG] Tìm thấy trong invoices")
+			}
+		}
+
+		// 3. Nếu không tìm thấy hoặc type là Du lịch, thử travel_insurance_invoices
+		if !found && (invoiceType == "Du lịch" || actualInvoiceID == "") {
+			err = db.Table("travel_insurance_invoices t").
+				Select("t.invoice_id, 'Du lịch' as invoice_type, t.product_id, p.name as product_name, t.status, DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') as created_at, DATE_FORMAT(t.departure_date, '%Y-%m-%d') as insurance_start, DATE_FORMAT(t.return_date, '%Y-%m-%d') as insurance_end, t.customer_id, t.total_amount as insurance_amount").
+				Joins("LEFT JOIN products p ON t.product_id = p.product_id").
+				Where("t.invoice_id = ? OR t.master_invoice_id = ?", invoiceID, actualInvoiceID).
+				Scan(&invoice).Error
+
+			if err == nil && invoice.InvoiceID > 0 {
+				found = true
+				println("[DEBUG] Tìm thấy trong travel_insurance_invoices")
+			}
+		}
+
+		// 4. Nếu vẫn không tìm thấy hoặc type là Nhà, thử home_insurance_invoices
+		if !found && (invoiceType == "Nhà" || actualInvoiceID == "") {
+			err = db.Table("home_insurance_invoices h").
+				Select("h.invoice_id, 'Nhà' as invoice_type, h.product_id, p.name as product_name, 'Chưa thanh toán' as status, DATE_FORMAT(h.created_at, '%Y-%m-%d %H:%i:%s') as created_at, DATE_FORMAT(h.insurance_start, '%Y-%m-%d') as insurance_start, DATE_FORMAT(h.insurance_end, '%Y-%m-%d') as insurance_end, h.customer_id, COALESCE(h.total_amount, (h.home_insurance_amount + h.asset_insurance_amount)) as insurance_amount").
+				Joins("LEFT JOIN products p ON h.product_id = p.product_id").
+				Where("h.invoice_id = ? OR h.master_invoice_id = ?", invoiceID, actualInvoiceID).
+				Scan(&invoice).Error
+
+			if err == nil && invoice.InvoiceID > 0 {
+				found = true
+				println("[DEBUG] Tìm thấy trong home_insurance_invoices")
+			}
+		}
+
+		if !found {
+			println("[DEBUG] Không tìm thấy hóa đơn trong tất cả các bảng!")
 			c.JSON(404, gin.H{"error": "Không tìm thấy hóa đơn!"})
 			return
 		}
+
+		println("[DEBUG] InvoiceID:", invoice.InvoiceID)
+		println("[DEBUG] ProductID:", invoice.ProductID)
+		println("[DEBUG] ProductName:", invoice.ProductName)
+		println("[DEBUG] Status:", invoice.Status)
+
+		// Sử dụng insurance_amount từ query (đã được xử lý ở trên)
+		var finalAmount interface{}
+		if invoice.InsuranceAmount != nil && *invoice.InsuranceAmount > 0 {
+			finalAmount = *invoice.InsuranceAmount
+		} else {
+			finalAmount = nil
+		}
+
 		// Lấy thông tin khách hàng
 		var customer struct {
 			CustomerID  uint   `json:"customer_id"`
@@ -140,9 +251,18 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 			IdentityNumber string `json:"identity_number"`
 		}
 		var participants []ParticipantResp
-		rows, err := db.Table("participants").
+
+		// Chọn bảng phù hợp dựa trên loại hóa đơn
+		var tableName string
+		if invoice.InvoiceType == "Du lịch" {
+			tableName = "travel_participants"
+		} else {
+			tableName = "participants"
+		}
+
+		rows, err := db.Table(tableName).
 			Select("participant_id, full_name, birth_date, gender, identity_number").
-			Where("invoice_id = ?", invoiceID).
+			Where("invoice_id = ?", invoice.InvoiceID).
 			Rows()
 		if err == nil {
 			defer rows.Close()
@@ -184,14 +304,15 @@ func GetInvoiceDetailUser(db *gorm.DB) gin.HandlerFunc {
 			}
 		}
 		response := gin.H{
-			"invoice_id":      invoice.InvoiceID,
-			"product_name":    invoice.ProductName,
-			"status":          invoice.Status,
-			"created_at":      invoice.CreatedAt,
-			"insurance_start": invoice.InsuranceStart,
-			"insurance_end":   invoice.InsuranceEnd,
-			"customer":        customer,
-			"participants":    participants,
+			"invoice_id":       invoice.InvoiceID,
+			"product_name":     invoice.ProductName,
+			"status":           invoice.Status,
+			"created_at":       invoice.CreatedAt,
+			"insurance_start":  invoice.InsuranceStart,
+			"insurance_end":    invoice.InsuranceEnd,
+			"insurance_amount": finalAmount,
+			"customer":         customer,
+			"participants":     participants,
 		}
 		// Log response trả về
 		println("[DEBUG] Response trả về:")

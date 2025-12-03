@@ -3,25 +3,28 @@ package models
 import (
 	"fmt"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Invoice struct { // hóa đơn
-	InvoiceID            uint      `gorm:"primaryKey;autoIncrement;column:invoice_id"`
-	CustomerID           *uint     `gorm:"index" json:"customer_id"` // Cho phép NULL
-	ProductID            uint      `gorm:"not null;index" json:"product_id"`
-	UserID               *uint     `gorm:"index" json:"user_id"` // Cho phép NULL nếu không đăng nhập
-	FormID               *uint     `gorm:"index" json:"form_id"` // Có thể NULL
-	InsurancePackage     string    `gorm:"size:255" json:"insurance_package"`
-	InsuranceStart       time.Time `gorm:"type:date;not null"`       // Không bind trực tiếp JSON
-	InsuranceStartString string    `json:"insurance_start" gorm:"-"` // Trường tạm để nhận chuỗi ngày
-	InsuranceEnd         time.Time `gorm:"type:date;not null"`       // Không bind trực tiếp JSON
-	InsuranceEndString   string    `json:"insurance_end" gorm:"-"`   // Trường tạm để nhận chuỗi ngày
-	InsuranceAmount      float64   `gorm:"type:decimal(15,2);not null" json:"insurance_amount"`
-	InsuranceQuantity    uint      `gorm:"default:1" json:"insurance_quantity"`
-	ContractType         string    `gorm:"type:enum('Mới','Tái tục');default:'Mới'" json:"contract_type"`
-	Status               string    `gorm:"type:enum('Đã thanh toán','Chưa thanh toán','Đã hủy');default:'Chưa thanh toán'" json:"status"`
-	CreatedAt            time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt            time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                   primitive.ObjectID  `bson:"_id,omitempty" json:"InvoiceID"`
+	MasterInvoiceID      *primitive.ObjectID `bson:"master_invoice_id,omitempty" json:"master_invoice_id"` // FK → invoices_master
+	CustomerID           *primitive.ObjectID `bson:"customer_id,omitempty" json:"CustomerID"`              // Cho phép NULL
+	ProductID            primitive.ObjectID  `bson:"product_id" json:"ProductID"`
+	UserID               *primitive.ObjectID `bson:"user_id,omitempty" json:"UserID"` // Cho phép NULL nếu không đăng nhập
+	FormID               *primitive.ObjectID `bson:"form_id,omitempty" json:"FormID"` // Có thể NULL
+	InsurancePackage     string              `bson:"insurance_package" json:"InsurancePackage"`
+	InsuranceStart       time.Time           `bson:"insurance_start" json:"-"` // Không bind trực tiếp từ JSON
+	InsuranceStartString string              `bson:"-" json:"InsuranceStart"`  // Trường tạm để nhận chuỗi ngày từ frontend
+	InsuranceEnd         time.Time           `bson:"insurance_end" json:"-"`   // Không bind trực tiếp từ JSON
+	InsuranceEndString   string              `bson:"-" json:"InsuranceEnd"`    // Trường tạm để nhận chuỗi ngày từ frontend
+	InsuranceAmount      float64             `bson:"insurance_amount" json:"InsuranceAmount"`
+	InsuranceQuantity    uint                `bson:"insurance_quantity" json:"InsuranceQuantity"`
+	ContractType         string              `bson:"contract_type" json:"ContractType"`
+	Status               string              `bson:"status" json:"Status"`
+	CreatedAt            time.Time           `bson:"created_at" json:"CreatedAt"`
+	UpdatedAt            time.Time           `bson:"updated_at" json:"UpdatedAt"`
 }
 
 func (i *Invoice) Validate() error {

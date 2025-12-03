@@ -168,19 +168,10 @@ export default function CarCivilLiabilityOrderPage() {
 
   // Xử lý chuyển bước
   const handleNextStep = async () => {
-    console.log("Current step:", currentStep);
-    console.log("Total steps:", totalSteps);
-    console.log("handleNextStep called"); // Log start of function
-
     let currentStepErrors: { [key: string]: string } = {};
 
     if (currentStep === 1) {
       // Validate step 1
-      console.log("Validating step 1..."); // Log validation start
-      console.log("insuranceType:", insuranceType);
-      console.log("licensePlateNumber:", licensePlateNumber);
-      console.log("vehicleCount:", vehicleCount);
-
       if (!insuranceType) {
         currentStepErrors.insuranceType =
           "Vui lòng chọn đối tượng được bảo hiểm";
@@ -196,7 +187,6 @@ export default function CarCivilLiabilityOrderPage() {
       }
     } else if (currentStep === 2) {
       // Validate step 2
-      console.log("Validating step 2...");
       if (!vehicleInfo.ownerType) {
         currentStepErrors.ownerType = "Vui lòng chọn người mua bảo hiểm";
       }
@@ -237,7 +227,6 @@ export default function CarCivilLiabilityOrderPage() {
       }
     } else if (currentStep === 3) {
       // Validate step 3
-      console.log("Validating step 3...");
       if (!customerInfo.fullName) {
         currentStepErrors.fullName = "Vui lòng nhập họ và tên";
       }
@@ -257,11 +246,9 @@ export default function CarCivilLiabilityOrderPage() {
     }
 
     if (Object.keys(currentStepErrors).length > 0) {
-      console.log("Validation errors found:", currentStepErrors);
       setErrors(currentStepErrors);
       setShowError(true);
     } else {
-      console.log(`Step ${currentStep} validation passed.`);
       setShowError(false);
       setErrors({});
       window.scrollTo(0, 0);
@@ -295,17 +282,14 @@ export default function CarCivilLiabilityOrderPage() {
             participant_count: vehicleInfo.seats,
           };
 
-          console.log("CarInsuranceForm payload:", carInsuranceFormPayload);
-
           const token = sessionStorage.getItem("token");
           // Make the API call to create the CarInsuranceForm
           const carFormResponse = await axios.post(
-            `${API_URL}/api/insurance_car_owner/create_car_insurance_form`,
+            `${API_URL}/insurance_car_owner/create_car_insurance_form`,
             carInsuranceFormPayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          console.log("CarInsuranceForm response:", carFormResponse.data);
           const formId = carFormResponse.data.form_id;
 
           // 2. Create CustomerRegistration
@@ -321,25 +305,19 @@ export default function CarCivilLiabilityOrderPage() {
             notes: "",
           };
 
-          console.log(
-            "CustomerRegistration payload:",
-            customerRegistrationPayload
-          );
-
           const customerResponse = await axios.post(
-            `${API_URL}/api/insurance_car_owner/create_customer_registration`,
+            `${API_URL}/insurance_car_owner/create_customer_registration`,
             customerRegistrationPayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          console.log("CustomerRegistration response:", customerResponse.data);
           const customerId = customerResponse.data.customer_id;
 
           // 3. Create Invoice
           const invoicePayload = {
-            product_id: 6,
+            product_id: 6, // Bảo hiểm TNDS xe ô tô
             contract_type: insuranceType === "new" ? "Mới" : "Tái tục",
-            insurance_amount: parseFloat(totalFeeDisplay.toFixed(2)),
+            insurance_amount: Math.round(totalFeeDisplay),
             insurance_start: vehicleInfo.insuranceStartDate,
             insurance_end: new Date(
               new Date(vehicleInfo.insuranceStartDate).setFullYear(
@@ -352,40 +330,42 @@ export default function CarCivilLiabilityOrderPage() {
             form_id: formId,
           };
 
-          console.log("Invoice payload:", invoicePayload);
-
           const invoiceResponse = await axios.post(
-            `${API_URL}/api/insurance_car_owner/create_invoice`,
+            `${API_URL}/insurance_car_owner/create_invoice`,
             invoicePayload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          console.log("Invoice response:", invoiceResponse.data);
-          const invoiceId = invoiceResponse.data.invoice_id;
+          const invoiceId = invoiceResponse.data.invoice_id; // Child invoice ID
+          const masterInvoiceId = invoiceResponse.data.master_invoice_id; // Master invoice ID for payment
 
-          // 4. Confirm Purchase
-          const confirmPurchasePayload = {
-            invoice_id: invoiceId,
-            customer_id: customerId,
-            form_id: formId,
+          // NOTE: Không gọi confirm_purchase ở đây!
+          // Invoice sẽ được confirm tự động khi thanh toán thành công qua Stripe webhook
+          // Status ban đầu: "Chưa thanh toán"
+
+          // Lưu thông tin đơn hàng vào sessionStorage (use master_invoice_id)
+          const orderInfo = {
+            invoice_id: masterInvoiceId, // Use master_invoice_id for payment
+            product_name: "Bảo hiểm TNDS xe ô tô",
+            insurance_amount: Math.round(totalFeeDisplay),
+            customer_name: customerInfo.fullName,
+            created_at: new Date().toISOString(),
+            insurance_start: vehicleInfo.insuranceStartDate,
+            insurance_end: new Date(new Date(vehicleInfo.insuranceStartDate).setFullYear(
+              new Date(vehicleInfo.insuranceStartDate).getFullYear() + vehicleInfo.insuranceTerm
+            )).toISOString(),
+            status: "Chưa thanh toán",
+            // Thông tin bổ sung
+            owner_name: vehicleInfo.ownerName,
+            license_plate: vehicleInfo.plateNumberPrefix + vehicleInfo.plateNumberSuffix,
+            chassis_number: vehicleInfo.chassisNumber,
+            insurance_term: vehicleInfo.insuranceTerm
           };
+          sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
 
-          console.log("ConfirmPurchase payload:", confirmPurchasePayload);
-
-          const confirmResponse = await axios.post(
-            `${API_URL}/api/insurance_car_owner/confirm_purchase`,
-            confirmPurchasePayload,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          console.log("ConfirmPurchase response:", confirmResponse.data);
-          navigate("/cart");
+          // Chuyển hướng đến trang đặt hàng thành công (use master_invoice_id for payment)
+          navigate(`/dat-hang-thanh-cong?invoice_id=${masterInvoiceId}&amount=${Math.round(totalFeeDisplay)}`);
         } catch (error) {
-          console.error("Error creating order:", error);
-          const err = error as any;
-          if (err.response) {
-            console.error("Error response:", err.response.data);
-          }
           alert("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.");
         }
       }

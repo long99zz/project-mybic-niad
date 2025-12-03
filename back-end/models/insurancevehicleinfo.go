@@ -1,29 +1,27 @@
 package models
 
 import (
-    "time"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type InsuranceVehicleInfo struct { // Thông tin bảo hiểm vật chất xe ô tô
-    FormInsuranceID             uint      `gorm:"primaryKey;autoIncrement" json:"form_insurance_id"`
-    Purpose                     string    `gorm:"size:255" json:"purpose"`
-    VehicleType                 string    `gorm:"size:100" json:"vehicle_type"`
-    Brand                       string    `gorm:"size:100" json:"brand"`
-    Model                       string    `gorm:"size:100" json:"model"`
-    ManufactureYear             *int      `json:"manufacture_year"` // Có thể NULL
-    SeatCount                   *int      `json:"seat_count"`      // Có thể NULL
-    VehicleValue                *float64  `gorm:"type:decimal(15,2)" json:"vehicle_value"`
-    InsuranceAmount             *float64  `gorm:"type:decimal(15,2)" json:"insurance_amount"`
-    RegistrationDate            *time.Time `gorm:"type:date" json:"registration_date"`
-    Deductible                  *float64  `gorm:"type:decimal(15,2)" json:"deductible"`
-    CoverageArea                string    `gorm:"size:255" json:"coverage_area"`
-    ParticipantCount            *int      `json:"participant_count"` // Có thể NULL
-    ParticipantInsuranceAmount  *float64  `gorm:"type:decimal(15,2)" json:"participant_insurance_amount"`
-    FormID                      *uint     `gorm:"index" json:"form_id"`  // Cho phép NULL
-    CreatedAt                   time.Time `gorm:"autoCreateTime" json:"created_at"`
-    UpdatedAt                   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-}
-
-func (InsuranceVehicleInfo) TableName() string {
-    return "insurance_vehicle_info"
+	ID                         primitive.ObjectID  `bson:"_id,omitempty" json:"form_insurance_id"`
+	Purpose                    string              `bson:"purpose" json:"purpose"`
+	VehicleType                string              `bson:"vehicle_type" json:"vehicle_type"`
+	Brand                      string              `bson:"brand" json:"brand"`
+	Model                      string              `bson:"model" json:"model"`
+	ManufactureYear            *int                `bson:"manufacture_year,omitempty" json:"manufacture_year"`
+	SeatCount                  *int                `bson:"seat_count,omitempty" json:"seat_count"`
+	VehicleValue               *float64            `bson:"vehicle_value,omitempty" json:"vehicle_value"`
+	InsuranceAmount            *float64            `bson:"insurance_amount,omitempty" json:"insurance_amount"`
+	RegistrationDate           *time.Time          `bson:"registration_date,omitempty" json:"registration_date"`
+	Deductible                 *float64            `bson:"deductible,omitempty" json:"deductible"`
+	CoverageArea               string              `bson:"coverage_area" json:"coverage_area"`
+	ParticipantCount           *int                `bson:"participant_count,omitempty" json:"participant_count"`
+	ParticipantInsuranceAmount *float64            `bson:"participant_insurance_amount,omitempty" json:"participant_insurance_amount"`
+	FormID                     *primitive.ObjectID `bson:"form_id,omitempty" json:"form_id"`
+	CreatedAt                  time.Time           `bson:"created_at" json:"created_at"`
+	UpdatedAt                  time.Time           `bson:"updated_at" json:"updated_at"`
 }

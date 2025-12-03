@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
-import { Bell, UploadCloud } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -184,11 +183,9 @@ function TravelDomesticInsuranceOrderPage() {
       try {
         // Lấy token từ session storage
         const token = sessionStorage.getItem('token');
-        console.log("[DEBUG] Token when submitting:", token);
 
         // Kiểm tra xem có token không
         if (!token) {
-          console.log("[DEBUG] No token found when submitting, redirecting to login");
           // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
           sessionStorage.setItem('redirectPath', window.location.pathname);
           alert("Vui lòng đăng nhập để tiếp tục");
@@ -198,7 +195,7 @@ function TravelDomesticInsuranceOrderPage() {
         
         // 1. Tạo hóa đơn du lịch trong nước
         const invoiceRes = await axios.post(
-          `${API_URL}/api/insurance_travel/create_travel_invoice`,
+          `${API_URL}/insurance_travel/create_travel_invoice`,
           {
             departure_location: form.itinerary || "",
             destination: "Trong nước",
@@ -218,17 +215,16 @@ function TravelDomesticInsuranceOrderPage() {
                   ? "Nữ"
                   : "Khác",
               birth_date: toISOStringDate(p.dob),
-              identity_number: p.idNumber,
-            })),
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log("[DEBUG] Response create_travel_invoice:", invoiceRes.data);
-        const invoice_id = invoiceRes.data.invoice_id;
-
+          identity_number: p.idNumber,
+        })),
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const invoice_id = invoiceRes.data.invoice_id;
+    const master_invoice_id = invoiceRes.data.master_invoice_id;
         // 2. Đăng ký khách hàng
         const customerRes = await axios.post(
-          `${API_URL}/api/insurance_travel/create_customer_registration`,
+          `${API_URL}/insurance_travel/create_customer_registration`,
           {
             customer_type:
               buyerInfo.type === "individual" ? "Cá nhân" : "Tổ chức",
@@ -241,40 +237,43 @@ function TravelDomesticInsuranceOrderPage() {
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("[DEBUG] Response create_customer_registration:", customerRes.data);
         const customer_id = customerRes.data.customer_id;
 
         // 3. Gán customer_id vào hóa đơn
         await axios.post(
-          `${API_URL}/api/insurance_travel/update_invoice_customer`,
+          `${API_URL}/insurance_travel/update_invoice_customer`,
           {
             invoice_id,
             customer_id,
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("[DEBUG] Update invoice customer successful");
-        alert("Đặt mua bảo hiểm thành công!");
-        // Lưu đơn hàng vào localStorage
-        const cartItem = {
-          id: "TRAVEL_DOMESTIC",
-          name: "Bảo hiểm du lịch trong nước",
-          description: `${form.numberOfPeople} người, ${form.numberOfDays} ngày, hành trình: ${form.itinerary}`,
-          price: totalFee,
-          image: "/products/bic-travel-care.png",
-          buyerName: buyerInfo.fullName,
-          buyerPhone: buyerInfo.phone,
-          buyerEmail: buyerInfo.email,
-          isSelected: true,
+
+        // 4. Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+        
+        // Lưu thông tin đơn hàng vào sessionStorage
+        const orderInfo = {
+          invoice_id: invoice_id,
+          master_invoice_id: master_invoice_id,
+          product_name: "Bảo hiểm du lịch trong nước",
+          insurance_amount: totalFee,
+          customer_name: buyerInfo.fullName,
+          created_at: new Date().toISOString(),
+          insurance_start: toISOStringDate(form.departureDate),
+          insurance_end: toISOStringDate(form.returnDate),
+          status: "Chưa thanh toán",
+          // Thông tin bổ sung
+          departure_location: form.itinerary || "",
+          destination: "Trong nước",
+          total_duration: form.numberOfDays,
+          group_size: form.numberOfPeople,
+          participants: participants
         };
-        localStorage.setItem("cartItem", JSON.stringify(cartItem));
-        // Chuyển hướng sang giỏ hàng
-        window.location.href = "/gio-hang.html";
+        sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+        
+        navigate(`/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${totalFee}`);
       } catch (error: any) {
-        console.error("[ERROR] Thực hiện đặt bảo hiểm:", error);
         if (error.response) {
-          console.error("[ERROR] Response data:", error.response.data);
-          console.error("[ERROR] Response status:", error.response.status);
         }
         alert(
           "Có lỗi xảy ra khi đặt mua bảo hiểm: " +
@@ -795,51 +794,49 @@ function TravelDomesticInsuranceOrderPage() {
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center gap-8">
-                        <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                          CMND/CCCD
-                          <span className="text-red-600">*</span>
-                        </label>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            value={buyerInfo.identityCard}
-                            onChange={(e) =>
-                              handleCustomerInfoChange(
-                                "identityCard",
-                                e.target.value
-                              )
-                            }
-                            className={inputClassName}
-                            placeholder="Nhập CMND/CCCD"
-                          />
+                      <>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            Họ và tên
+                            <span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={buyerInfo.fullName || ""}
+                              onChange={(e) =>
+                                handleCustomerInfoChange(
+                                  "fullName",
+                                  e.target.value
+                                )
+                              }
+                              className={inputClassName}
+                              placeholder="Nhập họ và tên"
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            CMND/CCCD
+                            <span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={buyerInfo.identityCard}
+                              onChange={(e) =>
+                                handleCustomerInfoChange(
+                                  "identityCard",
+                                  e.target.value
+                                )
+                              }
+                              className={inputClassName}
+                              placeholder="Nhập CMND/CCCD"
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-center gap-8">
-                      <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                        {buyerInfo.type === "organization"
-                          ? "Tên công ty/ Tổ chức"
-                          : "Họ và tên"}
-                        <span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={buyerInfo.fullName}
-                          onChange={(e) =>
-                            handleCustomerInfoChange("fullName", e.target.value)
-                          }
-                          className={inputClassName}
-                          placeholder={
-                            buyerInfo.type === "organization"
-                              ? "Nhập tên công ty/ tổ chức"
-                              : "Nhập họ và tên"
-                          }
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-start gap-8">
                       <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start pt-2">

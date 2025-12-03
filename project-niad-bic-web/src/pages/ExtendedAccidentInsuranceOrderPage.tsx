@@ -157,30 +157,19 @@ export default function CancerInsuranceOrderPage() {
   };
 
   const handleNext = async () => {
-    console.log("=== handleNext called ===");
-    console.log("Current step:", currentStep);
-    console.log("Total steps:", totalSteps);
     setShowError(false);
     let currentStepErrors: { [key: string]: string } = {};
 
     try {
       if (currentStep === 1) {
-        console.log("Validating step 1...");
-        console.log("Participant count:", participantCount);
         // Validate step 1
         if (participantCount < 1) {
           currentStepErrors.participantCount =
             "Vui lòng chọn số người tham gia từ 1 trở lên";
         }
       } else if (currentStep === 2) {
-        console.log("Validating step 2...");
-        console.log("Participants:", participants);
-        console.log("Customer info:", customerInfo);
-
         // Validate participant info
         participants.forEach((participant, index) => {
-          console.log(`Validating participant ${index}:`, participant);
-
           // Chỉ validate các trường bắt buộc
           if (!participant.fullName) {
             currentStepErrors[`participant${index}Name`] =
@@ -217,7 +206,6 @@ export default function CancerInsuranceOrderPage() {
         });
 
         // Validate main customer info
-        console.log("Validating customer info...");
         if (!customerInfo.fullName) {
           currentStepErrors.customerName = "Vui lòng nhập họ và tên";
         }
@@ -251,23 +239,18 @@ export default function CancerInsuranceOrderPage() {
         }
       }
 
-      console.log("Validation errors:", currentStepErrors);
       if (Object.keys(currentStepErrors).length > 0) {
-        console.log("Found validation errors, setting errors state");
         setErrors(currentStepErrors);
         setShowError(true);
         return;
       }
 
-      console.log("No validation errors, proceeding to next step");
       setErrors({});
       window.scrollTo(0, 0);
 
       if (currentStep < totalSteps) {
-        console.log("Moving to next step:", currentStep + 1);
         setCurrentStep(currentStep + 1);
       } else if (currentStep === totalSteps) {
-        console.log("Reached final step, calling handleSubmit");
         await handleOrderAccidentExtended();
       }
     } catch (error) {
@@ -277,16 +260,11 @@ export default function CancerInsuranceOrderPage() {
   };
 
   const handlePrevStep = () => {
-    console.log("=== handlePrevStep called ===");
-    console.log("Current step before:", currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       setShowError(false);
       setErrors({});
       window.scrollTo(0, 0);
-      console.log("Moving to previous step:", currentStep - 1);
-    } else {
-      console.log("Already at first step, cannot go back");
     }
   };
 
@@ -319,11 +297,6 @@ export default function CancerInsuranceOrderPage() {
     field: keyof ParticipantInfo,
     value: string | number
   ) => {
-    console.log(
-      `=== handleParticipantChange called for participant ${index} ===`
-    );
-    console.log("Field:", field);
-    console.log("Value:", value);
     const newParticipants = [...participants];
 
     // Format input values
@@ -347,7 +320,6 @@ export default function CancerInsuranceOrderPage() {
       field === "dateOfBirth" ||
       field === "productPackage"
     ) {
-      console.log("Recalculating premium for participant", index);
       const participant = newParticipants[index];
       if (
         participant.dateOfBirth &&
@@ -361,19 +333,14 @@ export default function CancerInsuranceOrderPage() {
           participant.gender,
           participant.productPackage
         );
-        console.log("New premium calculated:", premium);
         newParticipants[index].premium = premium;
       }
     }
 
-    console.log("Updated participant:", newParticipants[index]);
     setParticipants(newParticipants);
   };
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: any) => {
-    console.log("=== handleCustomerInfoChange called ===");
-    console.log("Field:", field);
-    console.log("Value:", value);
     let formattedValue = value;
 
     // Format input values
@@ -385,13 +352,11 @@ export default function CancerInsuranceOrderPage() {
       formattedValue = value.replace(/\D/g, "").slice(0, 13);
     }
 
-    console.log("Formatted value:", formattedValue);
     setCustomerInfo((prev) => {
       const newInfo = {
         ...prev,
         [field]: formattedValue,
       };
-      console.log("Updated customer info:", newInfo);
       return newInfo;
     });
   };
@@ -412,63 +377,70 @@ export default function CancerInsuranceOrderPage() {
       insuranceEnd.setFullYear(
         insuranceEnd.getFullYear() + (customerInfo.insuranceTerm || 1)
       );
-      const invoice = {
-        customer_id: null, // Có thể cập nhật sau nếu có
-        product_id: 16, // ID sản phẩm bảo hiểm tai nạn mở rộng
-        user_id: null, // Có thể lấy từ context đăng nhập nếu có
-        form_id: null,
-        insurance_package:
-          participants[0]?.productPackage === "abc" ? "Gói ABC" : "Gói AB",
-        insurance_start: insuranceStart.toISOString(),
-        insurance_end: insuranceEnd.toISOString(),
-        insurance_amount: 0,
-        insurance_quantity: participants.length,
-        contract_type: "Mới",
-        status: "Chưa thanh toán",
+      const payload = {
+        invoice: {
+          ProductID: 16, // ID sản phẩm bảo hiểm tai nạn mở rộng
+          InsurancePackage:
+            participants[0]?.productPackage === "abc" ? "Gói ABC" : "Gói AB",
+          InsuranceStart: insuranceStart.toISOString(),
+          InsuranceEnd: insuranceEnd.toISOString(),
+          InsuranceAmount: getTotalPremium(), // Tổng phí thực thu
+          InsuranceQuantity: participants.length,
+          ContractType: "Mới",
+          Status: "Chưa thanh toán",
+        },
+        participants: participants.map((p) => ({
+          FullName: p.fullName,
+          Gender:
+            p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
+          BirthDate: p.dateOfBirth
+            ? new Date(p.dateOfBirth).toISOString()
+            : null,
+          IdentityNumber: p.identityCard,
+          CmndImg: "",
+        })),
       };
-      // Chuẩn bị participants
-      const participantsPayload = participants.map((p) => ({
-        full_name: p.fullName,
-        gender:
-          p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "Khác",
-        birth_date: p.dateOfBirth
-          ? new Date(p.dateOfBirth).toISOString()
-          : null,
-        identity_number: p.identityCard,
-        cmnd_img: "",
-      }));
       // Gọi API với token
       const res = await fetch(
         `${
           import.meta.env.VITE_API_URL || "http://localhost:5000"
-        }/api/insurance_accident/create_accident`,
+        }/insurance_accident/create_accident`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ invoice, participants: participantsPayload }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Có lỗi khi tạo hóa đơn!");
-      // Lưu đơn hàng vào localStorage và chuyển hướng sang giỏ hàng
-      const cartItem = {
-        id: "EXTACC",
-        name: "Bảo hiểm tai nạn mở rộng",
-        description: `${participants.length} người, Gói: ${
-          participants[0]?.productPackage === "abc" ? "Gói ABC" : "Gói AB"
-        }`,
-        price: getTotalPremium(),
-        image: "/products/bic-tai-nan-mo-rong.png",
-        buyerName: customerInfo.fullName,
-        buyerPhone: customerInfo.phone,
-        buyerEmail: customerInfo.email,
-        isSelected: true,
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Có lỗi khi tạo hóa đơn!");
+  const invoice_id = data.master_invoice_id;
+  // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: invoice_id,
+        product_name: "Bảo hiểm tai nạn mở rộng",
+        insurance_amount: getTotalPremium(),
+        customer_name: customerInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: customerInfo.insuranceStartDate,
+        insurance_end: new Date(new Date(customerInfo.insuranceStartDate).setFullYear(
+          new Date(customerInfo.insuranceStartDate).getFullYear() + 1
+        )).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        participants: participants.map(p => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          date_of_birth: p.dateOfBirth,
+          insurance_package: p.package
+        }))
       };
-      localStorage.setItem("cartItem", JSON.stringify(cartItem));
-      window.location.href = "/gio-hang.html";
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+      
+      // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+      window.location.href = `/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${getTotalPremium()}`;
     } catch (err: any) {
       alert("Lỗi: " + (err.message || "Không xác định"));
     }

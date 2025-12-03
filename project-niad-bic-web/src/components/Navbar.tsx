@@ -10,7 +10,7 @@ import {
   X,
   User,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 // Dữ liệu menu đa cấp với URL chính xác
@@ -270,18 +270,12 @@ function ProductMenu({ isActive = false }) {
         }
       }}
     >
-      <a
-        href="/san-pham"
+      <Link
+        to="/danh-muc/bao-hiem-o-to-9.html"
         className="lg:px-1.5 xl:px-2 py-1.5 lg:mx-2 xl:mx-3 text-sm font-medium relative text-red-600 border border-red-600 rounded-md"
-        onClick={(e) => {
-          if (window.innerWidth >= 1024 && isDropdownOpen) {
-            e.preventDefault();
-            setIsDropdownOpen(!isDropdownOpen);
-          }
-        }}
       >
         SẢN PHẨM
-      </a>
+      </Link>
 
       {isActive ? (
         <div className="absolute bottom-[-30px] left-0 w-full flex flex-col items-center">
@@ -560,14 +554,11 @@ function MobileMenu() {
 }
 
 export default function Navbar() {
-  const location = useLocation();
-  console.log('Navbar pathname:', location.pathname);
+  const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const [currentPath, setCurrentPath] = useState("");
   // ...existing code...
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-
-  console.log("Navbar user data:", user);
 
   // Hàm kiểm tra đường dẫn active
   // ...existing code...
@@ -730,7 +721,10 @@ export default function Navbar() {
 
                     {/* Logout Link */}
                     <button
-                      onClick={logout}
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                      }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Đăng xuất

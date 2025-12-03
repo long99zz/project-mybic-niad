@@ -17,30 +17,32 @@ import AccountPage from "./pages/AccountPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import OrderPage from "./pages/OrderPage";
 import CartPage from "./pages/CartPage";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
+import PaymentResultPage from "./pages/PaymentResultPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./App.css";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
+import DashboardNew from "./pages/admin/DashboardNew";
 import Orders from "./pages/admin/Orders";
 import Products from "./pages/admin/Products";
+import ProductsManagement from "./pages/admin/ProductsManagement";
 import Posts from "./pages/admin/Posts";
 import Users from "./pages/admin/Users";
+import UsersManagement from "./pages/admin/UsersManagement";
 import Comments from "./pages/admin/Comments";
 import Statistics from "./pages/admin/Statistics";
 import InsuranceOrderRouter from "./pages/order/InsuranceOrderRouter";
+import OrderDetail from "./pages/admin/OrderDetail";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin } = useAuth();
 
-  console.log("ProtectedRoute state:", { isAuthenticated, isAdmin }); // Debug log
-
   if (!isAuthenticated) {
-    console.log("Redirecting to login page"); // Debug log
     return <Navigate to="/dang-nhap" />;
   }
 
   if (!isAdmin) {
-    console.log("Redirecting to home page"); // Debug log
     return <Navigate to="/" />;
   }
 
@@ -136,8 +138,12 @@ const AppRoutes = () => {
         element={<InsuranceOrderRouter />}
       />
       <Route path="/mua-ngay/:productType" element={<InsuranceOrderRouter />} />
-  <Route path="/gio-hang.html" element={<CartPage />} />
-  <Route path="/cart" element={<CartPage />} />
+      <Route path="/gio-hang.html" element={<CartPage />} />
+      <Route path="/gio-hang" element={<CartPage />} />
+      <Route path="/cart" element={<CartPage />} />
+      <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />
+      <Route path="/order-success" element={<OrderSuccessPage />} />
+      <Route path="/payment-result" element={<PaymentResultPage />} />
 
       {/* Các route cụ thể cho từng sản phẩm */}
       <Route
@@ -170,10 +176,14 @@ const AppRoutes = () => {
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
+        <Route path="dashboard-new" element={<DashboardNew />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="products" element={<Products />} />
+        <Route path="products-management" element={<ProductsManagement />} />
         <Route path="posts" element={<Posts />} />
         <Route path="users" element={<Users />} />
+        <Route path="users-management" element={<UsersManagement />} />
         <Route path="comments" element={<Comments />} />
         <Route path="statistics" element={<Statistics />} />
       </Route>

@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"net/http"
-	"gorm.io/gorm"
 	"backend/models"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
+
 // Thêm bài viết
 // AddPost godoc
 // @Summary Thêm bài viết
@@ -59,4 +61,5 @@ func UpdatePost(db *gorm.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, post)
 	}
 }
+
 // ...copy from server/internal/handlers/post_handler.go...

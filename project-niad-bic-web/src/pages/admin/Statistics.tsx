@@ -1,11 +1,6 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 
-interface StatItem {
-  title: string;
-  value: number;
-  change: number;
-  icon: string;
-}
+
 
 interface CategoryProductStat {
   category_id: number;
@@ -23,218 +18,279 @@ interface OrderProductStat {
   sold_count: number;
 }
 
-const mockStats = [
-  {
-    title: "Tổng doanh thu",
-    value: 150000000,
-    change: 12.5,
-    icon: "💰",
-  },
-  {
-    title: "Tổng đơn hàng",
-    value: 150,
-    change: 8.2,
-    icon: "📦",
-  },
-  {
-    title: "Tổng sản phẩm",
-    value: 1200,
-    change: 5.4,
-    icon: "📱",
-  },
-  {
-    title: "Tổng người dùng",
-    value: 850,
-    change: 15.3,
-    icon: "👥",
-  },
-];
+interface ProductStatistic {
+  product_id: number;
+  product_name: string;
+  category_id: number;
+  category_name: string;
+  total_sold: number;
+  total_revenue: number;
+  date_group: string;
+}
 
-const mockCategoryProductStats: CategoryProductStat[] = [
-  {
-    category_id: 1,
-    category_name: "Máy Tính Để Bàn",
-    quantity: 1,
-    price_lowest: 6500000,
-    price_highest: 6500000,
-    price_average: 6500000,
-  },
-  {
-    category_id: 2,
-    category_name: "Laptop văn phòng",
-    quantity: 3,
-    price_lowest: 9290000,
-    price_highest: 15490000,
-    price_average: 12556667,
-  },
-  {
-    category_id: 3,
-    category_name: "Laptop Gaming",
-    quantity: 7,
-    price_lowest: 111,
-    price_highest: 25990000,
-    price_average: 15262873,
-  },
-];
-
-const mockOrderProductStats: OrderProductStat[] = [
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      'Laptop MSI Modern 14 C7M-221VN R7 7730U/8GB/512GB/14" FHD IPS/Win 11',
-    order_count: 5,
-    sold_count: 6,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      'Laptop Lenovo LOQ 15APH8 R5 7640HS/8GB/512GB/15.6" FHD/Win11',
-    order_count: 1,
-    sold_count: 1,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      'Laptop Asus Vivobook 15 OLED A1505VA-L1113W i5 13500H/16GB/512GB/15.6" FHD/Win11',
-    order_count: 6,
-    sold_count: 7,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      'Laptop Asus TUF Gaming FX507ZC4-HN095W i5 12500H/16GB/512GB/15.6"/Nvidia RTX 3050 4GB/Win11',
-    order_count: 1,
-    sold_count: 1,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      "Laptop Acer Nitro V Gaming ANV15-51-55CA i5 13420H/16GB/512GB/15.6",
-    order_count: 0,
-    sold_count: 0,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name:
-      'Laptop Acer Gaming Aspire 5 A515-58GM-53PZ i5 13420H/8GB/512GB/15.6"FHD/RTX2050 4GB/Win11',
-    order_count: 3,
-    sold_count: 3,
-  },
-  {
-    category_name: "Laptop Gaming",
-    product_name: "1111",
-    order_count: 0,
-    sold_count: 0,
-  },
-  {
-    category_name: "Laptop văn phòng",
-    product_name:
-      'Laptop Lenovo IdeaPad 3 14IAH8 i5 12450H/16GB/512GB/14"FHD/Win11',
-    order_count: 2,
-    sold_count: 2,
-  },
-  {
-    category_name: "Laptop văn phòng",
-    product_name: 'Laptop HP 245 G10 R5-7520U/8GB/256GB/14"FHD/Win11 (9H8X8PT)',
-    order_count: 1,
-    sold_count: 1,
-  },
-  {
-    category_name: "Laptop văn phòng",
-    product_name:
-      'Laptop Dell Vostro 3520 i5 1235U/16GB/512GB/15.6"FHD/Win11/Office HS21',
-    order_count: 1,
-    sold_count: 1,
-  },
-  {
-    category_name: "Máy Tính Để Bàn",
-    product_name: "NNPC Văn Phòng H510 Core i3, i5 10th / Window 10",
-    order_count: 8,
-    sold_count: 8,
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Statistics = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState("week");
+  const [selectedPeriod, setSelectedPeriod] = useState("day");
+  const [categoryStats, setCategoryStats] = useState<CategoryProductStat[]>([]);
+  const [orderStats, setOrderStats] = useState<OrderProductStat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Lấy token từ sessionStorage
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          setError("Cần đăng nhập để xem thống kê");
+          setLoading(false);
+          return;
+        }
+
+        // Gọi API lấy thống kê sản phẩm theo ngày/tháng/năm
+        const apiUrl = `http://localhost:5000/api/admin/product-statistics?group=${selectedPeriod}`;
+        
+        const productStatsResponse = await fetch(apiUrl, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        if (!productStatsResponse.ok) {
+          const errorText = await productStatsResponse.text();
+          throw new Error(`Failed to fetch product statistics (${productStatsResponse.status}): ${errorText}`);
+        }
+
+        const productStats: ProductStatistic[] = await productStatsResponse.json() || [];
+
+        if (!productStats || productStats.length === 0) {
+          setError("No data available");
+          setCategoryStats([]);
+          setOrderStats([]);
+          setLoading(false);
+          return;
+        }
+
+        // Xử lý dữ liệu để tạo thống kê theo danh mục
+        const categoryMap = new Map<number, {
+          category_id: number;
+          category_name: string;
+          quantity: number;
+          price_lowest: number;
+          price_highest: number;
+          total_revenue: number;
+        }>();
+
+        const productMap = new Map<string, OrderProductStat>();
+
+        // Group dữ liệu theo danh mục và sản phẩm
+        productStats.forEach((stat) => {
+          // Group by category để tính thống kê danh mục
+          if (!categoryMap.has(stat.category_id)) {
+            categoryMap.set(stat.category_id, {
+              category_id: stat.category_id,
+              category_name: stat.category_name,
+              quantity: 0,
+              price_lowest: Number.MAX_VALUE,
+              price_highest: 0,
+              total_revenue: 0,
+            });
+          }
+          
+          const category = categoryMap.get(stat.category_id)!;
+          category.quantity += stat.total_sold;
+          category.total_revenue += stat.total_revenue;
+          
+          if (stat.total_revenue > 0) {
+            const avgPrice = stat.total_revenue / stat.total_sold;
+            if (avgPrice < category.price_lowest) category.price_lowest = avgPrice;
+            if (avgPrice > category.price_highest) category.price_highest = avgPrice;
+          }
+
+          // Group by product để tính thống kê sản phẩm
+          const productKey = `${stat.product_id}`;
+          if (!productMap.has(productKey)) {
+            productMap.set(productKey, {
+              category_name: stat.category_name,
+              product_name: stat.product_name,
+              order_count: stat.total_sold,
+              sold_count: stat.total_sold,
+            });
+          }
+        });
+
+        // Convert category map to array và tính giá trung bình
+        const categoryStatsArray: CategoryProductStat[] = Array.from(categoryMap.values()).map((cat) => ({
+          category_id: cat.category_id,
+          category_name: cat.category_name,
+          quantity: cat.quantity,
+          price_lowest: cat.price_lowest === Number.MAX_VALUE ? 0 : cat.price_lowest,
+          price_highest: cat.price_highest,
+          price_average: cat.quantity > 0 ? cat.total_revenue / cat.quantity : 0,
+        }));
+
+        setCategoryStats(categoryStatsArray);
+        setOrderStats(Array.from(productMap.values()));
+      } catch (err) {
+        console.error("Error fetching statistics:", err);
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
+        
+        // Fallback: Show message but keep UI functional
+        setCategoryStats([]);
+        setOrderStats([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, [selectedPeriod]);
 
   return (
     <div className="space-y-6">
-      {/* Thống kê sản phẩm theo danh mục */}
+      {/* Bộ chọn khoảng thời gian */}
       <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-xl font-bold mb-4">
-          Thống kê sản phẩm theo danh mục
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-blue-50">
-                <th className="p-2 text-center">#</th>
-                <th className="p-2 text-center">Tên danh mục</th>
-                <th className="p-2 text-center">Số lượng</th>
-                <th className="p-2 text-center">Giá thấp nhất</th>
-                <th className="p-2 text-center">Giá cao nhất</th>
-                <th className="p-2 text-center">Giá trung bình</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockCategoryProductStats.map((item, index) => (
-                <tr
-                  key={item.category_id}
-                  className="border-b hover:bg-gray-50"
-                >
-                  <td className="p-2 text-center">{index + 1}</td>
-                  <td className="p-2 text-left">{item.category_name}</td>
-                  <td className="p-2 text-center">{item.quantity}</td>
-                  <td className="p-2 text-right">
-                    {item.price_lowest.toLocaleString()}₫
-                  </td>
-                  <td className="p-2 text-right">
-                    {item.price_highest.toLocaleString()}₫
-                  </td>
-                  <td className="p-2 text-right">
-                    {item.price_average.toLocaleString()}₫
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Thống kê đơn hàng */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Thống kê đơn hàng</h2>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition text-sm">
-            Xem biểu đồ
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedPeriod("day")}
+            className={`px-4 py-2 rounded transition ${
+              selectedPeriod === "day"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Theo ngày
+          </button>
+          <button
+            onClick={() => setSelectedPeriod("month")}
+            className={`px-4 py-2 rounded transition ${
+              selectedPeriod === "month"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Theo tháng
+          </button>
+          <button
+            onClick={() => setSelectedPeriod("year")}
+            className={`px-4 py-2 rounded transition ${
+              selectedPeriod === "year"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Theo năm
           </button>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-blue-50">
-                <th className="p-2 text-center">#</th>
-                <th className="p-2 text-center">Tên danh mục</th>
-                <th className="p-2 text-center">Tên sản phẩm</th>
-                <th className="p-2 text-center">Số đơn hàng</th>
-                <th className="p-2 text-center">Đã bán</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockOrderProductStats.map((item, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="p-2 text-center">{index + 1}</td>
-                  <td className="p-2 text-left">{item.category_name}</td>
-                  <td className="p-2 text-left">{item.product_name}</td>
-                  <td className="p-2 text-center">{item.order_count}</td>
-                  <td className="p-2 text-center">{item.sold_count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
+
+      {/* Thông báo lỗi */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          Lỗi: {error}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="bg-white rounded-xl shadow p-6 text-center">
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      )}
+
+      {/* Thống kê sản phẩm theo danh mục */}
+      {!loading && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-xl font-bold mb-4">
+            Thống kê sản phẩm theo danh mục
+          </h2>
+          {categoryStats.length === 0 ? (
+            <p className="text-gray-500">Không có dữ liệu thống kê</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-blue-50">
+                    <th className="p-2 text-center">#</th>
+                    <th className="p-2 text-center">Tên danh mục</th>
+                    <th className="p-2 text-center">Số lượng</th>
+                    <th className="p-2 text-center">Giá thấp nhất</th>
+                    <th className="p-2 text-center">Giá cao nhất</th>
+                    <th className="p-2 text-center">Giá trung bình</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryStats.map((item, index) => (
+                    <tr
+                      key={item.category_id}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="p-2 text-center">{index + 1}</td>
+                      <td className="p-2 text-center">{item.category_name}</td>
+                      <td className="p-2 text-center">{item.quantity}</td>
+                      <td className="p-2 text-center">
+                        {item.price_lowest.toLocaleString()}₫
+                      </td>
+                      <td className="p-2 text-center">
+                        {item.price_highest.toLocaleString()}₫
+                      </td>
+                      <td className="p-2 text-center">
+                        {item.price_average.toLocaleString()}₫
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Thống kê đơn hàng */}
+      {!loading && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Thống kê đơn hàng</h2>
+            <button className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition text-sm">
+              Xem biểu đồ
+            </button>
+          </div>
+
+          {orderStats.length === 0 ? (
+            <p className="text-gray-500">Không có dữ liệu thống kê</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-blue-50">
+                    <th className="p-2 text-center">#</th>
+                    <th className="p-2 text-center">Tên danh mục</th>
+                    <th className="p-2 text-center">Tên sản phẩm</th>
+                    <th className="p-2 text-center">Số đơn hàng</th>
+                    <th className="p-2 text-center">Đã bán</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderStats.map((item, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="p-2 text-center">{index + 1}</td>
+                      <td className="p-2 text-center">{item.category_name}</td>
+                      <td className="p-2 text-center">{item.product_name}</td>
+                      <td className="p-2 text-center">{item.order_count}</td>
+                      <td className="p-2 text-center">{item.sold_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

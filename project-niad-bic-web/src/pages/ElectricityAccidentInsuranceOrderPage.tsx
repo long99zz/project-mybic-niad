@@ -103,9 +103,6 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
   const discount = 0;
   const total = fee - discount;
 
-  // Tính phí bảo hiểm 1 năm
-  const annualFee = calcFee(Number(numPeople), amount || 0);
-
   // Cập nhật số người => cập nhật mảng participants
   React.useEffect(() => {
     const n = Number(numPeople) || 0;
@@ -173,11 +170,9 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
     try {
       // Lấy token từ session storage
       const token = sessionStorage.getItem('token');
-      console.log("[DEBUG] Token when submitting:", token);
 
       // Kiểm tra xem có token không
       if (!token) {
-        console.log("[DEBUG] No token found when submitting, redirecting to login");
         alert("Vui lòng đăng nhập để tiếp tục");
         window.location.href = "/dang-nhap";
         return;
@@ -189,8 +184,8 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
       endDate.setMonth(endDate.getMonth() + 12); // Sử dụng 12 tháng
 
       const invoice = {
-        product_id: 15,
-        InsuranceAmount: amount,
+        ProductID: 15,
+        InsuranceAmount: total, // Tổng phí thực thu (đã trừ chiết khấu)
         InsuranceQuantity: Number(numPeople),
         InsuranceStart: startDate.toISOString(), // RFC3339 format
         InsuranceEnd: endDate.toISOString(), // RFC3339 format
@@ -207,36 +202,41 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
       }));
       // 3. Gọi API tạo hóa đơn
       const res = await axios.post(
-        `${API_URL}/api/insurance_accident/create_accident`,
+        `${API_URL}/insurance_accident/create_accident`,
         {
-          invoice,
-          participants: participantsPayload,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log("[DEBUG] Response create_accident:", res.data);
-      const invoice_id = res.data.invoice?.invoice_id;
-      // 4. (Tuỳ chọn) Gọi API update customer cho invoice nếu cần
-      // await axios.post(`${API_URL}/api/insurance_accident/update_invoice_customer`, { invoice_id, customer_id: ... });
-      // 5. Lưu đơn hàng vào localStorage và chuyển hướng
-      const cartItem = {
-        id: "GPA",
-        name: "Bảo hiểm tai nạn con người 24/24",
-        description: `${numPeople} người, Số tiền BH: ${amount?.toLocaleString(
-          "vi-VN"
-        )} VNĐ`,
-        price: total,
-        image: "/products/bic-tai-nan-24h.png",
-        buyerName: accountInfo.fullName,
-        buyerPhone: accountInfo.phone,
-        buyerEmail: accountInfo.email,
-        isSelected: true,
+      invoice,
+      participants: participantsPayload,
+    },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const invoice_id = res.data.master_invoice_id;      // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: invoice_id,
+        product_name: "Bảo hiểm tai nạn điện",
+        insurance_amount: total,
+        customer_name: accountInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: insuranceStart,
+        insurance_end: new Date(new Date(insuranceStart).setFullYear(
+          new Date(insuranceStart).getFullYear() + 1
+        )).toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        insurance_package: amount?.toString(),
+        participants: participants.map(p => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          dob: p.dob,
+          id_number: p.idNumber
+        }))
       };
-      localStorage.setItem("cartItem", JSON.stringify(cartItem));
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+      
+      // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
       setOrderSuccess(true);
       setTimeout(() => {
-        window.location.href = "/gio-hang.html";
-      }, 1000);
+        window.location.href = `/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${total}`;
+      }, 500);
     } catch (error) {
       const err = error as any;
       alert(
@@ -254,7 +254,7 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
           <div className="max-w-5xl mx-auto mb-8">
             {/* Progress Bar */}
             <div className="flex items-center justify-center mb-8">
-              {[1, 2, 3].map((s, idx) => (
+              {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center">
                     <div
@@ -343,7 +343,7 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
                       Quyền lợi bảo hiểm
                     </span>
                   </div>
-                  <div className="bg-white border rounded px-4 py-3 text-sm text-left text-base">
+                  <div className="bg-white border rounded px-4 py-3 text-left text-base">
                     <div className="flex items-center border-b pb-2 mb-2">
                       <div className="font-semibold text-gray-700 w-1/3 whitespace-nowrap text-base">
                         Số tiền bảo hiểm:
@@ -581,41 +581,47 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center gap-8">
-                        <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                          CMND/CCCD <span className="text-red-600">*</span>
-                        </label>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            name="identityCard"
-                            value={accountInfo.identityCard || ""}
-                            onChange={(e) =>
-                              setAccountInfo((prev) => ({
-                                ...prev,
-                                identityCard: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                          />
+                      <>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            CMND/CCCD<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="identityCard"
+                              value={accountInfo.identityCard || ""}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  identityCard: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-8">
+                          <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
+                            Họ và tên<span className="text-red-600">*</span>
+                          </label>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name="fullName"
+                              value={accountInfo.fullName}
+                              onChange={(e) =>
+                                setAccountInfo((prev) => ({
+                                  ...prev,
+                                  fullName: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-center gap-8">
-                      <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                        Họ và tên<span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={accountInfo.fullName}
-                          onChange={handleAccountInfoChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-center gap-8">
                       <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">

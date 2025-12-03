@@ -21,7 +21,6 @@ export default function ContactPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         // Handle form submission
-        console.log("Form submitted:", formData)
     }
     return (
         <main className="min-h-screen">
@@ -148,7 +147,7 @@ export default function ContactPage() {
                                             <button
                                                 type="button"
                                                 className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
-                                                onClick={() => console.log("Change CAPTCHA")}
+                                                onClick={() => {}}
                                             >
                                                 <RefreshCw className="w-4 h-4" />
                                                 Đổi mã khác

@@ -16,7 +16,7 @@ type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
 };
 
@@ -87,10 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Gọi fetchUserInfo để lấy thông tin chi tiết
       await fetchUserInfo(token);
-      return true;
+      return userData;
     } catch (error) {
       console.error("Login error:", error);
-      return false;
+      return null;
     }
   };
 

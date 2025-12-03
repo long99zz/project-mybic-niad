@@ -86,7 +86,6 @@ const GPAOrderPage: React.FC = () => {
     identityCard: "",
     invoice: false,
   });
-  const [orderSuccess, setOrderSuccess] = useState(false);
   const [insuranceStart, setInsuranceStart] = useState("");
   const [insuranceDuration, setInsuranceDuration] = useState(12);
 
@@ -143,26 +142,49 @@ const GPAOrderPage: React.FC = () => {
 
   const handleOrder = async () => {
     try {
+      // Kiểm tra dữ liệu bắt buộc
+      if (!numPeople || !amount) {
+        alert("Vui lòng chọn số người và số tiền bảo hiểm");
+        return;
+      }
+
+      if (!insuranceStart) {
+        alert("Vui lòng chọn ngày hiệu lực bảo hiểm");
+        return;
+      }
+
+      if (!accountInfo.fullName || !accountInfo.email || !accountInfo.phone || !accountInfo.address) {
+        alert("Vui lòng điền đầy đủ thông tin tài khoản");
+        return;
+      }
+
+      // Kiểm tra thông tin người tham gia
+      const isValidParticipants = participants.every(p => 
+        p.fullName && p.gender && p.dob && p.idNumber
+      );
+      if (!isValidParticipants) {
+        alert("Vui lòng điền đầy đủ thông tin cho tất cả người tham gia");
+        return;
+      }
+
       // Lấy token từ session storage
       const token = sessionStorage.getItem('token');
-      console.log("[DEBUG] Token when submitting:", token);
 
       // Kiểm tra xem có token không
       if (!token) {
-        console.log("[DEBUG] No token found when submitting, redirecting to login");
         alert("Vui lòng đăng nhập để tiếp tục");
         navigate('/dang-nhap');
         return;
       }
 
       // 1. Chuẩn bị dữ liệu invoice với định dạng RFC3339
-      const startDate = insuranceStart ? new Date(insuranceStart) : new Date();
+      const startDate = new Date(insuranceStart);
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + insuranceDuration);
 
       const invoice = {
         ProductID: 14,
-        InsuranceAmount: amount,
+        InsuranceAmount: periodFee - discount, // Tổng phí thực thu (đã trừ chiết khấu)
         InsuranceQuantity: Number(numPeople),
         InsuranceStart: startDate.toISOString(), // RFC3339 format
         InsuranceEnd: endDate.toISOString(), // RFC3339 format
@@ -177,43 +199,54 @@ const GPAOrderPage: React.FC = () => {
         BirthDate: p.dob ? new Date(p.dob).toISOString() : null, // RFC3339 format
         IdentityNumber: p.idNumber,
       }));
+      
       // 3. Gọi API tạo hóa đơn
       const res = await axios.post(
-        `${API_URL}/api/insurance_accident/create_accident`,
+        `${API_URL}/insurance_accident/create_accident`,
         {
           invoice,
           participants: participantsPayload,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("[DEBUG] Response create_accident:", res.data);
-      const invoice_id = res.data.invoice?.invoice_id;
-      // 4. (Tuỳ chọn) Gọi API update customer cho invoice nếu cần
-      // await axios.post(`${API_URL}/api/insurance_accident/update_invoice_customer`, { invoice_id, customer_id: ... });
-      // 5. Lưu đơn hàng vào localStorage và chuyển hướng
-      const cartItem = {
-        id: "GPA",
-        name: "Bảo hiểm tai nạn con người 24/24",
-        description: `${numPeople} người, Số tiền BH: ${amount?.toLocaleString(
-          "vi-VN"
-        )} VNĐ`,
-        price: total,
-        image: "/products/bic-tai-nan-24h.png",
-        buyerName: accountInfo.fullName,
-        buyerPhone: accountInfo.phone,
-        buyerEmail: accountInfo.email,
-        isSelected: true,
+      
+      // Trích xuất master_invoice_id từ response
+      // Response có cấu trúc: { Invoice: { MasterInvoiceID, InvoiceID, ... } }
+      const master_invoice_id = res.data.Invoice?.MasterInvoiceID || res.data.master_invoice_id;
+
+      if (!master_invoice_id) {
+        alert("Lỗi: Không nhận được mã đơn hàng từ server");
+        return;
+      }
+      
+      // Lưu thông tin đơn hàng vào sessionStorage
+      const orderInfo = {
+        invoice_id: master_invoice_id,
+        product_name: "Bảo hiểm GPA",
+        insurance_amount: periodFee,
+        customer_name: accountInfo.fullName,
+        created_at: new Date().toISOString(),
+        insurance_start: insuranceStart,
+        insurance_end: endDate.toISOString(),
+        status: "Chưa thanh toán",
+        // Thông tin bổ sung
+        insurance_package: amount?.toString(),
+        participants: participants.map(p => ({
+          full_name: p.fullName,
+          gender: p.gender,
+          dob: p.dob,
+          id_number: p.idNumber
+        }))
       };
-      localStorage.setItem("cartItem", JSON.stringify(cartItem));
-      setOrderSuccess(true);
-      setTimeout(() => {
-        window.location.href = "/gio-hang.html";
-      }, 1000);
+      sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
+      
+      // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
+      navigate(`/dat-hang-thanh-cong?invoice_id=${master_invoice_id}&amount=${periodFee}`);
     } catch (error) {
       const err = error as any;
       alert(
         "Có lỗi khi đặt mua bảo hiểm: " +
-          (err?.response?.data?.message || err?.message || "")
+          (err?.response?.data?.message || err?.response?.data?.error || err?.message || "Lỗi không xác định")
       );
     }
   };
@@ -235,7 +268,7 @@ const GPAOrderPage: React.FC = () => {
           <div className="max-w-5xl mx-auto mb-8">
             {/* Progress Bar */}
             <div className="flex items-center justify-center mb-8">
-              {[1, 2, 3].map((s, idx) => (
+              {[1, 2, 3].map((s) => (
                 <React.Fragment key={s}>
                   <div className="flex flex-col items-center">
                     <div
@@ -587,24 +620,6 @@ const GPAOrderPage: React.FC = () => {
                         </div>
                       </>
                     )}
-                    {/* Họ và tên */}
-                    <div className="flex items-center gap-8">
-                      <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
-                        Họ và tên<span className="text-red-600">*</span>
-                      </label>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={accountInfo.fullName}
-                          onChange={(e) =>
-                            handleCustomerInfoChange("fullName", e.target.value)
-                          }
-                          className={inputClassName}
-                          placeholder="Nhập họ và tên"
-                        />
-                      </div>
-                    </div>
                     {/* Địa chỉ */}
                     <div className="flex items-center gap-8">
                       <label className="text-lg font-medium text-gray-700 min-w-[200px] flex justify-start">
@@ -938,18 +953,6 @@ const GPAOrderPage: React.FC = () => {
       </div>
       <CustomerSupport />
       <Footer />
-      {/* Hiển thị thông báo thành công nếu orderSuccess */}
-      {orderSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <h2 className="text-2xl font-bold text-green-600 mb-4">
-              Đặt mua thành công!
-            </h2>
-            <p className="mb-4">Đơn hàng của bạn đã được lưu vào giỏ hàng.</p>
-            <p>Đang chuyển hướng sang trang giỏ hàng...</p>
-          </div>
-        </div>
-      )}
     </>
   );
 };

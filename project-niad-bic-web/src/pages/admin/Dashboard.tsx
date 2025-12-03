@@ -1,63 +1,71 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
-
-interface StatItem {
-  title: string;
-  value: number;
-  change: number;
-  icon: string;
-}
-
-const mockStats = [
-  {
-    title: "Tổng doanh thu",
-    value: 150000000,
-    change: 12.5,
-    icon: "💰",
-  },
-  {
-    title: "Tổng đơn hàng",
-    value: 150,
-    change: 8.2,
-    icon: "📦",
-  },
-  {
-    title: "Tổng sản phẩm",
-    value: 1200,
-    change: 5.4,
-    icon: "📱",
-  },
-  {
-    title: "Tổng người dùng",
-    value: 850,
-    change: 15.3,
-    icon: "👥",
-  },
-];
+import {
+  getDashboardStats,
+  getRevenueByMonth,
+  getOrdersByProduct,
+  DashboardStats as DashboardStatsType,
+  RevenueByMonth,
+  OrdersByProduct,
+} from "@/services/admin";
 
 const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
+  const [stats, setStats] = useState<DashboardStatsType | null>(null);
+  const [revenueData, setRevenueData] = useState<RevenueByMonth[]>([]);
+  const [ordersData, setOrdersData] = useState<OrdersByProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const salesChartRef = useRef<Chart | null>(null);
   const ordersChartRef = useRef<Chart | null>(null);
 
   useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [statsData, revenueData, ordersData] = await Promise.all([
+        getDashboardStats(),
+        getRevenueByMonth(),
+        getOrdersByProduct(),
+      ]);
+      setStats(statsData);
+      setRevenueData(revenueData || []);
+      setOrdersData(ordersData || []);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
+
+  useEffect(() => {
     // Khởi tạo biểu đồ doanh thu
     const salesCtx = document.getElementById("salesChart") as HTMLCanvasElement;
-    if (salesCtx) {
+    
+    if (salesCtx && revenueData.length > 0) {
       if (salesChartRef.current) {
         salesChartRef.current.destroy();
       }
+
+      const last6Months = revenueData.slice(-6);
+      
       salesChartRef.current = new Chart(salesCtx, {
         type: "line",
         data: {
-          labels: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+          labels: last6Months.map((item) => item.month),
           datasets: [
             {
               label: "Doanh thu",
-              data: [
-                12000000, 19000000, 15000000, 25000000, 22000000, 30000000,
-                28000000,
-              ],
+              data: last6Months.map((item) => item.revenue),
               borderColor: "rgb(59, 130, 246)",
               backgroundColor: "rgba(59, 130, 246, 0.1)",
               tension: 0.4,
@@ -84,27 +92,24 @@ const Dashboard = () => {
       });
     }
 
-    // Khởi tạo biểu đồ đơn hàng
+    // Khởi tạo biểu đồ đơn hàng theo sản phẩm
     const ordersCtx = document.getElementById(
       "ordersChart"
     ) as HTMLCanvasElement;
-    if (ordersCtx) {
+    if (ordersCtx && ordersData.length > 0) {
       if (ordersChartRef.current) {
         ordersChartRef.current.destroy();
       }
+
+      const top5Products = ordersData.slice(0, 5);
+      
       ordersChartRef.current = new Chart(ordersCtx, {
         type: "doughnut",
         data: {
-          labels: [
-            "Chờ xác nhận",
-            "Đã xác nhận",
-            "Đang giao",
-            "Hoàn thành",
-            "Đã hủy",
-          ],
+          labels: top5Products.map((item) => item.product_name),
           datasets: [
             {
-              data: [12, 19, 3, 5, 2],
+              data: top5Products.map((item) => item.order_count),
               backgroundColor: [
                 "rgb(234, 179, 8)",
                 "rgb(59, 130, 246)",
@@ -124,6 +129,8 @@ const Dashboard = () => {
           },
         },
       });
+    } else {
+      console.error("ordersChart canvas element not found!");
     }
 
     return () => {
@@ -134,10 +141,56 @@ const Dashboard = () => {
         ordersChartRef.current.destroy();
       }
     };
-  }, []);
+  }, [revenueData, ordersData]);
+
+  if (loading || !stats) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl">Đang tải dữ liệu...</div>
+      </div>
+    );
+  }
+
+  const mockStats = [
+    {
+      title: "Tổng doanh thu",
+      value: stats.total_revenue,
+      change: 12.5,
+      icon: "💰",
+    },
+    {
+      title: "Tổng đơn hàng",
+      value: stats.total_orders,
+      change: 8.2,
+      icon: "📦",
+    },
+    {
+      title: "Tổng sản phẩm",
+      value: stats.total_products,
+      change: 5.4,
+      icon: "📱",
+    },
+    {
+      title: "Tổng người dùng",
+      value: stats.total_users,
+      change: 15.3,
+      icon: "👥",
+    },
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <button
+          onClick={loadDashboardData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          🔄 Làm mới
+        </button>
+      </div>
+
       {/* Thẻ thống kê nhanh */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {mockStats.map((stat, index) => (
@@ -159,11 +212,31 @@ const Dashboard = () => {
             <h3 className="text-gray-500 text-sm mb-1">{stat.title}</h3>
             <p className="text-2xl font-bold">
               {stat.title.includes("doanh thu")
-                ? `${stat.value.toLocaleString()}₫`
+                ? formatCurrency(stat.value)
                 : stat.value.toLocaleString()}
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Stats Grid Bổ sung */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
+          <h3 className="text-gray-500 text-sm mb-1">Đơn chưa thanh toán</h3>
+          <p className="text-2xl font-bold text-yellow-600">{stats.pending_orders}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
+          <h3 className="text-gray-500 text-sm mb-1">Đơn đã thanh toán</h3>
+          <p className="text-2xl font-bold text-green-600">{stats.completed_orders}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
+          <h3 className="text-gray-500 text-sm mb-1">Tỷ lệ hoàn thành</h3>
+          <p className="text-2xl font-bold text-blue-600">
+            {stats.total_orders > 0 
+              ? `${((stats.completed_orders / stats.total_orders) * 100).toFixed(1)}%`
+              : '0%'}
+          </p>
+        </div>
       </div>
 
       {/* Biểu đồ */}

@@ -1,38 +1,8 @@
-import React, { useState, useEffect } from "react";
-// import { Link } from "react-router-dom"; // Tạm thời bỏ Link nếu không cần điều hướng chi tiết
-
-interface Product {
-  id: number;
-  name: string;
-  img: string;
-  price: number;
-  sale: number;
-}
-
-interface Category {
-  category_id: number;
-  name: string;
-}
-
-const mockProducts = [
-  {
-    id: 1,
-    name: "Laptop Acer Nitro V Gaming ANV15-51-55CA i5 13420H/16GB/512GB/15.6",
-    img: "https://via.placeholder.com/60", // Placeholder image
-    price: 27990000,
-    sale: 25990000,
-  },
-  {
-    id: 2,
-    name: "NNPC Văn Phòng H510 Core i3, i5 10th / Window 10",
-    img: "https://via.placeholder.com/60", // Placeholder image
-    price: 6800000,
-    sale: 6500000,
-  },
-];
+import { useState, useEffect } from "react";
+import { getAllProducts, deleteProduct, AdminProduct } from "@/services/admin";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,17 +15,8 @@ const Products = () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Thay thế bằng lệnh gọi API thực tế
-      console.log("Fetching products...");
-      // const response = await fetch('/api/admin/products');
-      // if (!response.ok) { throw new Error('Failed to fetch products'); }
-      // const data = await response.json();
-      // setProducts(data);
-
-      // Mô phỏng độ trễ API và dữ liệu
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setProducts(mockProducts);
-      console.log("Products fetched:", mockProducts);
+      const data = await getAllProducts();
+      setProducts(data);
     } catch (err) {
       console.error("Error fetching products:", err);
       setError("Không thể tải dữ liệu sản phẩm.");
@@ -65,67 +26,79 @@ const Products = () => {
     }
   };
 
-  // Các hàm CRUD placeholder
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "Chưa có giá";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
+
+  // Các hàm CRUD
   const handleCreate = () => {
-    // TODO: Triển khai chức năng tạo sản phẩm mới (có thể dùng routing hoặc modal)
-    console.log("Initiating product creation...");
-    alert("Chức năng thêm sản phẩm mới");
+    alert("Chức năng thêm sản phẩm mới đang được phát triển");
   };
 
   const handleEdit = (productId: number) => {
-    // TODO: Triển khai chức năng chỉnh sửa sản phẩm (có thể dùng routing hoặc modal)
-    console.log("Editing product with ID:", productId);
-    alert(`Chỉnh sửa sản phẩm ${productId}`);
+    alert(`Chỉnh sửa sản phẩm ${productId} - Đang phát triển`);
   };
 
-  const handleDelete = async (productId: number) => {
-    if (window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
-      // TODO: Thay thế bằng lệnh gọi API xóa thực tế
-      console.log("Attempting to delete product with ID:", productId);
-      try {
-        // const response = await fetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
-        // if (!response.ok) { throw new Error('Failed to delete product'); }
+  const handleDelete = async (productId: number, name: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa sản phẩm "${name}"?`)) return;
 
-        // Mô phỏng độ trễ API và cập nhật trạng thái
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        setProducts(products.filter((product) => product.id !== productId));
-        console.log("Product deleted with ID:", productId);
-        alert("Xóa sản phẩm thành công!");
-      } catch (err) {
-        console.error("Error deleting product:", err);
-        setError("Không thể xóa sản phẩm.");
-        alert("Xóa sản phẩm thất bại!");
-      }
+    try {
+      await deleteProduct(productId);
+      alert("Xóa sản phẩm thành công!");
+      fetchProducts(); // Reload
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      alert("Không thể xóa sản phẩm");
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchKeyword.toLowerCase())
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchKeyword.toLowerCase())
   );
 
   if (loading) {
-    return <div className="text-center py-8">Đang tải dữ liệu sản phẩm...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-8 text-red-600">Lỗi: {error}</div>;
+    return (
+      <div className="flex items-center justify-center h-64 bg-white rounded-xl shadow">
+        <div className="text-xl">Đang tải...</div>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
-      <h2 className="text-xl font-bold mb-4">Danh sách sản phẩm</h2>
-      <div className="mb-4 flex justify-between items-center">
-        {/* Nút Thêm sản phẩm - dùng button hoặc Link tùy cấu trúc route thêm */}
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
-          onClick={handleCreate}
-        >
-          Thêm sản phẩm
-        </button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Danh sách sản phẩm</h2>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition"
+            onClick={handleCreate}
+          >
+            + Thêm sản phẩm
+          </button>
+          <button
+            onClick={fetchProducts}
+            className="px-4 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition"
+          >
+            🔄 Làm mới
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      <div className="mb-4">
         <input
           type="text"
-          className="w-64 px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Tìm sản phẩm..."
+          className="w-full px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Tìm sản phẩm theo tên..."
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
         />
@@ -136,40 +109,59 @@ const Products = () => {
           <thead>
             <tr className="bg-blue-50">
               <th className="p-2 text-center">#</th>
-              <th className="p-2 text-center">Tên</th>
+              <th className="p-2 text-left">Tên sản phẩm</th>
               <th className="p-2 text-center">Ảnh</th>
-              <th className="p-2 text-center">Giá thường</th>
-              <th className="p-2 text-center">Giá khuyến mãi</th>
+              <th className="p-2 text-center">Giá</th>
+              <th className="p-2 text-center">Danh mục</th>
               <th className="p-2 text-center">Chỉnh sửa</th>
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map((p, i) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50">
-                <td className="p-2 text-center">{i + 1}</td>
-                <td className="p-2 text-center">{p.name}</td>
+            {filteredProducts.map((product) => (
+              <tr key={product.product_id} className="border-b hover:bg-gray-50">
+                <td className="p-2 text-center">{product.product_id}</td>
+                <td className="p-2">
+                  <div className="font-medium">{product.name}</div>
+                  {product.description && (
+                    <div className="text-xs text-gray-500 line-clamp-1">
+                      {product.description}
+                    </div>
+                  )}
+                </td>
                 <td className="p-2 text-center">
-                  <img
-                    src={p.img}
-                    alt={p.name}
-                    className="w-14 h-10 object-cover rounded inline-block"
-                  />
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-12 h-12 object-cover rounded inline-block"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded inline-flex items-center justify-center">
+                      📦
+                    </div>
+                  )}
                 </td>
-                <td className="p-2 text-center">{p.price.toLocaleString()}₫</td>
-                <td className="p-2 text-center text-red-600">
-                  {p.sale.toLocaleString()}₫
+                <td className="p-2 text-center font-medium">
+                  {formatCurrency(product.price)}
                 </td>
-                <td className="p-2 space-x-2 text-center">
-                  {/* <Link to={`/admin/products/edit/${p.id}`} className="px-2 py-1 bg-blue-500 text-white rounded text-xs">Sửa</Link> */}
+                <td className="p-2 text-center">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                    ID: {product.category_id || "N/A"}
+                  </span>
+                </td>
+                <td className="p-2 text-center space-x-2">
                   <button
-                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition"
-                    onClick={() => handleEdit(p.id)}
+                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                    onClick={() => handleEdit(product.product_id)}
                   >
                     Sửa
                   </button>
                   <button
-                    className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition"
-                    onClick={() => handleDelete(p.id)}
+                    className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                    onClick={() => handleDelete(product.product_id, product.name)}
                   >
                     Xóa
                   </button>
@@ -178,6 +170,12 @@ const Products = () => {
             ))}
           </tbody>
         </table>
+
+        {filteredProducts.length === 0 && !loading && (
+          <div className="py-12 text-center text-gray-500">
+            {searchKeyword ? "Không tìm thấy sản phẩm nào" : "Chưa có sản phẩm"}
+          </div>
+        )}
       </div>
     </div>
   );
