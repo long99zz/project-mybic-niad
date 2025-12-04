@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const regions = [
   {
@@ -412,7 +412,7 @@ function TravelInsuranceOrderPage() {
         };
         sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
         
-        navigate(`/dat-hang-thanh-cong?invoice_id=${master_invoice_id}&amount=${totalFee}`);
+        navigate(`/dat-hang-thanh-cong?master_invoice_id=${master_invoice_id}&amount=${totalFee}`);
       } catch (error: any) {
         setIsSubmitting(false);
         console.error("[ERROR] Thực hiện đặt bảo hiểm:", error);

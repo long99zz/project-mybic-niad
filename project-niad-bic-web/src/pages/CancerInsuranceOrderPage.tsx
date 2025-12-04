@@ -9,7 +9,7 @@ import axios, { AxiosError } from "axios";
 import feeTable from "../data/cancer_fee_table.json";
 import { useAuth } from "../contexts/AuthContext";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface ParticipantInfo {
   fullName: string;
@@ -468,7 +468,7 @@ export default function CancerInsuranceOrderPage() {
       sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
 
       // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
-      navigate(`/dat-hang-thanh-cong?invoice_id=${invoiceId}&amount=${getTotalPremium()}`);
+      navigate(`/dat-hang-thanh-cong?master_invoice_id=${invoiceId}&amount=${getTotalPremium()}`);
     } catch (error) {
       setShowError(true);
       let axiosError: AxiosError | null = null;

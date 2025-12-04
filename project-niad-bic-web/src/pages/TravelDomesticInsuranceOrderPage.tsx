@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const DOMESTIC_TRAVEL_PRODUCT_ID = 12; // Bảo hiểm du lịch trong nước (TRV)
 
@@ -271,7 +271,7 @@ function TravelDomesticInsuranceOrderPage() {
         };
         sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
         
-        navigate(`/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${totalFee}`);
+        navigate(`/dat-hang-thanh-cong?master_invoice_id=${invoice_id}&amount=${totalFee}`);
       } catch (error: any) {
         if (error.response) {
         }

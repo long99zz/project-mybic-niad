@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const regions = [
   { value: "vietnam", label: "Vùng 1 - Việt Nam" },
@@ -448,7 +448,7 @@ function TravelAccidentInsuranceOrderPage() {
         };
         sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
         
-        navigate(`/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${totalFee}`);
+        navigate(`/dat-hang-thanh-cong?master_invoice_id=${invoice_id}&amount=${totalFee}`);
       } catch (error) {
         const err = error as any;
         alert(

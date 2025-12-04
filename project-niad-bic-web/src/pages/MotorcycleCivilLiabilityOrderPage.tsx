@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface MotorcycleVehicleInfo {
   ownerType: "personal" | "organization";
@@ -419,7 +419,7 @@ export default function MotorcycleCivilLiabilityOrderPage() {
       sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
 
       // Chuyển hướng đến trang đặt hàng thành công (use master_invoice_id for payment)
-      navigate(`/dat-hang-thanh-cong?invoice_id=${masterInvoiceId}&amount=${Math.round(tndsFeeDisplay * vehicleCount)}`);
+      navigate(`/dat-hang-thanh-cong?master_invoice_id=${masterInvoiceId}&amount=${Math.round(tndsFeeDisplay * vehicleCount)}`);
     } catch (error: any) {
       setShowError(true);
 

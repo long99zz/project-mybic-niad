@@ -11,6 +11,7 @@ import axios from "axios";
 const InvoiceAdmin: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   const fetchInvoices = async () => {
@@ -119,71 +120,95 @@ const InvoiceAdmin: React.FC = () => {
 
   if (loading) return <p>Đang tải...</p>;
 
+  // Filter invoices based on search term
+  const filteredInvoices = invoices.filter((invoice) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (invoice.invoice_id && String(invoice.invoice_id).toLowerCase().includes(searchLower)) ||
+      (invoice.product_name && invoice.product_name.toLowerCase().includes(searchLower)) ||
+      (invoice.customer_name && invoice.customer_name.toLowerCase().includes(searchLower))
+    );
+  });
+
   return (
     <div className="p-6">
-      <h2 className="mb-4 text-xl font-bold">Quản lý Đơn hàng</h2>
-      <table className="w-full border border-collapse">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="p-2 border">ID</th>
-            <th className="p-2 border">Sản phẩm</th>
-            <th className="p-2 border">Người mua</th>
-            <th className="p-2 border">Ngày tạo</th>
-            <th className="p-2 border">Trạng thái</th>
-            <th className="p-2 border">Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.map((invoice) => {
-            return (
-              <tr key={invoice.invoice_type + '-' + invoice.invoice_id}>
-                <td className="p-2 border">{invoice.invoice_id}</td>
-                <td className="p-2 border">{invoice.product_name}</td>
-                <td className="p-2 border">{invoice.customer_name}</td>
-                <td className="p-2 border">{invoice.updated_at ? new Date(invoice.updated_at).toLocaleDateString('vi-VN') : ''}</td>
-                <td className="p-2 border">
-                  <span
-                    className={`px-2 py-1 rounded ${
-                      invoice.status === "Pending"
-                        ? "bg-yellow-200"
-                        : invoice.status === "Approved"
-                        ? "bg-green-200"
-                        : "bg-red-200"
-                    }`}
-                  >
-                    {invoice.status}
-                  </span>
-                </td>
-                <td className="flex gap-2 p-2 border">
-                  <button
-                    onClick={() => handleViewDetail(invoice)}
-                    className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
-                    title="Xem chi tiết đơn hàng"
-                  >
-                    Chi tiết
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleStatusChange(invoice.invoice_id, invoice.status || "Chưa thanh toán", invoice.invoice_type)
-                    }
-                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                    title="Chuyển đổi trạng thái thanh toán"
-                  >
-                    Đổi trạng thái
-                  </button>
-                  <button
-                    onClick={() => handleDelete(invoice.invoice_id, invoice.invoice_type)}
-                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                    title="Xóa đơn hàng này"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Quản lý Đơn hàng</h2>
+        <input
+          type="text"
+          placeholder="Tìm kiếm theo ID, sản phẩm hoặc tên khách hàng..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      
+      {filteredInvoices.length === 0 ? (
+        <p className="text-center text-gray-500 py-4">Không tìm thấy đơn hàng</p>
+      ) : (
+        <table className="w-full border border-collapse">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2 border">ID</th>
+              <th className="p-2 border">Sản phẩm</th>
+              <th className="p-2 border">Người mua</th>
+              <th className="p-2 border">Ngày tạo</th>
+              <th className="p-2 border">Trạng thái</th>
+              <th className="p-2 border">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredInvoices.map((invoice) => {
+              return (
+                <tr key={invoice.invoice_type + '-' + invoice.invoice_id}>
+                  <td className="p-2 border">{invoice.invoice_id}</td>
+                  <td className="p-2 border">{invoice.product_name}</td>
+                  <td className="p-2 border">{invoice.customer_name}</td>
+                  <td className="p-2 border">{invoice.updated_at ? new Date(invoice.updated_at).toLocaleDateString('vi-VN') : ''}</td>
+                  <td className="p-2 border">
+                    <span
+                      className={`px-2 py-1 rounded ${
+                        invoice.status === "Pending"
+                          ? "bg-yellow-200"
+                          : invoice.status === "Approved"
+                          ? "bg-green-200"
+                          : "bg-red-200"
+                      }`}
+                    >
+                      {invoice.status}
+                    </span>
+                  </td>
+                  <td className="flex gap-2 p-2 border">
+                    <button
+                      onClick={() => handleViewDetail(invoice)}
+                      className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
+                      title="Xem chi tiết đơn hàng"
+                    >
+                      Chi tiết
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleStatusChange(invoice.invoice_id, invoice.status || "Chưa thanh toán", invoice.invoice_type)
+                      }
+                      className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                      title="Chuyển đổi trạng thái thanh toán"
+                    >
+                      Đổi trạng thái
+                    </button>
+                    <button
+                      onClick={() => handleDelete(invoice.invoice_id, invoice.invoice_type)}
+                      className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
+                      title="Xóa đơn hàng này"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

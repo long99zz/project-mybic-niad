@@ -11,7 +11,7 @@ import {
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 
-const API_URL = import.meta.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.NEXT_PUBLIC_API_URL || "";
 
 // Định nghĩa các loại dữ liệu
 interface ProductInfo {
@@ -364,7 +364,7 @@ export default function CarCivilLiabilityOrderPage() {
           sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
 
           // Chuyển hướng đến trang đặt hàng thành công (use master_invoice_id for payment)
-          navigate(`/dat-hang-thanh-cong?invoice_id=${masterInvoiceId}&amount=${Math.round(totalFeeDisplay)}`);
+          navigate(`/dat-hang-thanh-cong?master_invoice_id=${masterInvoiceId}&amount=${Math.round(totalFeeDisplay)}`);
         } catch (error) {
           alert("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.");
         }

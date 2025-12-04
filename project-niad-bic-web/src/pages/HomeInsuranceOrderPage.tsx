@@ -255,7 +255,7 @@ const HomeInsuranceOrderPage: React.FC = () => {
     setAccountInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   const handleOrderHomeInsurance = async () => {
     try {
@@ -318,7 +318,7 @@ const HomeInsuranceOrderPage: React.FC = () => {
         sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
         
         // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
-        navigate(`/dat-hang-thanh-cong?invoice_id=${master_invoice_id}&amount=${totalFee}`);
+        navigate(`/dat-hang-thanh-cong?master_invoice_id=${master_invoice_id}&amount=${totalFee}`);
       } else {
         alert("Có lỗi khi đặt mua bảo hiểm!");
       }

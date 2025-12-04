@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import CustomerSupport from "../components/CustomerSupport";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const insuranceOptions = [
   {
@@ -235,7 +235,7 @@ const ElectricityAccidentInsuranceOrderPage: React.FC = () => {
       // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
       setOrderSuccess(true);
       setTimeout(() => {
-        window.location.href = `/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${total}`;
+        window.location.href = `/dat-hang-thanh-cong?master_invoice_id=${invoice_id}&amount=${total}`;
       }, 500);
     } catch (error) {
       const err = error as any;

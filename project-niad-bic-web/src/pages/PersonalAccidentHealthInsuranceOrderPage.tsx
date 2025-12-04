@@ -8,7 +8,7 @@ import CustomerSupport from "../components/CustomerSupport";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface InsuredPerson {
   fullName: string;
@@ -604,7 +604,7 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
 
       // 5. Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
       navigate(
-        `/dat-hang-thanh-cong?invoice_id=${invoiceId}&amount=${getTotalPremium()}`
+        `/dat-hang-thanh-cong?master_invoice_id=${invoiceId}&amount=${getTotalPremium()}`
       );
     } catch (error) {
       setShowError(true);
@@ -1025,20 +1025,11 @@ export default function PersonalAccidentHealthInsuranceOrderPage() {
                 {getTotalPremium().toLocaleString("vi-VN")} VNĐ
               </span>
             </p>
-            <p className="text-lg">
-              Số tiền chiết khấu:{" "}
-              <span className="text-red-600">
-                {Math.round(getTotalPremium() * 0.15).toLocaleString("vi-VN")}{" "}
-                VNĐ
-              </span>
-            </p>
             <hr className="my-2" />
             <p className="text-xl font-bold">
               Tổng phí thực thu (miễn VAT):{" "}
               <span className="text-red-600">
-                {(
-                  getTotalPremium() - Math.round(getTotalPremium() * 0.15)
-                ).toLocaleString("vi-VN")}{" "}
+                {getTotalPremium().toLocaleString("vi-VN")}{" "}
                 VNĐ
               </span>
             </p>

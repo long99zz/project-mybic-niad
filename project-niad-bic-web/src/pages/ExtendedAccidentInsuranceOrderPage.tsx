@@ -440,7 +440,7 @@ export default function CancerInsuranceOrderPage() {
       sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
       
       // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
-      window.location.href = `/dat-hang-thanh-cong?invoice_id=${invoice_id}&amount=${getTotalPremium()}`;
+      window.location.href = `/dat-hang-thanh-cong?master_invoice_id=${invoice_id}&amount=${getTotalPremium()}`;
     } catch (err: any) {
       alert("Lỗi: " + (err.message || "Không xác định"));
     }

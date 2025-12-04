@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const insuranceOptions = Array.from({ length: 20 }, (_, i) => {
   const value = 200_000_000 - i * 10_000_000;
@@ -241,7 +241,7 @@ const GPAOrderPage: React.FC = () => {
       sessionStorage.setItem('temp_order_info', JSON.stringify(orderInfo));
       
       // Chuyển hướng đến trang đặt hàng thành công (OrderSuccessPage sẽ xử lý payment)
-      navigate(`/dat-hang-thanh-cong?invoice_id=${master_invoice_id}&amount=${periodFee}`);
+      navigate(`/dat-hang-thanh-cong?master_invoice_id=${master_invoice_id}&amount=${periodFee}`);
     } catch (error) {
       const err = error as any;
       alert(
